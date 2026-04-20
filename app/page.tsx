@@ -66,21 +66,7 @@ export default function Home()
   </div>
 </a>
 
-{/* videos */}
-<a href="/videos">
-  <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:brightness-110">
-    <div className="group w-full h-full relative">
-      <img
-        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        src="https://images.unsplash.com/photo-1434394354979-a235cd36269d?..."
-      />
-      <div className="absolute inset-0 bg-black/50 transition-opacity duration-500 group-hover:opacity-0" />
-      <p className="absolute inset-0 flex items-center justify-center text-white font-bold text-4xl transition-opacity duration-500 group-hover:opacity-0">
-        videos
-      </p>
-    </div>
-  </div>
-</a>
+
 
 {/* instagram */}
 <a href="/photos">
