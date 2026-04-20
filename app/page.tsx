@@ -1,65 +1,132 @@
 import Image from "next/image";
+import type { Metadata } from "next";
+import ScrollBanner from './components/ScrollBanner'
+import './globals.css'
 
-export default function Home() {
+export const metadata: Metadata = {
+  title: "jackson zhou.",
+  description: "Homepage",
+};
+
+
+export default function Home() 
+// const marqueeRef = useRef<HTMLDivElement>(null)
+{
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+//  whole page div
+    <div className="">
+  
+  {/* top page part */}
+  <div className="-my-8 flex flex-wrap gap-10 mx-auto min-h-screen max-w-6xl items-center justify-center">
+    {/* Left: image/gif */}
+    <div 
+        style={{ animation: 'homefadein 2s ease forwards' }}
+        className="flex-auto w-full lg:w-190 homefadein">
+    <img
+        className="w-full object-cover rounded-xl aspect-3/2"
+        src="/web.gif"
+        alt="me in a video!"
+      />
     </div>
-  );
+
+    {/* Right: text */}
+    <div className="flex-1 min-w-85">
+      <p className="pb-3 text-5xl font-bold slide-left">hello!</p>
+      <p className="text-neutral-600 dark:text-neutral-300 slide-left-delay">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin at fringilla massa. Aenean molestie non enim aliquam tincidunt. Praesent porttitor elit lorem, in convallis massa aliquet vitae. Mauris cursus posuere lectus, eu facilisis enim cursus sit amet. Donec a egestas sapien, id laoreet magna. Vivamus iaculis, sem ac varius tempor, dolor ex feugiat mauris, sodales consectetur lorem leo vel dui. Ut mi lorem, imperdiet quis hendrerit interdum, tincidunt sed sapien. Morbi ullamcorper ligula a quam venenatis, id vestibulum lectus lobortis. Ut mollis tortor sit amet arcu volutpat, at vestibulum tellus vulputate. Suspendisse luctus efficitur felis, sit amet scelerisque urna. Vivamus sem justo, volutpat id suscipit quis, finibus egestas neque. Nulla tempus pellentesque lectus id rhoncus. Sed varius felis eu mi eleifend, et lobortis augue laoreet.</p>
+    </div>
+  </div>
+
+{/* banner */}
+<div className="-mx-4 sm:-mx-8 lg:-mx-28">
+<ScrollBanner />
+</div>
+
+{/* my work text */}
+<div className="py-8 mx-auto max-w-6xl">
+  <p className="text-5xl font-bold">my work:</p>
+</div>
+
+
+{/* buttom selectors */}
+<div className="mx-auto max-w-6xl grid lg:grid-cols-3 grid-cols-1 gap-8">
+
+<a href="/photos">
+  <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:brightness-110">
+    <div className="group w-full h-full relative">
+      <img
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        src="https://images.unsplash.com/photo-1434394354979-a235cd36269d?..."
+      />
+      <div className="absolute inset-0 bg-black/50 transition-opacity duration-500 group-hover:opacity-0" />
+      <p className="absolute inset-0 flex items-center justify-center text-white font-bold text-4xl transition-opacity duration-500 group-hover:opacity-0">
+        photos
+      </p>
+    </div>
+  </div>
+</a>
+
+{/* videos */}
+<a href="/videos">
+  <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:brightness-110">
+    <div className="group w-full h-full relative">
+      <img
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        src="https://images.unsplash.com/photo-1434394354979-a235cd36269d?..."
+      />
+      <div className="absolute inset-0 bg-black/50 transition-opacity duration-500 group-hover:opacity-0" />
+      <p className="absolute inset-0 flex items-center justify-center text-white font-bold text-4xl transition-opacity duration-500 group-hover:opacity-0">
+        videos
+      </p>
+    </div>
+  </div>
+</a>
+
+{/* instagram */}
+<a href="/photos">
+  <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:brightness-110">
+    <div className="group w-full h-full relative">
+      <img
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        src="https://images.unsplash.com/photo-1434394354979-a235cd36269d?..."
+      />
+      <div className="absolute inset-0 bg-black/50 transition-opacity duration-500 group-hover:opacity-0" />
+      <p className="absolute inset-0 flex items-center justify-center text-white font-bold text-4xl transition-opacity duration-500 group-hover:opacity-0">
+        instagram
+      </p>
+    </div>
+  </div>
+</a>
+
+</div>
+
+
+{/* contact button */}
+<div className="mx-auto max-w-6xl w-full mt-8">
+<a href="/contact">
+  <div className="w-full h-14 rounded-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:brightness-110">
+    <div className="group w-full h-full relative">
+      <img
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        src="https://images.unsplash.com/photo-1434394354979-a235cd36269d?..."
+      />
+      <div className="absolute inset-0 bg-black/50 transition-opacity duration-500 group-hover:opacity-0" />
+      <p className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl transition-opacity duration-500 group-hover:opacity-80">
+        contact
+      </p>
+    </div>
+  </div>
+</a>
+</div>
+
+{/* abt me */}
+<div className="mx-auto max-w-6xl w-full mt-8">
+    <p className="pb-3 text-5xl font-bold">about me!</p>
+    <p className="text-neutral-600 dark:text-neutral-300">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin at fringilla massa. Aenean molestie non enim aliquam tincidunt. Praesent porttitor elit lorem, in convallis massa aliquet vitae. Mauris cursus posuere lectus, eu facilisis enim cursus sit amet. Donec a egestas sapien, id laoreet magna. Vivamus iaculis, sem ac varius tempor, dolor ex feugiat mauris, sodales consectetur lorem leo vel dui. Ut mi lorem, imperdiet quis hendrerit interdum, tincidunt sed sapien. Morbi ullamcorper ligula a quam venenatis, id vestibulum lectus lobortis. Ut mollis tortor sit amet arcu volutpat, at vestibulum tellus vulputate. Suspendisse luctus efficitur felis, sit amet scelerisque urna. Vivamus sem justo, volutpat id suscipit quis, finibus egestas neque. Nulla tempus pellentesque lectus id rhoncus. Sed varius felis eu mi eleifend, et lobortis augue laoreet.</p>
+</div>
+
+
+</div>
+
+  )
 }
