@@ -36,12 +36,12 @@ export function Navbar() {
   return (
     <aside>
       <div>
-        <nav
-          className="flex flex-col md:flex-row md:items-center md:justify-between px-2.5 py-2.5"
-          id="nav"
-        >
+<nav
+  className="flex flex-col items-center text-center px-2.5 py-2.5 sm:flex-row sm:justify-between sm:text-left"
+  id="nav"
+>
           {/* Left: jackson zhou. */}
-          <div>
+          <div className="flex-shrink-0">
             {Object.entries(navItems)
               .filter(([_, { name }]) => name === 'jackson zhou.')
               .map(([id, { name, path }]) => (
@@ -56,7 +56,7 @@ export function Navbar() {
           </div>
 
           {/* Right: links */}
-          <div className="flex flex-wrap items-center justify-start mt-2 md:mt-0 md:justify-end">
+          <div className="flex flex-wrap items-center justify-center md:justify-end">
             {Object.entries(navItems)
               .filter(([_, { name }]) => name !== 'jackson zhou.')
               .map(([id, { name, path, icon }]) => (

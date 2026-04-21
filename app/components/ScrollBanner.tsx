@@ -15,12 +15,12 @@ export default function ScrollBanner() {
   }, [])
 
   return (
-<div className="overflow-hidden whitespace-nowrap py-4 border-y border-neutral-800 dark:border-neutral-200">
+<div className="overflow-hidden whitespace-nowrap py-4 border-y border-neutral-600 dark:border-neutral-300">
   <div ref={marqueeRef} className="flex w-max">
     {Array.from({ length: 20 }).map((_, i) => (
       <span
         key={i}
-        className="px-8 text-5xl font-bold text-black dark:text-white"
+        className="px-8 text-5xl font-bold text-neutral-600 dark:text-neutral-300"
       >
         JACKSON ZHOU.
       </span>

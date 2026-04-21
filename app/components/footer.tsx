@@ -18,20 +18,57 @@ function ArrowIcon() {
 export default function Footer() {
   return (
     <footer className="my-16">
-      <div className="flex justify-between items-center py-8 max-w-6xl mx-auto">
-        {/* Left: your text */}
-        <div>
-        <p className="text-4xl font-bold text-neutral-600 dark:text-neutral-300">jackson zhou</p>
-        <p className="text-neutral-600 dark:text-neutral-300">hello@jkzhou.ca</p>
+      <div className="max-w-6xl mx-auto py-8 flex flex-col items-center text-center md:flex-row md:justify-between md:items-center md:text-left">
+        <div className="flex flex-col items-center md:items-start">
+          <p className="text-4xl font-bold text-neutral-600 dark:text-neutral-300">
+            jackson zhou
+          </p>
+          <p className="text-neutral-600 dark:text-neutral-300">
+            hello@jkzhou.ca
+          </p>
         </div>
-        {/* Right: links + copyright */}
-        <div className="flex flex-col items-end">
-          <ul className="flex flex-row space-x-4 text-neutral-600 dark:text-neutral-300">
-            <li><a draggable={false} rel="noopener noreferrer" target="_blank" href="https://www.instagram.com/jkz.mov/" className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"><ArrowIcon /><p className="ml-2">instagram</p></a></li>
-            <li><a draggable={false} rel="noopener noreferrer" target="_blank" href="https://www.linkedin.com/in/jackson-zhou-9a5703297/" className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"><ArrowIcon /><p className="ml-2">linkedin</p></a></li>
-            <li><a draggable={false} href="/contact" className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"><ArrowIcon /><p className="ml-2">contact</p></a></li>
+
+        <div className="mt-6 flex flex-col items-center md:mt-0 md:items-end">
+          <ul className="flex flex-wrap justify-center gap-4 text-neutral-600 dark:text-neutral-300 md:justify-end">
+            <li>
+              <a
+                draggable={false}
+                rel="noopener noreferrer"
+                target="_blank"
+                href="https://www.instagram.com/jkz.mov/"
+                className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"
+              >
+                <ArrowIcon />
+                <p className="ml-2">instagram</p>
+              </a>
+            </li>
+            <li>
+              <a
+                draggable={false}
+                rel="noopener noreferrer"
+                target="_blank"
+                href="https://www.linkedin.com/in/jackson-zhou-9a5703297/"
+                className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"
+              >
+                <ArrowIcon />
+                <p className="ml-2">linkedin</p>
+              </a>
+            </li>
+            <li>
+              <a
+                draggable={false}
+                href="/contact"
+                className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"
+              >
+                <ArrowIcon />
+                <p className="ml-2">contact</p>
+              </a>
+            </li>
           </ul>
-          <p className="mt-2 text-neutral-600 dark:text-neutral-300">© {new Date().getFullYear()} Jackson Zhou. All rights reserved</p>
+
+          <p className="mt-2 text-neutral-600 dark:text-neutral-300">
+            © {new Date().getFullYear()} Jackson Zhou. All rights reserved
+          </p>
         </div>
       </div>
     </footer>
