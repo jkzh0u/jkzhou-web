@@ -18,7 +18,7 @@ export default function Home()
     <div className="">
   
   {/* top page part */}
-  <div className="-my-8 flex flex-wrap gap-10 mx-auto min-h-screen max-w-6xl items-center justify-center">
+  <div className="flex flex-wrap gap-10 mx-auto h-[calc(100vh-56px)] max-w-6xl items-center justify-center overflow-hidden">
     {/* Left: image/gif */}
     <div 
         style={{ animation: 'homefadein 2s ease forwards' }}
@@ -32,7 +32,7 @@ export default function Home()
 
     {/* Right: text */}
     <div className="flex-1 min-w-85">
-      <p className="pb-3 text-5xl font-bold slide-left">hello!</p>
+      <p className="pb-3 text-5xl font-bold">hello!</p>
       <p className="text-neutral-600 dark:text-neutral-300">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin at fringilla massa. Aenean molestie non enim aliquam tincidunt. Praesent porttitor elit lorem, in convallis massa aliquet vitae. Mauris cursus posuere lectus, eu facilisis enim cursus sit amet. Donec a egestas sapien, id laoreet magna. Vivamus iaculis, sem ac varius tempor, dolor ex feugiat mauris, sodales consectetur lorem leo vel dui. Ut mi lorem, imperdiet quis hendrerit interdum, tincidunt sed sapien. Morbi ullamcorper ligula a quam venenatis, id vestibulum lectus lobortis. Ut mollis tortor sit amet arcu volutpat, at vestibulum tellus vulputate. Suspendisse luctus efficitur felis, sit amet scelerisque urna. Vivamus sem justo, volutpat id suscipit quis, finibus egestas neque. Nulla tempus pellentesque lectus id rhoncus. Sed varius felis eu mi eleifend, et lobortis augue laoreet.</p>
     </div>
   </div>
@@ -53,7 +53,9 @@ export default function Home()
 
 {/* photos */}
 <a href="/photos">
-  <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:brightness-110">
+  <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden 
+    transition-all duration-400 ease-out transform 
+    hover:scale-104 hover:shadow-2xl hover:brightness-110">
     <div className="group w-full h-full relative">
       <img
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -69,7 +71,9 @@ export default function Home()
 
 {/* videos */}
 <a href="/videos">
-  <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:brightness-110">
+    <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden 
+    transition-all duration-400 ease-out transform 
+    hover:scale-104 hover:shadow-2xl hover:brightness-110">
     <div className="group w-full h-full relative">
       <img
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -85,7 +89,9 @@ export default function Home()
 
 {/* instagram */}
 <a href="/photos">
-  <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:brightness-110">
+    <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden 
+    transition-all duration-400 ease-out transform 
+    hover:scale-104 hover:shadow-2xl hover:brightness-110">
     <div className="group w-full h-full relative">
       <img
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -105,7 +111,7 @@ export default function Home()
 {/* contact button */}
 <div className="mx-auto max-w-6xl w-full mt-8">
 <a href="/contact">
-  <div className="w-full h-14 rounded-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:brightness-110">
+  <div className="w-full h-14 rounded-xl overflow-hidden transition-all duration-400 ease-out transform hover:scale-104 hover:shadow-2xl hover:brightness-110">
     <div className="group w-full h-full relative">
       <img
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"

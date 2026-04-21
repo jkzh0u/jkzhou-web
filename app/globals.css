@@ -28,20 +28,7 @@ body {
 }
 
 @keyframes homefadein {
-  from { opacity: 0; transform: translateY(20px) scale(1.2); }
+  from { opacity: 0; transform: translateY(20px) scale(1.1); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes slideFromLeft {
-  from { opacity: 0; transform: translateX(-40px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.slide-left {
-  opacity: 0;
-  animation: slideFromLeft 1s ease 3 forwards;
-}
-.slide-left-delay {
-  opacity: 0;
-  animation: slideFromLeft 0.8s ease 3.4s forwards;
-}

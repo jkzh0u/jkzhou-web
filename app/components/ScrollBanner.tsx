@@ -15,13 +15,17 @@ export default function ScrollBanner() {
   }, [])
 
   return (
-    <div className="overflow-hidden whitespace-nowrap py-4 border-y border-neutral-800">
-      <div ref={marqueeRef} className="flex w-max">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <span key={i} style={{ WebkitTextStroke: '.8px white' }} className="px-8 text-5xl font-bold text-transparent">
-            JACKSON ZHOU.</span>
-        ))}
-      </div>
-    </div>
+<div className="overflow-hidden whitespace-nowrap py-4 border-y border-neutral-800 dark:border-neutral-200">
+  <div ref={marqueeRef} className="flex w-max">
+    {Array.from({ length: 20 }).map((_, i) => (
+      <span
+        key={i}
+        className="px-8 text-5xl font-bold text-black dark:text-white"
+      >
+        JACKSON ZHOU.
+      </span>
+    ))}
+  </div>
+</div>
   )
 }

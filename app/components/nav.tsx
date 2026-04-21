@@ -34,32 +34,44 @@ const navItems: Record<number, NavItem> = {
 
 export function Navbar() {
   return (
-    <aside className="">
-      <div className="">
-<nav
-  className="flex flex-row items-center justify-between relative px-2.5 py-2.5 fade md:overflow-auto scroll-pr-6 md:relative"
-  id="nav"
->
-  {/* Left: jackson zhou. */}
-  <div>
-    {Object.entries(navItems).filter(([_, { name }]) => name === 'jackson zhou.').map(([id, { name, path }]) => (
-      <Link draggable={false} key={path} href={path} className="transition-all hover:text-neutral-800 dark:hover:text-neutral-200 flex align-middle relative py-1 px-2 m-1 font-bold">
-        {name}
-      </Link>
-    ))}
-  </div>
+    <aside>
+      <div>
+        <nav
+          className="flex flex-col md:flex-row md:items-center md:justify-between px-2.5 py-2.5"
+          id="nav"
+        >
+          {/* Left: jackson zhou. */}
+          <div>
+            {Object.entries(navItems)
+              .filter(([_, { name }]) => name === 'jackson zhou.')
+              .map(([id, { name, path }]) => (
+                <Link
+                  key={path}
+                  href={path}
+                  className="transition-all hover:text-neutral-800 dark:hover:text-neutral-200 py-1 px-2 m-1 font-bold"
+                >
+                  {name}
+                </Link>
+              ))}
+          </div>
 
-  {/* Right: all other links */}
-  <div className="flex flex-row items-center">
-    {Object.entries(navItems).filter(([_, { name }]) => name !== 'jackson zhou.').map(([id, { name, path, icon }]) => (
-        <Link draggable={false} key={path} href={path} target={path.startsWith('https') ? '_blank' : undefined} rel={path.startsWith('https') ? 'noopener noreferrer' : undefined}
-        className="transition-all hover:text-neutral-800 dark:hover:text-neutral-200 flex align-middle relative py-1 px-2 m-1"
-            > {icon ?? name}
-        </Link>
-    ))}
-  </div>
-
-</nav>
+          {/* Right: links */}
+          <div className="flex flex-wrap items-center justify-start mt-2 md:mt-0 md:justify-end">
+            {Object.entries(navItems)
+              .filter(([_, { name }]) => name !== 'jackson zhou.')
+              .map(([id, { name, path, icon }]) => (
+                <Link
+                  key={path}
+                  href={path}
+                  target={path.startsWith('https') ? '_blank' : undefined}
+                  rel={path.startsWith('https') ? 'noopener noreferrer' : undefined}
+                  className="transition-all hover:text-neutral-800 dark:hover:text-neutral-200 py-1 px-2 m-1"
+                >
+                  {icon ?? name}
+                </Link>
+              ))}
+          </div>
+        </nav>
       </div>
     </aside>
   )
