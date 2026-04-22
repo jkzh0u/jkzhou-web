@@ -29,7 +29,7 @@ export default function RootLayout({
           <Navbar />
         </div>
 
-        <main className="px-4 sm:px-8 lg:px-28 overflow-x-hidden">
+        <main className="px-4 sm:px-8 lg:px-28">
           {children}
         </main>
         {/* px-4 sm:px-8 lg:px-28 */}
