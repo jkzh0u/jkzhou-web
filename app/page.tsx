@@ -4,6 +4,7 @@ import ScrollBanner from './components/ScrollBanner'
 import FadeInSection from "./components/FadeInSection";
 import DesktopSticky from "./components/DesktopSticky";
 import './globals.css'
+import Scroll3D from './components/Scroll3D'
 
 export const metadata: Metadata = {
   title: "jackson zhou.",
@@ -19,6 +20,11 @@ export default function Home()
 //  whole page div
     <div className="">
 
+
+      {/* <section className="h-screen flex items-center justify-center">
+        <Scroll3D />
+      </section> */}
+      
 {/* top page part */}
 
 {/* on desktop havethe fancy thingy thangy */}
@@ -26,8 +32,11 @@ export default function Home()
   <div className="mt-3 lg:mt-0 flex flex-wrap content-start lg:content-center gap-5 lg:gap-10 mx-auto max-w-6xl items-start justify-center lg:min-h-[calc(100vh-56px)]">
     {/* Left: image/gif */}
     <div 
-        style={{ animation: 'homefadein 2s cubic-bezier(0.22,1,0.36,1) 500ms forwards' }}
-        className="flex-auto w-full lg:w-190 homefadein">
+      style={{
+        opacity: 0,
+        transform: "translateY(20px) scale(1.1)",
+        animation: "homefadein 2s cubic-bezier(0.22,1,0.36,1) 500ms forwards",}}
+      className="flex-auto w-full lg:w-190 homefadein">
     <img
         className="w-full object-cover rounded-xl aspect-3/2"
         src="/web.gif"
@@ -52,8 +61,11 @@ export default function Home()
   <div className="mt-3 lg:mt-0 flex flex-wrap content-start lg:content-center gap-5 lg:gap-10 mx-auto max-w-6xl items-start justify-center lg:min-h-[calc(100vh-56px)]">
     {/* Left: image/gif */}
     <div 
-        style={{ animation: 'homefadein 2s cubic-bezier(0.22,1,0.36,1) 500ms forwards' }}
-        className="flex-auto w-full lg:w-190 homefadein">
+      style={{
+        opacity: 0,
+        transform: "translateY(20px) scale(1.1)",
+        animation: "homefadein 2s cubic-bezier(0.22,1,0.36,1) 500ms forwards",}}
+      className="flex-auto w-full lg:w-190 homefadein">
     <img
         className="w-full object-cover rounded-xl aspect-3/2"
         src="/web.gif"
@@ -88,7 +100,7 @@ export default function Home()
 <div className="mx-auto max-w-6xl grid lg:grid-cols-3 grid-cols-1 gap-8">
 
 {/* photos */}
-<FadeInSection delay={200}>
+<FadeInSection delay={300}>
 <a href="/photos">
 <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden 
   transition-all duration-500 ease-out 
@@ -108,7 +120,7 @@ export default function Home()
 </FadeInSection>
 
 {/* videos */}
-<FadeInSection delay={800}>
+<FadeInSection delay={600}>
 <a href="/videos">
     <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden 
     transition-all duration-400 ease-out transform 
@@ -128,7 +140,7 @@ export default function Home()
 </FadeInSection>
 
 {/* instagram */}
-<FadeInSection delay={1400}>
+<FadeInSection delay={900}>
 <a href="/photos">
     <div className="w-full h-32 lg:aspect-4/5 lg:h-auto rounded-xl overflow-hidden 
     transition-all duration-400 ease-out transform 
@@ -152,7 +164,7 @@ export default function Home()
 
 {/* mobile contact */}
 <div className="block lg:hidden">
-  <FadeInSection delay={1800}>
+  <FadeInSection delay={400}>
     <div className="mx-auto max-w-6xl w-full mt-8">
       <a href="/contact">
         <div className="w-full h-14 rounded-xl overflow-hidden transition-all duration-500 ease-out hover:scale-105 hover:shadow-2xl hover:brightness-110">
@@ -174,7 +186,7 @@ export default function Home()
 
 {/* desktop contact */}
 <div className="hidden lg:block">
-  <FadeInSection delay={100}>
+  <FadeInSection delay={400}>
     <div className="mx-auto max-w-6xl w-full mt-8">
       <a href="/contact">
         <div className="w-full h-14 rounded-xl overflow-hidden transition-all duration-500 ease-out hover:scale-105 hover:shadow-2xl hover:brightness-110">
