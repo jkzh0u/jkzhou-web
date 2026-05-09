@@ -3,6 +3,7 @@ import { albums } from "@/data/albums";
 import AlbumGallery from "../../components/AlbumGallery";
 import fs from "fs";
 import path from "path";
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return albums.map((album) => ({
