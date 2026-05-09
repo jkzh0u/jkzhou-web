@@ -30,13 +30,15 @@ export default async function AlbumPage({
     album.slug
   );
 
-const photos = fs
-  .readdirSync(photosDirectory)
-  .filter((file) =>
-    [".jpg", ".jpeg", ".png", ".webp"].includes(
-      path.extname(file).toLowerCase()
-    )
-  );
+const photos = fs.existsSync(photosDirectory)
+  ? fs
+      .readdirSync(photosDirectory)
+      .filter((file) =>
+        [".jpg", ".jpeg", ".png", ".webp"].includes(
+          path.extname(file).toLowerCase()
+        )
+      )
+  : [];
 
   return (
     <div className="px-4 sm:px-8 lg:px-28">
