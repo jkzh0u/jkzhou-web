@@ -2,67 +2,25 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
-const heroItems = [
-  {
-    title: 'photo 1',
-    subtitle: 'photo',
-    image:
-      'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=2000&auto=format&fit=crop',
-    href: '/photos/example',
-  },
-  {
-    title: 'photo 2',
-    subtitle: 'photo',
-    image:
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=2000&auto=format&fit=crop',
-    href: '/photos/example',
-  },
-  {
-    title: 'photo 3',
-    subtitle: 'photo',
-    image:
-      'https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=2000&auto=format&fit=crop',
-    href: '/photos/example',
-  },
-  {
-    title: 'photo 4',
-    subtitle: 'photo',
-    image:
-      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2000&auto=format&fit=crop',
-    href: '/photos/example',
-  },
-]
+import { albums } from "@/data/albums";
 
-const smallItems = [
-  {
-    title: 'photo 1',
-    subtitle: 'photo',
-    image:
-      'https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1200&auto=format&fit=crop',
-    href: '/item-1',
-  },
-  {
-    title: 'photo 2',
-    subtitle: 'photo',
-    image:
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop',
-    href: '/item-2',
-  },
-  {
-    title: 'photo 3',
-    subtitle: 'photo',
-    image:
-      'https://images.unsplash.com/photo-1511300636408-a63a89df3482?q=80&w=1200&auto=format&fit=crop',
-    href: '/item-3',
-  },
-  {
-    title: 'photo 4',
-    subtitle: 'photo',
-    image:
-      'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=1200&auto=format&fit=crop',
-    href: '/item-4',
-  },
-]
+const heroItems = albums
+  .filter((album) => album.size === "big")
+  .map((album) => ({
+    title: album.title,
+    subtitle: album.subtitle,
+    image: `/photos/${album.slug}/${album.cover}`,
+    href: `/photos/${album.slug}`,
+  }));
+
+const smallItems = albums
+  .filter((album) => album.size === "small")
+  .map((album) => ({
+    title: album.title,
+    subtitle: album.subtitle,
+    image: `/photos/${album.slug}/${album.cover}`,
+    href: `/photos/${album.slug}`,
+  }));
 
 export default function PhotosShowcase() {
   const wrapperRef = useRef<HTMLDivElement>(null)
