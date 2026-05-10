@@ -12,7 +12,7 @@ export default function Home() {
 
 
 <div className="">
-  <p className="text-9xl font-bold my-7">photos</p>
+  <p className="sm:text-9xl text-6xl font-bold my-7 overflow-hidden">photos</p>
 
 <section className="-mx-4 sm:-mx-8 lg:-mx-28">
   <PhotosShowcase/>
