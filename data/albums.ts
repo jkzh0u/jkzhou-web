@@ -1,11 +1,4 @@
 export const albums = [
-  {
-    slug: "2024gloco",
-    title: "gloco 2024",
-    subtitle: "@ mary ward css",
-    cover: "cover.jpg",
-    size: "big",
-  },
 
   {
     slug: "2024sunrise",
@@ -16,23 +9,29 @@ export const albums = [
   },
 
   {
-    slug: "photo3",
-    title: "photo 3",
-    subtitle: "photo",
+    slug: "2023gloco",
+    title: "gloco 2023",
+    subtitle: "@ mary ward",
     cover:
-      "https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=2000&auto=format&fit=crop",
+      "cover.jpg",
     size: "big",
-    photos: [],
   },
 
   {
-    slug: "photo4",
-    title: "photo 4",
-    subtitle: "photo",
+    slug: "2024robotics",
+    title: "5596 crescendo",
+    subtitle: "FRC 2024 game",
     cover:
-      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2000&auto=format&fit=crop",
+      "IMG_1379.jpg",
     size: "big",
-    photos: [],
+  },
+
+  {
+    slug: "2024gloco",
+    title: "gloco 2024",
+    subtitle: "@ mary ward css",
+    cover: "cover.jpg",
+    size: "big",
   },
 
   {
@@ -48,21 +47,20 @@ export const albums = [
   },
 
   {
-    slug: "smallphoto2",
-    title: "photo 2",
-    subtitle: "photo",
+    slug: "downtowntoronto",
+    title: "downtown toronto",
+    subtitle: "personal photos!",
     cover:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
+      "IMG_0032.jpg",
     size: "small",
-    photos: [],
   },
 
   {
-    slug: "smallphoto3",
-    title: "photo 3",
-    subtitle: "photo",
+    slug: "2024autoshow",
+    title: "autoshow",
+    subtitle: "2024",
     cover:
-      "https://images.unsplash.com/photo-1511300636408-a63a89df3482?q=80&w=1200&auto=format&fit=crop",
+      "IMG_1032.jpg",
     size: "small",
     photos: [],
   },

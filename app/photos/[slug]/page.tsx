@@ -4,12 +4,18 @@ import AlbumGallery from "../../components/AlbumGallery";
 import fs from "fs";
 import path from "path";
 export const dynamic = "force-dynamic";
+import type { Metadata } from "next";
 
-export function generateStaticParams() {
-  return albums.map((album) => ({
-    slug: album.slug,
-  }));
-}
+// export function generateStaticParams() {
+//   return albums.map((album) => ({
+//     slug: album.slug,
+//   }));
+// }
+
+export const metadata: Metadata = {
+  title: "jackson zhou.",
+  description: "Homepage",
+};
 
 export default async function AlbumPage({
   params,
@@ -34,6 +40,7 @@ export default async function AlbumPage({
 const photos = fs.existsSync(photosDirectory)
   ? fs
       .readdirSync(photosDirectory)
+      .filter((file) => !file.startsWith("."))
       .filter((file) =>
         [".jpg", ".jpeg", ".png", ".webp"].includes(
           path.extname(file).toLowerCase()
