@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
-
+import { imageSize } from "image-size";
 // export function generateStaticParams() {
 //   return albums.map((album) => ({
 //     slug: album.slug,
