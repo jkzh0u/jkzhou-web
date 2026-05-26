@@ -1,70 +1,89 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 type DesktopStickyProps = {
   children: ReactNode;
-  strength?: number;
+  scrollBuffer?: number;
 };
 
 export default function DesktopSticky({
   children,
-  strength = 0.6,
+  scrollBuffer = 420,
 }: DesktopStickyProps) {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const [offset, setOffset] = useState(0);
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
     const update = () => {
-      const section = sectionRef.current;
-      if (!section) return;
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
 
-      const rect = section.getBoundingClientRect();
-      const scrolled = Math.max(0, -rect.top);
+      frameRef.current = requestAnimationFrame(() => {
+        const section = sectionRef.current;
+        const inner = innerRef.current;
 
-      const vh = window.innerHeight;
-      const vw = window.innerWidth;
+        if (!section || !inner) return;
 
-      // disable on mobile + short screens
-      const isMobile = vw < 1024;   // Tailwind lg breakpoint
-      const isShort = vh < 850;
+        const rect = section.getBoundingClientRect();
+        const scrolled = Math.max(0, -rect.top);
 
-      if (isMobile || isShort) {
-        setOffset(0);
-        return;
-      }
+        const holdDistance = scrollBuffer * 0.62;
+        const moveRange = scrollBuffer - holdDistance;
 
-      // normal behavior for large screens
-      const viewportBasedMax = Math.min(vh * 0.16, 220);
-      const y = Math.min(scrolled * strength, viewportBasedMax);
+        const raw =
+          moveRange > 0
+            ? Math.min(Math.max((scrolled - holdDistance) / moveRange, 0), 1)
+            : 0;
 
-      setOffset(y);
+        // softer/slower start
+        const eased = raw * raw * raw;
+
+        const dropAmount = 75;
+
+        inner.style.transform = `translate3d(0, ${eased * dropAmount}px, 0)`;
+      });
     };
 
     update();
+
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
 
     return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [strength]);
+  }, [scrollBuffer]);
 
   return (
-    <section
+    <div
       ref={sectionRef}
-      className="relative hidden lg:flex min-h-[calc(100vh-56px)] items-center"
+      className="block relative"
+      style={{
+        height: `calc(100vh - 56px + ${scrollBuffer}px)`,
+        marginBottom: "-70px",
+      }}
     >
-      <div
-        className="w-full"
-        style={{
-          transform: `translateY(${offset}px)`,
-          willChange: "transform",
-        }}
-      >
-        {children}
+<div
+  className="sticky top-[56px] flex items-start"
+  style={{
+    minHeight: "calc(100vh - 56px)",
+  }}
+>
+        <div
+          ref={innerRef}
+          className="w-full"
+          style={{
+            transform: "translate3d(0,0,0)",
+            willChange: "transform",
+          }}
+        >
+          {children}
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
