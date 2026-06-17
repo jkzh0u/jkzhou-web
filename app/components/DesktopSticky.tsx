@@ -1,83 +1,64 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+
+const NAV_HEIGHT = 56;
+const SCROLL_BUFFER = 1600;
+const RELEASE_DISTANCE = 850;
 
 type DesktopStickyProps = {
   children: ReactNode;
-  scrollBuffer?: number;
 };
 
-export default function DesktopSticky({
-  children,
-  scrollBuffer = 420,
-}: DesktopStickyProps) {
-  const sectionRef = useRef<HTMLDivElement | null>(null);
-  const innerRef = useRef<HTMLDivElement | null>(null);
-  const frameRef = useRef<number | null>(null);
+export default function DesktopSticky({ children }: DesktopStickyProps) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [release, setRelease] = useState(0);
 
   useEffect(() => {
     const update = () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      const wrapper = wrapperRef.current;
+      if (!wrapper) return;
 
-      frameRef.current = requestAnimationFrame(() => {
-        const section = sectionRef.current;
-        const inner = innerRef.current;
+      const rect = wrapper.getBoundingClientRect();
+      const releaseStart = -(SCROLL_BUFFER - RELEASE_DISTANCE);
 
-        if (!section || !inner) return;
+      const raw = (releaseStart - rect.top) / RELEASE_DISTANCE;
+      const clamped = Math.min(1, Math.max(0, raw));
 
-        const rect = section.getBoundingClientRect();
-        const scrolled = Math.max(0, -rect.top);
+      const eased = clamped * clamped * (3 - 2 * clamped);
 
-        const holdDistance = scrollBuffer * 0.62;
-        const moveRange = scrollBuffer - holdDistance;
-
-        const raw =
-          moveRange > 0
-            ? Math.min(Math.max((scrolled - holdDistance) / moveRange, 0), 1)
-            : 0;
-
-        // softer/slower start
-        const eased = raw * raw * raw;
-
-        const dropAmount = 75;
-
-        inner.style.transform = `translate3d(0, ${eased * dropAmount}px, 0)`;
-      });
+      setRelease(eased);
     };
 
     update();
-
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
 
     return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [scrollBuffer]);
+  }, []);
 
   return (
     <div
-      ref={sectionRef}
-      className="block relative"
+      ref={wrapperRef}
       style={{
-        height: `calc(100vh - 56px + ${scrollBuffer}px)`,
-        marginBottom: "-70px",
+        height: `calc(100vh - ${NAV_HEIGHT}px + ${SCROLL_BUFFER}px)`,
       }}
     >
-<div
-  className="sticky top-[56px] flex items-start"
-  style={{
-    minHeight: "calc(100vh - 56px)",
-  }}
->
+      <div
+        className="sticky"
+        style={{
+          top: `${NAV_HEIGHT}px`,
+          height: `calc(100vh - ${NAV_HEIGHT}px)`,
+        }}
+      >
         <div
-          ref={innerRef}
-          className="w-full"
+          className="flex h-full w-full items-center justify-center"
           style={{
-            transform: "translate3d(0,0,0)",
+            transform: `translateY(${-release * 42}px)`,
+            transition: "transform 90ms linear",
             willChange: "transform",
           }}
         >

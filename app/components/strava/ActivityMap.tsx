@@ -1,0 +1,401 @@
+"use client";
+
+import { useEffect, useMemo, useRef } from "react";
+import {
+  CircleMarker,
+  MapContainer,
+  Marker,
+  Polyline,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useTheme } from "next-themes";
+
+const iconDefaultProto = L.Icon.Default.prototype as unknown as {
+  _getIconUrl?: unknown;
+};
+
+delete iconDefaultProto._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+});
+
+const startIcon = new L.DivIcon({
+  className: "custom-marker",
+  html: `
+    <div style="
+      background-color:#22c55e;
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      border:3px solid white;
+      box-shadow:0 2px 6px rgba(0,0,0,0.3);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="white">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
+
+const endIcon = new L.DivIcon({
+  className: "custom-marker",
+  html: `
+    <div style="
+      background-color:#ef4444;
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      border:3px solid white;
+      box-shadow:0 2px 6px rgba(0,0,0,0.3);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="white">
+        <rect x="6" y="4" width="4" height="16"/>
+        <rect x="14" y="4" width="4" height="16"/>
+      </svg>
+    </div>
+  `,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
+
+function decodePolyline(encoded: string) {
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  const coordinates: [number, number][] = [];
+
+  while (index < encoded.length) {
+    let b;
+    let shift = 0;
+    let result = 0;
+
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+
+    shift = 0;
+    result = 0;
+
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+
+    coordinates.push([lat / 1e5, lng / 1e5]);
+  }
+
+  return coordinates;
+}
+
+function FitBounds({
+  bounds,
+  fitKey,
+}: {
+  bounds: L.LatLngBoundsExpression;
+  fitKey: string;
+}) {
+  const map = useMap();
+  const lastFitKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (lastFitKeyRef.current === fitKey) return;
+
+    map.whenReady(() => {
+      map.fitBounds(bounds, {
+        padding: [30, 30],
+        animate: false,
+      });
+      lastFitKeyRef.current = fitKey;
+    });
+  }, [map, bounds, fitKey]);
+
+  return null;
+}
+
+function HoverMarker({
+  position,
+  color,
+}: {
+  position: [number, number] | null;
+  color: string;
+}) {
+  if (!position) return null;
+
+  return (
+    <CircleMarker
+      center={position}
+      radius={7}
+      pathOptions={{
+        color: "#ffffff",
+        weight: 3,
+        fillColor: color,
+        fillOpacity: 1,
+      }}
+    />
+  );
+}
+
+export default function ActivityMap({
+  polyline,
+  secondaryPolyline,
+  showMarkers = true,
+  className = "",
+  hoverPosition,
+  secondaryHoverPosition,
+  highlightRange,
+  highlightStyle,
+  showHighlightMarkers = true,
+  focusHighlight = false,
+}: {
+  polyline: string | null;
+  secondaryPolyline?: string | null;
+  showMarkers?: boolean;
+  className?: string;
+  hoverPosition?: [number, number] | null;
+  secondaryHoverPosition?: [number, number] | null;
+  highlightRange?: { startIndex: number; endIndex: number } | null;
+  highlightStyle?: { color?: string; weight?: number; opacity?: number };
+  showHighlightMarkers?: boolean;
+  focusHighlight?: boolean;
+}) {
+  const { resolvedTheme } = useTheme();
+
+  const coordinates = useMemo(() => {
+    if (!polyline) return [];
+    return decodePolyline(polyline);
+  }, [polyline]);
+
+  const secondaryCoordinates = useMemo(() => {
+    if (!secondaryPolyline) return [];
+    return decodePolyline(secondaryPolyline);
+  }, [secondaryPolyline]);
+
+  const normalizedCoordinates = useMemo(() => {
+    if (!coordinates.length) return [];
+
+    const isValidCoord = (
+      coord: [number, number] | null | undefined
+    ): coord is [number, number] =>
+      Array.isArray(coord) &&
+      coord.length === 2 &&
+      Number.isFinite(coord[0]) &&
+      Number.isFinite(coord[1]);
+
+    const firstValid = coordinates.find(isValidCoord);
+    if (!firstValid) return [];
+
+    let lastValid: [number, number] = firstValid;
+
+    return coordinates.map((coord) => {
+      if (isValidCoord(coord)) {
+        lastValid = coord;
+        return coord;
+      }
+
+      return lastValid;
+    });
+  }, [coordinates]);
+
+  const normalizedSecondaryCoordinates = useMemo(() => {
+    if (!secondaryCoordinates.length) return [];
+
+    const isValidCoord = (
+      coord: [number, number] | null | undefined
+    ): coord is [number, number] =>
+      Array.isArray(coord) &&
+      coord.length === 2 &&
+      Number.isFinite(coord[0]) &&
+      Number.isFinite(coord[1]);
+
+    const firstValid = secondaryCoordinates.find(isValidCoord);
+    if (!firstValid) return [];
+
+    let lastValid: [number, number] = firstValid;
+
+    return secondaryCoordinates.map((coord) => {
+      if (isValidCoord(coord)) {
+        lastValid = coord;
+        return coord;
+      }
+
+      return lastValid;
+    });
+  }, [secondaryCoordinates]);
+
+  const highlightCoordinates = useMemo(() => {
+    if (!highlightRange) return [];
+
+    return normalizedCoordinates.slice(
+      highlightRange.startIndex,
+      highlightRange.endIndex + 1
+    );
+  }, [highlightRange, normalizedCoordinates]);
+
+  const hasHighlight = highlightCoordinates.length > 1;
+
+  const baseBounds = useMemo(() => {
+    if (!normalizedCoordinates.length) {
+      return L.latLngBounds([
+        [0, 0],
+        [0, 0],
+      ]);
+    }
+
+    return L.latLngBounds(normalizedCoordinates);
+  }, [normalizedCoordinates]);
+
+  const activeBounds = useMemo(() => {
+    if (focusHighlight && hasHighlight) {
+      return L.latLngBounds(highlightCoordinates);
+    }
+
+    return baseBounds;
+  }, [focusHighlight, hasHighlight, highlightCoordinates, baseBounds]);
+
+  const center = activeBounds.getCenter();
+
+  const fitKey = useMemo(() => {
+    if (!normalizedCoordinates.length) return "empty";
+
+    const activeCoords =
+      focusHighlight && hasHighlight
+        ? highlightCoordinates
+        : normalizedCoordinates;
+
+    const first = activeCoords[0];
+    const last = activeCoords[activeCoords.length - 1];
+
+    return `${activeCoords.length}-${first[0]}-${first[1]}-${last[0]}-${last[1]}`;
+  }, [focusHighlight, hasHighlight, highlightCoordinates, normalizedCoordinates]);
+
+  if (!normalizedCoordinates.length) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center rounded-lg border text-sm text-muted-foreground">
+        No route map available.
+      </div>
+    );
+  }
+
+  const startPoint = normalizedCoordinates[0];
+  const endPoint = normalizedCoordinates[normalizedCoordinates.length - 1];
+
+  const selectedStartPoint = hasHighlight ? highlightCoordinates[0] : null;
+  const selectedEndPoint = hasHighlight
+    ? highlightCoordinates[highlightCoordinates.length - 1]
+    : null;
+
+  const tileUrl =
+    resolvedTheme === "dark"
+      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+  const attribution =
+    resolvedTheme === "dark"
+      ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+
+  return (
+    <div className="overflow-hidden rounded-xl border">
+      <MapContainer
+        {...({
+          center: [center.lat, center.lng],
+          zoom: 13,
+          className: `h-full w-full rounded-lg ${className}`,
+          style: {
+            minHeight: "400px",
+          },
+          zoomAnimation: false,
+          fadeAnimation: false,
+          scrollWheelZoom: false,
+          markerZoomAnimation: false,
+        } as any)}
+      >
+        <TileLayer url={tileUrl} attribution={attribution} />
+
+        <FitBounds bounds={activeBounds} fitKey={fitKey} />
+
+        <Polyline
+          positions={normalizedCoordinates}
+          pathOptions={{
+            color: "#fc4c02",
+            weight: 4,
+            opacity: 0.9,
+            lineCap: "round",
+            lineJoin: "round",
+          }}
+        />
+
+        {normalizedSecondaryCoordinates.length > 1 && (
+          <Polyline
+            positions={normalizedSecondaryCoordinates}
+            pathOptions={{
+              color: "#f59e0b",
+              weight: 3,
+              opacity: 0.65,
+              dashArray: "8 6",
+              lineCap: "round",
+              lineJoin: "round",
+            }}
+          />
+        )}
+
+        {hasHighlight && (
+          <Polyline
+            positions={highlightCoordinates}
+            pathOptions={{
+              color: highlightStyle?.color ?? "#f59e0b",
+              weight: highlightStyle?.weight ?? 6,
+              opacity: highlightStyle?.opacity ?? 0.85,
+              lineCap: "round",
+              lineJoin: "round",
+            }}
+          />
+        )}
+
+        {showMarkers && (
+          <>
+            <Marker position={startPoint} icon={startIcon} />
+            <Marker position={endPoint} icon={endIcon} />
+          </>
+        )}
+
+        {showHighlightMarkers && selectedStartPoint && selectedEndPoint && (
+          <>
+            <Marker position={selectedStartPoint} icon={startIcon} />
+            <Marker position={selectedEndPoint} icon={endIcon} />
+          </>
+        )}
+
+        <HoverMarker position={hoverPosition ?? null} color="#06b6d4" />
+        <HoverMarker
+          position={secondaryHoverPosition ?? null}
+          color="#f59e0b"
+        />
+      </MapContainer>
+    </div>
+  );
+}

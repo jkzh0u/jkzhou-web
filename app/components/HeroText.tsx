@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import FadeInSection from "./FadeInSection";
+import { HighlightedText } from "./HighlightedText";
 
 export default function HeroText() {
   const [progress1, setProgress1] = useState(0.28);
@@ -13,32 +14,57 @@ export default function HeroText() {
 
   const MAX_EM = 2.2;
 
+  const DESKTOP_REVEAL_1_START = 40;
+  const DESKTOP_REVEAL_1_DISTANCE = 420;
+
+  const DESKTOP_REVEAL_2_START = 520;
+  const DESKTOP_REVEAL_2_DISTANCE = 460;
+
+  const MOBILE_REVEAL_1_DISTANCE = 170;
+  const MOBILE_REVEAL_2_START = 70;
+  const MOBILE_REVEAL_2_DISTANCE = 190;
+
   useEffect(() => {
+    const clamp = (value: number, min: number, max: number) =>
+      Math.min(max, Math.max(min, value));
+
     const handleScroll = () => {
       const y = window.scrollY;
       const mobile = window.innerWidth < 1280;
 
       target1.current = mobile
-        ? Math.min(1, Math.max(0.28, y / 55))
-        : Math.min(1, Math.max(0, (y - 10) / 120));
+        ? clamp(y / MOBILE_REVEAL_1_DISTANCE, 0.28, 1)
+        : clamp(
+            (y - DESKTOP_REVEAL_1_START) / DESKTOP_REVEAL_1_DISTANCE,
+            0,
+            1
+          );
 
       target2.current = mobile
-        ? Math.min(1, Math.max(0, (y - 10) / 55))
-        : Math.min(1, Math.max(0, (y - 80) / 120));
+        ? clamp(
+            (y - MOBILE_REVEAL_2_START) / MOBILE_REVEAL_2_DISTANCE,
+            0,
+            1
+          )
+        : clamp(
+            (y - DESKTOP_REVEAL_2_START) / DESKTOP_REVEAL_2_DISTANCE,
+            0,
+            1
+          );
     };
 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
     const tick = () => {
-      setProgress1(prev => {
-        const next = lerp(prev, target1.current, 0.08);
+      setProgress1((prev) => {
+        const next = lerp(prev, target1.current, 0.065);
         return Math.abs(next - target1.current) < 0.001
           ? target1.current
           : next;
       });
 
-      setProgress2(prev => {
-        const next = lerp(prev, target2.current, 0.08);
+      setProgress2((prev) => {
+        const next = lerp(prev, target2.current, 0.065);
         return Math.abs(next - target2.current) < 0.001
           ? target2.current
           : next;
@@ -101,12 +127,18 @@ export default function HeroText() {
               }}
             >
               <img
-                src="https://images.unsplash.com/photo-1434394354979-a235cd36269d?"
+                src="/homepage/videos.jpg"
                 alt=""
                 className="h-[0.9em] w-[2.05em] object-cover"
               />
             </span>{" "}
-            photographer
+            <HighlightedText
+              imageSrc="/homepage/photos.jpg"
+              color="#22bae3"
+              href="/photos"
+            >
+              photographer
+            </HighlightedText>
           </p>
         </FadeInSection>
 
@@ -122,12 +154,18 @@ export default function HeroText() {
               }}
             >
               <img
-                src="https://images.unsplash.com/photo-1434394354979-a235cd36269d?"
+                src="/homepage/mywork2.jpg"
                 alt=""
                 className="h-[0.9em] w-[2.05em] object-cover"
               />
             </span>{" "}
-            filmmaker
+            <HighlightedText
+              imageSrc="/homepage/mywork2.jpg"
+              color="#db22e3"
+              href="/videos"
+            >
+              filmmaker
+            </HighlightedText>
           </p>
         </FadeInSection>
 
@@ -140,7 +178,10 @@ export default function HeroText() {
       </div>
 
       {/* DESKTOP VERSION */}
-      <div className="hidden xl:block text-5xl font-bold" style={{ lineHeight: "1.4" }}>
+      <div
+        className="hidden xl:block text-[2.8rem] font-bold"
+        style={{ lineHeight: "1.4" }}
+      >
         <FadeInSection delay={500}>
           <p>
             hello!{" "}
@@ -158,7 +199,13 @@ export default function HeroText() {
         </FadeInSection>
 
         <FadeInSection delay={700}>
-          <p>photographer</p>
+          <HighlightedText
+            imageSrc="/homepage/filmmaker.jpg"
+            color="#22bae3"
+            href="/photos"
+          >
+            photographer
+          </HighlightedText>
         </FadeInSection>
 
         <FadeInSection delay={700}>
@@ -171,7 +218,7 @@ export default function HeroText() {
             }}
           >
             <img
-              src="https://images.unsplash.com/photo-1434394354979-a235cd36269d?"
+              src="/homepage/videos.jpg"
               alt="photographer"
               className="w-full object-cover"
               style={{ height: `${MAX_EM}em` }}
@@ -180,7 +227,16 @@ export default function HeroText() {
         </FadeInSection>
 
         <FadeInSection delay={900}>
-          <p>and filmmaker</p>
+          <p>
+            and{" "}
+            <HighlightedText
+              imageSrc="/homepage/hover1.jpg"
+              color="#db22e3"
+              href="/videos"
+            >
+              filmmaker
+            </HighlightedText>
+          </p>
         </FadeInSection>
 
         <FadeInSection delay={900}>
@@ -193,7 +249,7 @@ export default function HeroText() {
             }}
           >
             <img
-              src="https://images.unsplash.com/photo-1434394354979-a235cd36269d?"
+              src="/homepage/mywork2.jpg"
               alt="filmmaker"
               className="w-full object-cover"
               style={{ height: `${MAX_EM}em` }}

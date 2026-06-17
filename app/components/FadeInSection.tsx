@@ -15,8 +15,23 @@ export default function FadeInSection({
 }: FadeInSectionProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
+  const [signatureDone, setSignatureDone] = useState(false);
 
   useEffect(() => {
+    const onComplete = () => {
+      setSignatureDone(true);
+    };
+
+    window.addEventListener("signature-complete", onComplete);
+
+    return () => {
+      window.removeEventListener("signature-complete", onComplete);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!signatureDone) return;
+
     const el = ref.current;
     if (!el) return;
 
@@ -26,6 +41,7 @@ export default function FadeInSection({
           requestAnimationFrame(() => {
             setVisible(true);
           });
+
           observer.unobserve(el);
         }
       },
@@ -36,8 +52,9 @@ export default function FadeInSection({
     );
 
     observer.observe(el);
+
     return () => observer.disconnect();
-  }, []);
+  }, [signatureDone]);
 
   return (
     <div
@@ -45,16 +62,14 @@ export default function FadeInSection({
       className={className}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible
-          ? "translateY(0px)"
-          : "translateY(24px)",
+        transform: visible ? "translateY(0px)" : "translateY(24px)",
 
         transitionProperty: "opacity, transform",
         transitionDuration: "1400ms",
         transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
         transitionDelay: `${delay}ms`,
 
-        willChange: "opacity, transform",
+        willChange: visible ? "auto" : "opacity, transform",
       }}
     >
       {children}
