@@ -2,16 +2,25 @@ import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import ContactEmail from "../../components/ContactEmail";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-// Set this to an address on a domain you've verified in Resend.
-// "onboarding@resend.dev" only works for sending to your own account email
-// while testing — replace it once your domain is verified.
+// Set this to an address on a verified Resend domain
 const FROM_ADDRESS = "Portfolio <hello@jkzhou.ca>";
 const TO_ADDRESS = "hello@jkzhou.ca";
 
 export async function POST(req: Request) {
   try {
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey) {
+      console.error("RESEND_API_KEY missing");
+
+      return NextResponse.json(
+        { error: "email service not configured" },
+        { status: 500 }
+      );
+    }
+
+    const resend = new Resend(apiKey);
+
     const { name, email, subject, message } = await req.json();
 
     if (
@@ -39,30 +48,52 @@ export async function POST(req: Request) {
       from: FROM_ADDRESS,
       to: TO_ADDRESS,
       replyTo: email,
+
       subject: subject?.trim()
         ? `Contact form: ${subject.trim()}`
         : `New message from ${name.trim()}`,
-      react: ContactEmail({
-        name: name.trim(),
-        email: email.trim(),
-        subject: subject?.trim(),
-        message: message.trim(),
-      }),
+
+      react: (
+        <ContactEmail
+          name={name.trim()}
+          email={email.trim()}
+          subject={subject?.trim()}
+          message={message.trim()}
+        />
+      ),
     });
 
     if (error) {
       console.error("Resend error:", error);
+
       return NextResponse.json(
-        { error: "failed to send email" },
+        {
+          error:
+            typeof error === "object" && error !== null && "message" in error
+              ? error.message
+              : "failed to send email",
+        },
         { status: 502 }
       );
     }
 
-    return NextResponse.json({ id: data?.id }, { status: 200 });
+    return NextResponse.json(
+      {
+        success: true,
+        id: data?.id,
+      },
+      { status: 200 }
+    );
   } catch (err) {
     console.error("Contact route error:", err);
+
     return NextResponse.json(
-      { error: "something went wrong" },
+      {
+        error:
+          err instanceof Error
+            ? err.message
+            : "something went wrong",
+      },
       { status: 500 }
     );
   }
