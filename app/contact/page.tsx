@@ -1,0 +1,11 @@
+import type { Metadata } from "next";
+import Contact from "../components/Contact";
+
+export const metadata: Metadata = {
+  title: "jackson zhou - contact",
+  description: "Contact Me",
+};
+
+export default function Page() {
+  return <Contact />;
+}

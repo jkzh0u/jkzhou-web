@@ -14,7 +14,7 @@ import { imageSize } from "image-size";
 
 export const metadata: Metadata = {
   title: "jackson zhou.",
-  description: "Homepage",
+  description: "photos",
 };
 
 export default async function AlbumPage({
