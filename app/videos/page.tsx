@@ -10,6 +10,15 @@ const videos: VideoItem[] = [
     desc: "an introduction. who am i?",
     aspectRatio: 3 / 2,
   },
+  {
+    title: "how to host a summer function",
+    tag: "vlog",
+    year: "2026",
+    src: "/videos/summerfunction.mp4",
+    poster: "/videos/havefun.jpg",
+    desc: "its finally summer!",
+    aspectRatio: 3 / 2,
+  },
 ];
 
 export default function VideosPage() {
