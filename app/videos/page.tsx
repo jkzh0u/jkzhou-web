@@ -15,7 +15,7 @@ const videos: VideoItem[] = [
     tag: "vlog",
     year: "2026",
     src: "/videos/summerfunction.mp4",
-    poster: "/videos/havefun.jpg",
+    poster: "/videos/havefun.jpeg",
     desc: "its finally summer!",
     aspectRatio: 3 / 2,
   },
