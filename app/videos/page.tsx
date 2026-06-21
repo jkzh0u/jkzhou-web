@@ -1,36 +1,18 @@
+import { promises as fs } from "fs";
+import path from "path";
 import VideoGallery, { type VideoItem } from "../components/VideoGallery";
 
-const videos: VideoItem[] = [
-  {
-    title: "first vlog",
-    tag: "vlog",
-    year: "2026",
-    src: "/videos/first-vlog.mp4",
-    poster: "/homepage/filmmaker.jpg",
-    desc: "an introduction. who am i?",
-    aspectRatio: 3 / 2,
-  },
-  {
-    title: "how to host a summer function",
-    tag: "vlog",
-    year: "2026",
-    src: "/videos/summerfunction.mp4",
-    poster: "/videos/havefun.jpeg",
-    desc: "its finally summer!",
-    aspectRatio: 3 / 2,
-  },
-  {
-    title: "you should make new friends",
-    tag: "vlog",
-    year: "2026",
-    src: "/videos/newfriends.mov",
-    poster: "/videos/havefun.jpeg",
-    desc: "test!",
-    aspectRatio: 3 / 2,
-  },
-];
+async function getVideos(): Promise<VideoItem[]> {
+  const filePath = path.join(process.cwd(), "public", "videos", "videos.json");
+  const file = await fs.readFile(filePath, "utf-8");
+  return JSON.parse(file);
+}
 
-export default function VideosPage() {
+export const dynamic = "force-dynamic"; // always re-read the file, never cache
+
+export default async function VideosPage() {
+  const videos = await getVideos();
+
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
       <section className="mx-auto w-full max-w-7xl px-4 py-24">
@@ -50,7 +32,6 @@ export default function VideosPage() {
         </div>
 
         <VideoGallery videos={videos} />
-
       </section>
     </main>
   );
