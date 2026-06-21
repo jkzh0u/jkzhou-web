@@ -19,6 +19,15 @@ const videos: VideoItem[] = [
     desc: "its finally summer!",
     aspectRatio: 3 / 2,
   },
+  {
+    title: "you should make new friends",
+    tag: "vlog",
+    year: "2026",
+    src: "/videos/newfriends.mov",
+    poster: "/videos/havefun.jpeg",
+    desc: "test!",
+    aspectRatio: 3 / 2,
+  },
 ];
 
 export default function VideosPage() {
