@@ -38,20 +38,20 @@ export default function RootLayout({
         inter.variable,
       )}
     >
-      <body>
-        <SmoothScroll />
-        <ThemeChecker>
-          <div className="sticky top-0 z-50 backdrop-blur-xl bg-background/60s">
-            <Navbar />
-          </div>
+<body>
+  <SmoothScroll />
+  <ThemeChecker>
+    <div className="sticky top-0 z-50 backdrop-blur-xl bg-background/60">
+      <Navbar />
+    </div>
 
-          <main className="px-4 sm:px-8 lg:px-28">{children}</main>
-          {/* px-4 sm:px-8 lg:px-28 */}
-          <div className="px-4 sm:px-8 lg:px-28">
-            <Footer />
-          </div>
-        </ThemeChecker>
-      </body>
+    {children}
+
+    <div className="px-4 sm:px-8 lg:px-28">
+      <Footer />
+    </div>
+  </ThemeChecker>
+</body>
     </html>
   );
 }

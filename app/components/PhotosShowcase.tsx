@@ -180,7 +180,7 @@ export default function PhotosShowcase() {
               {heroSlides.map((item, i) => (
                 <a key={i} href={item.href} className="group block">
                   <div
-                    className="relative h-[52vh] min-h-[420px] flex-none overflow-hidden shadow-2xl transition-all duration-500 ease-out hover:scale-[1.015] hover:brightness-110"
+                    className="relative h-[52vh] min-h-[420px] flex-none overflow-hidden rounded-[18px] shadow-2xl transition-all duration-500 ease-out hover:scale-[1.015] hover:brightness-110"
                     style={{ width: heroWidth }}
                   >
                     <img
@@ -210,7 +210,7 @@ export default function PhotosShowcase() {
               {smallSlides.map((item, i) => (
                 <a key={i} href={item.href} className="group block">
                   <div
-                    className="relative h-[27vh] min-h-[210px] flex-none overflow-hidden transition-all duration-500 ease-out hover:scale-[1.02] hover:brightness-110 hover:shadow-2xl"
+                    className="relative h-[27vh] min-h-[210px] flex-none overflow-hidden rounded-[18px] transition-all duration-500 ease-out hover:scale-[1.02] hover:brightness-110 hover:shadow-2xl"
                     style={{ width: smallWidth }}
                   >
                     <img

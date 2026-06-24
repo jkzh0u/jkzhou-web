@@ -9,22 +9,27 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <div className="">
-      <p className="sm:text-9gitxl text-6xl font-bold my-7 overflow-hidden">
-        photos
+<main className="min-h-screen overflow-hidden bg-background text-foreground">
+  <section className="mx-auto w-full max-w-7xl px-4 py-24">
+    <div className="relative mb-20">
+      <p className="mb-5 text-sm uppercase tracking-[0.45em] text-foreground/35">
+        images
       </p>
 
-      <section className="-mx-4 sm:-mx-8 lg:-mx-28">
-        <PhotosShowcase />
-      </section>
-      <div className="columns-3 gap-6 space-y-6">
-        <a href="photos/example">
-          <img
-            className="aspect-rectangle"
-            src="https://images.unsplash.com/photo-1434394354979-a235cd36269d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2902&q=80"
-          />
-        </a>
-      </div>
+      <h1 className="text-[clamp(4.5rem,14vw,12rem)] font-bold leading-[0.78] tracking-tight">
+        photo
+        vault
+      </h1>
+
+      <p className="mt-8 max-w-xl text-lg leading-relaxed text-foreground/50">
+        my photography work. I hope you enjoy browsing through my collection of images.
+      </p>
     </div>
+  </section>
+
+  <section className="-mx-4 sm:-mx-8 lg:-mx-28">
+    <PhotosShowcase />
+  </section>
+</main>
   );
 }

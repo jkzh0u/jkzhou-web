@@ -84,11 +84,11 @@ function VideoModal({
 
 function FilmCard({
   video,
-  index,
+  number,
   onClick,
 }: {
   video: VideoItem;
-  index: number;
+  number: number;
   onClick: () => void;
 }) {
   return (
@@ -106,7 +106,7 @@ function FilmCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent md:bg-gradient-to-r md:from-black/20 md:via-transparent md:to-transparent" />
 
         <div className="absolute left-4 top-4 rounded-[9px] border border-white/15 bg-black/25 px-3 py-1 text-xs uppercase tracking-[0.25em] text-white/75 backdrop-blur-md">
-          0{index + 1}
+          {String(number).padStart(2, "0")}
         </div>
 
         <div className="absolute inset-0 flex items-center justify-center opacity-0 transition duration-500 group-hover:opacity-100">
@@ -148,6 +148,9 @@ function FilmCard({
 export default function VideoGallery({ videos }: VideoGalleryProps) {
   const [selected, setSelected] = useState<VideoItem | null>(null);
 
+  // Reverse so newest (last in JSON) appears first, but keep original 1-based numbering
+  const reversed = [...videos].reverse();
+
   return (
     <>
       {selected && (
@@ -155,11 +158,11 @@ export default function VideoGallery({ videos }: VideoGalleryProps) {
       )}
 
       <div className="space-y-5">
-        {videos.map((video, index) => (
+        {reversed.map((video, index) => (
           <FilmCard
             key={video.title}
             video={video}
-            index={index}
+            number={videos.length - index}
             onClick={() => setSelected(video)}
           />
         ))}

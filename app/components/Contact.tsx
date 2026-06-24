@@ -55,7 +55,7 @@ export default function Contact() {
       form.reset();
     } catch {
       setStatus("error");
-      setError("something went wrong on my end — try again, or just email me directly.");
+      setError("something went wrong on my end — try again, or just email me directly at hello@jkzhou.ca.");
     }
   }
 
@@ -79,8 +79,8 @@ export default function Contact() {
           </h1>
 
           <p className="mt-8 max-w-md text-lg leading-relaxed text-foreground/50">
-            got an idea, shoot, project, or collab? send a message and i'll
-            get back to you within a day or two.
+            got an idea, shoot, project, or collab? send a message and I will
+            get back to you as soon as I can
           </p>
 
           <div className="mt-9 flex flex-wrap gap-3 text-sm text-foreground/45">
@@ -89,7 +89,7 @@ export default function Contact() {
               className="group flex items-center gap-1.5 rounded-full border border-foreground/10 px-4 py-2 transition hover:border-foreground/25 hover:text-foreground"
             >
               hello@jkzhou.ca
-              <ArrowUpRight className="h-3.5 w-3.5 opacity-0 transition group-hover:opacity-60" />
+              
             </a>
 
             <a
@@ -99,7 +99,7 @@ export default function Contact() {
               className="group flex items-center gap-1.5 rounded-full border border-foreground/10 px-4 py-2 transition hover:border-foreground/25 hover:text-foreground"
             >
               @jkz.mov
-              <ArrowUpRight className="h-3.5 w-3.5 opacity-0 transition group-hover:opacity-60" />
+              
             </a>
           </div>
         </div>

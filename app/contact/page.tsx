@@ -7,5 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <Contact />;
+  return (
+    <main className="px-4 sm:px-8 lg:px-28">
+      <Contact />
+    </main>
+  );
 }

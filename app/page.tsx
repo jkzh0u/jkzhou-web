@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <div className="">
+    <div className="px-4 sm:px-8 lg:px-28">
       <Signature></Signature>
       {/* desktop hero only */}
       <div className="hidden xl:block">
