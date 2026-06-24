@@ -66,11 +66,11 @@ export const albums = [
   },
 
   {
-    slug: "smallphoto4",
-    title: "photo 4",
-    subtitle: "photo",
+    slug: "chantys18",
+    title: "Chantle's 18th birthday",
+    subtitle: "chanty's debut",
     cover:
-      "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=1200&auto=format&fit=crop",
+      "photosv1--19.jpg",
     size: "small",
     photos: [],
   },
