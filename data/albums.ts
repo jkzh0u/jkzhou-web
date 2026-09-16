@@ -75,13 +75,13 @@ export const albums = [
     photos: [],
   },
 
-  {
-    slug: "micahfunc09-04-26",
-    title: "mic function",
-    subtitle: "sept 4, 2026",
-    cover:
-      "JKZ06255.jpg",
-    size: "big",
-    photos: [],
-  }
+  // {
+  //   slug: "micahfunc09-04-26",
+  //   title: "mic function",
+  //   subtitle: "sept 4, 2026",
+  //   cover:
+  //     "JKZ06255.jpg",
+  //   size: "big",
+  //   photos: [],
+  // }
 ] as const;
