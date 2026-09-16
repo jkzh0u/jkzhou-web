@@ -39,7 +39,7 @@ export default function AlbumGallery({
               onClick={() => setSelectedPhoto(src)}
               className="group block w-full break-inside-avoid text-left"
             >
-              <img
+              <Image
                 src={src}
                 alt={`${album.title} photo ${i + 1}`}
                 className="
