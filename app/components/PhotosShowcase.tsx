@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { albums } from "@/data/albums";
+import Image from 'next/image';
 
 const heroItems = albums
   .filter((album) => album.size === "big")
@@ -183,7 +184,7 @@ export default function PhotosShowcase() {
                     className="relative h-[52vh] min-h-[420px] flex-none overflow-hidden rounded-[18px] shadow-2xl transition-all duration-500 ease-out hover:scale-[1.015] hover:brightness-110"
                     style={{ width: heroWidth }}
                   >
-                    <img
+                    <Image
                       src={item.image}
                       alt={item.title}
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
@@ -213,7 +214,7 @@ export default function PhotosShowcase() {
                     className="relative h-[27vh] min-h-[210px] flex-none overflow-hidden rounded-[18px] transition-all duration-500 ease-out hover:scale-[1.02] hover:brightness-110 hover:shadow-2xl"
                     style={{ width: smallWidth }}
                   >
-                    <img
+                    <Image
                       src={item.image}
                       alt={item.title}
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
