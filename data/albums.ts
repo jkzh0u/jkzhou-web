@@ -1,5 +1,13 @@
 export const albums = [
-
+    {
+    slug: "wave2earth2026",
+    title: "wave to earth",
+    subtitle: "the () pieces tour in toronto",
+    cover:
+      "1.jpg",
+    size: "big",
+    photos: [],
+  },
   {
     slug: "2024sunrise",
     title: "07s senior sunrise",

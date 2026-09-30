@@ -187,7 +187,10 @@ export default function PhotosShowcase() {
                     <Image
                       src={item.image}
                       alt={item.title}
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                      fill
+                      sizes="75vw"
+                      priority={i === heroItems.length}
+                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent transition-opacity duration-500 group-hover:opacity-20" />
                     <div className="absolute bottom-6 left-0 right-0 px-4 text-center text-white sm:bottom-8 sm:left-8 sm:right-auto sm:px-0 sm:text-left">
@@ -217,7 +220,9 @@ export default function PhotosShowcase() {
                     <Image
                       src={item.image}
                       alt={item.title}
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                      fill
+                      sizes="33vw"
+                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent transition-opacity duration-500 group-hover:opacity-20" />
                     <div className="absolute bottom-4 left-0 right-0 px-3 text-center text-white sm:bottom-5 sm:left-5 sm:right-auto sm:px-0 sm:text-left">
