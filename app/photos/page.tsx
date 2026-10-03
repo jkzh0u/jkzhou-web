@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
 <main className="min-h-screen overflow-hidden bg-background text-foreground">
-  <section className="mx-auto w-full max-w-7xl px-4 py-24">
-    <div className="relative mb-20">
+  <section className="mx-auto w-full max-w-7xl px-4">
+    <div className="relative">
       <p className="mb-5 text-sm uppercase tracking-[0.45em] text-foreground/35">
         images
       </p>
