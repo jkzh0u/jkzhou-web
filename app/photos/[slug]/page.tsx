@@ -1,10 +1,10 @@
-
 import { notFound } from "next/navigation";
 import { albums } from "@/data/albums";
 import AlbumGallery from "../../components/AlbumGallery";
 import { getAlbumPhotos, getPhotoUrl } from "@/lib/r2";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "jackson zhou.",
@@ -18,7 +18,7 @@ export default async function AlbumPage({
 }) {
   const { slug } = await params;
 
-  const album = albums.find((item) => item.slug === slug);
+  const album = albums.find((album) => album.slug === slug);
 
   if (!album) {
     notFound();
@@ -30,13 +30,9 @@ export default async function AlbumPage({
     getPhotoUrl(album.slug, filename)
   );
 
-  console.log("Album slug:", album.slug);
-  console.log("R2 filenames:", filenames);
-  console.log("Photo URLs:", photos);
-
   return (
     <div className="px-4 sm:px-8 lg:px-28">
-      <p className="mt-7 text-5xl font-bold">{album.title}</p>
+      <p className="text-5xl font-bold mt-7">{album.title}</p>
 
       <p className="mb-7 text-neutral-600 dark:text-neutral-400">
         {album.subtitle}

@@ -9,7 +9,7 @@ const heroItems = albums
   .map((album) => ({
     title: album.title,
     subtitle: album.subtitle,
-    image: `/photos/${album.slug}/${album.cover}`,
+    image: `https://assets.jkzhou.ca/photos/${album.slug}/${album.cover}`,
     href: `/photos/${album.slug}`,
   }));
 
@@ -18,7 +18,7 @@ const smallItems = albums
   .map((album) => ({
     title: album.title,
     subtitle: album.subtitle,
-    image: `/photos/${album.slug}/${album.cover}`,
+    image: `https://assets.jkzhou.ca/photos/${album.slug}/${album.cover}`,
     href: `/photos/${album.slug}`,
   }));
 
@@ -189,7 +189,7 @@ export default function PhotosShowcase() {
                       alt={item.title}
                       fill
                       sizes="75vw"
-                      priority={i === heroItems.length}
+                      loading={i === heroItems.length ? "eager" : "lazy"}
                       className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent transition-opacity duration-500 group-hover:opacity-20" />

@@ -139,3 +139,14 @@
     @apply font-sans;
   }
 }
+
+.photo-container {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+}
+
+.loading-image--fill {
+  position: absolute;
+  inset: 0;
+}
