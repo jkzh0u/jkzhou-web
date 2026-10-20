@@ -8,28 +8,9 @@ import {
 
 import { unstable_cache } from "next/cache";
 
-
-const accountId = process.env.R2_ACCOUNT_ID;
-const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-const bucketName = process.env.R2_BUCKET_NAME;
-
-if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
-  throw new Error("Missing required R2 environment variables.");
-}
-
 export const r2PublicUrl = (
   process.env.R2_PUBLIC_URL || "https://assets.jkzhou.ca"
 ).replace(/\/+$/, "");
-
-const r2 = new S3Client({
-  region: "auto",
-  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId,
-    secretAccessKey,
-  },
-});
 
 const imageExtensions = new Set([
   ".jpg",
@@ -38,15 +19,47 @@ const imageExtensions = new Set([
   ".webp",
 ]);
 
+function getR2Config() {
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+  const bucketName = process.env.R2_BUCKET_NAME;
+
+  if (
+    !accountId ||
+    !accessKeyId ||
+    !secretAccessKey ||
+    !bucketName
+  ) {
+    throw new Error(
+      "Missing required R2 environment variables. " +
+        "Check R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, " +
+        "R2_SECRET_ACCESS_KEY, and R2_BUCKET_NAME."
+    );
+  }
+
+  const client = new S3Client({
+    region: "auto",
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
+  });
+
+  return { client, bucketName };
+}
 
 export const getAlbumPhotos = unstable_cache(
   async (slug: string): Promise<string[]> => {
+    const { client, bucketName } = getR2Config();
+
     const photos: string[] = [];
     let continuationToken: string | undefined;
     const prefix = `photos/${slug}/`;
 
     do {
-      const response = await r2.send(
+      const response = await client.send(
         new ListObjectsV2Command({
           Bucket: bucketName,
           Prefix: prefix,
@@ -59,6 +72,7 @@ export const getAlbumPhotos = unstable_cache(
 
         const filename = object.Key.slice(prefix.length);
 
+        // Only include images directly inside this album folder.
         if (!filename || filename.includes("/")) continue;
         if (filename.startsWith(".")) continue;
 
@@ -89,8 +103,6 @@ export const getAlbumPhotos = unstable_cache(
     revalidate: 3600,
   }
 );
-
-
 
 export function getPhotoUrl(
   slug: string,
