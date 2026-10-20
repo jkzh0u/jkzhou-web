@@ -19,7 +19,6 @@ async function getVideos(): Promise<VideoItem[]> {
   const file = path.join(
     process.cwd(),
     "public",
-    "videos",
     "videos.json"
   );
 
