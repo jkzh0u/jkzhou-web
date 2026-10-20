@@ -14,9 +14,23 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { VideoItem } from "./components/Videomodal";
 
+
 async function getVideos(): Promise<VideoItem[]> {
-  const file = path.join(process.cwd(), "public", "videos", "videos.json");
-  return JSON.parse(await fs.readFile(file, "utf8"));
+  const url = "https://assets.jkzhou.ca/videos/videos.json";
+
+  const response = await fetch(url, {
+    next: { revalidate: 3600 },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to load videos.json: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const videos: VideoItem[] = await response.json();
+
+  return videos;
 }
 
 export const metadata: Metadata = {
