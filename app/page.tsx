@@ -10,26 +10,25 @@ import Signature from "./components/signature";
 import MyWork from "./components/MyWork";
 import AboutMe from "./components/AboutMe";
 import CardHero from "./components/CardHero";
+import fs from "node:fs/promises";
+import path from "node:path";
 import type { VideoItem } from "./components/Videomodal";
 
 
 async function getVideos(): Promise<VideoItem[]> {
-  const url = "https://assets.jkzhou.ca/videos/videos.json";
+  const file = path.join(
+    process.cwd(),
+    "public",
+    "videos",
+    "videos.json"
+  );
 
-  const response = await fetch(url, {
-    next: { revalidate: 3600 },
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to load videos.json: ${response.status} ${response.statusText}`
-    );
-  }
-
-  const videos: VideoItem[] = await response.json();
+  const contents = await fs.readFile(file, "utf8");
+  const videos: VideoItem[] = JSON.parse(contents);
 
   return videos;
 }
+
 
 export const metadata: Metadata = {
   title: "jackson zhou.",
