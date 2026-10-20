@@ -9,16 +9,26 @@ import Scroll3D from "./components/Scroll3D";
 import Signature from "./components/signature";
 import MyWork from "./components/MyWork";
 import AboutMe from "./components/AboutMe";
+import CardHero from "./components/CardHero";
+import fs from "node:fs/promises";
+import path from "node:path";
+import type { VideoItem } from "./components/Videomodal";
+
+async function getVideos(): Promise<VideoItem[]> {
+  const file = path.join(process.cwd(), "public", "videos", "videos.json");
+  return JSON.parse(await fs.readFile(file, "utf8"));
+}
 
 export const metadata: Metadata = {
   title: "jackson zhou.",
   description: "Homepage",
 };
 
-export default function Home() {
+export default async function Home() {
+  const videos = await getVideos();
   return (
     <div className="px-4 sm:px-8 lg:px-28">
-      <Signature></Signature>
+      {/* <CardHero videos={videos} /> */}
       {/* desktop hero only */}
       <div className="hidden xl:block">
         <DesktopSticky>

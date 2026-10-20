@@ -19,13 +19,13 @@ export default function AboutMe() {
 
             <div className="mt-10 max-w-xl space-y-6 text-lg leading-relaxed text-foreground/60">
               <p>
-                i'm jackson, a 16 year old photographer, filmmaker, and creator based in
+                i'm jackson, a photographer, filmmaker, and creator based in
                 toronto!
               </p>
 
               <p>
                 lately i've been documenting my life through photos, videos, and
-                random projects with my friends.
+                random projects!
               </p>
 
               <p>
@@ -40,7 +40,7 @@ export default function AboutMe() {
   <TiltCard className="w-[min(80vw,380px)] rotate-[4deg] rounded-[3px] bg-[#f8f7f3] p-4 shadow-[0_35px_90px_rgba(0,0,0,0.45)]">
     <div className="aspect-[4/5] overflow-hidden bg-neutral-900">
       <img
-        src="/homepage/aboutme.jpg"
+        src="https://assets.jkzhou.ca/homepage/aboutme.jpg"
         alt="this is a photo of me!"
         className="h-full w-full object-cover"
       />

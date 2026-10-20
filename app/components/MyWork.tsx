@@ -4,13 +4,13 @@ import type React from "react";
 import FadeInSection from "./FadeInSection";
 import TiltCard from "./TiltCard";
 
-const photos_image = "/homepage/photos.jpg";
-const videos_image = "/homepage/videos.jpg";
-const instagram_image = "/homepage/instagram.jpg";
-const contact_image = "/homepage/contact.jpg";
+const photos_image = "https://assets.jkzhou.ca/homepage/photos.jpg";
+const videos_image = "https://assets.jkzhou.ca/homepage/videos.jpg";
+const instagram_image = "https://assets.jkzhou.ca/homepage/instagram.jpg";
+const contact_image = "https://assets.jkzhou.ca/homepage/contact.jpg";
 
-const polaroidImage1 = "/homepage/mywork2.jpg";
-const polaroidImage2 = "/homepage/mywork1.jpg";
+const polaroidImage1 = "https://assets.jkzhou.ca/homepage/mywork2.jpg";
+const polaroidImage2 = "https://assets.jkzhou.ca/homepage/mywork1.jpg";
 
 const items = [
   {

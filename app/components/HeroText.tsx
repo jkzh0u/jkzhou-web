@@ -127,13 +127,13 @@ export default function HeroText() {
               }}
             >
               <img
-                src="/homepage/videos.jpg"
+                src="https://assets.jkzhou.ca/homepage/videos.jpg"
                 alt=""
                 className="h-[0.9em] w-[2.05em] object-cover"
               />
             </span>{" "}
             <HighlightedText
-              imageSrc="/homepage/photos.jpg"
+              imageSrc="https://assets.jkzhou.ca/homepage/photos.jpg"
               color="#22bae3"
               href="/photos"
             >
@@ -154,13 +154,13 @@ export default function HeroText() {
               }}
             >
               <img
-                src="/homepage/mywork2.jpg"
+                src="https://assets.jkzhou.ca/homepage/mywork2.jpg"
                 alt=""
                 className="h-[0.9em] w-[2.05em] object-cover"
               />
             </span>{" "}
             <HighlightedText
-              imageSrc="/homepage/mywork2.jpg"
+              imageSrc="https://assets.jkzhou.ca/homepage/mywork2.jpg"
               color="#db22e3"
               href="/videos"
             >
@@ -200,7 +200,7 @@ export default function HeroText() {
 
         <FadeInSection delay={700}>
           <HighlightedText
-            imageSrc="/homepage/filmmaker.jpg"
+            imageSrc="https://assets.jkzhou.ca/homepage/filmmaker.jpg"
             color="#22bae3"
             href="/photos"
           >
@@ -218,7 +218,7 @@ export default function HeroText() {
             }}
           >
             <img
-              src="/homepage/videos.jpg"
+              src="https://assets.jkzhou.ca/homepage/videos.jpg"
               alt="photographer"
               className="w-full object-cover"
               style={{ height: `${MAX_EM}em` }}
@@ -249,7 +249,7 @@ export default function HeroText() {
             }}
           >
             <img
-              src="/homepage/mywork2.jpg"
+              src="https://assets.jkzhou.ca/homepage/mywork2.jpg"
               alt="filmmaker"
               className="w-full object-cover"
               style={{ height: `${MAX_EM}em` }}

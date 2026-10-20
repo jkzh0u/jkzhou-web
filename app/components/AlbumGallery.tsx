@@ -23,16 +23,19 @@ function subscribe(callback: () => void) {
   mq.addEventListener("change", callback);
   return () => mq.removeEventListener("change", callback);
 }
-const getColumnCount = () => (window.matchMedia("(min-width: 640px)").matches ? 3 : 2);
+
+const getColumnCount = () =>
+  window.matchMedia("(min-width: 640px)").matches ? 3 : 2;
+
 const getServerColumnCount = () => 3;
 
 const THUMB_SIZES = "(max-width: 640px) 50vw, 33vw";
+
 // The first row is what people see first, so only it gets priority
 const PRIORITY_COUNT = 3;
 
 // Same order as Finder's "sort by name": numbers compare by value
-// (2 before 10) and case is ignored. A fixed locale keeps the order
-// identical on the server and in the browser, so hydration never mismatches.
+// (2 before 10) and case is ignored.
 const finderCollator = new Intl.Collator("en", {
   numeric: true,
   sensitivity: "base",
@@ -76,7 +79,11 @@ const Thumb = memo(function Thumb({
   );
 });
 
-export default function AlbumGallery({ album }: { album: Album }) {
+export default function AlbumGallery({
+  album,
+}: {
+  album: Album;
+}) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const closeTimer = useRef<number | null>(null);
@@ -87,28 +94,44 @@ export default function AlbumGallery({ album }: { album: Album }) {
     getServerColumnCount
   );
 
-  // Masonry with left-to-right order: 1 2 3 across the top, then 4 5 6
-  // continue under them in each column. Heights stay mismatched.
+  // Masonry with left-to-right order: 1 2 3 across the top, then 4 5 6.
+  // Heights stay mismatched.
   const columns = useMemo(() => {
     const cols: { photo: string; index: number }[][] = Array.from(
       { length: columnCount },
       () => []
     );
+
     const sorted = [...album.photos].sort(finderCollator.compare);
+
     sorted.forEach((photo, index) => {
       cols[index % columnCount].push({ photo, index });
     });
+
     return cols;
   }, [album.photos, columnCount]);
 
   const open = useCallback((src: string) => {
-    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    if (closeTimer.current !== null) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+
+    setVisible(false);
     setSelectedPhoto(src);
   }, []);
 
   const close = useCallback(() => {
     setVisible(false);
-    closeTimer.current = window.setTimeout(() => setSelectedPhoto(null), 300);
+
+    if (closeTimer.current !== null) {
+      window.clearTimeout(closeTimer.current);
+    }
+
+    closeTimer.current = window.setTimeout(() => {
+      setSelectedPhoto(null);
+      closeTimer.current = null;
+    }, 300);
   }, []);
 
   // Fade in after mount, and close on Escape
@@ -116,6 +139,7 @@ export default function AlbumGallery({ album }: { album: Album }) {
     if (!selectedPhoto) return;
 
     let raf2 = 0;
+
     const raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => setVisible(true));
     });
@@ -123,6 +147,7 @@ export default function AlbumGallery({ album }: { album: Album }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
+
     window.addEventListener("keydown", onKey);
 
     return () => {
@@ -135,7 +160,9 @@ export default function AlbumGallery({ album }: { album: Album }) {
   // Clear any pending close timer on unmount
   useEffect(() => {
     return () => {
-      if (closeTimer.current) window.clearTimeout(closeTimer.current);
+      if (closeTimer.current !== null) {
+        window.clearTimeout(closeTimer.current);
+      }
     };
   }, []);
 
@@ -147,7 +174,8 @@ export default function AlbumGallery({ album }: { album: Album }) {
             {col.map(({ photo, index }) => (
               <Thumb
                 key={photo}
-                src={`/photos/${album.slug}/${encodeURIComponent(photo)}`}
+                // R2 URLs are passed directly from AlbumPage.
+                src={photo}
                 alt={`${album.title} photo ${index + 1}`}
                 priority={index < PRIORITY_COUNT}
                 onSelect={open}
@@ -169,7 +197,11 @@ export default function AlbumGallery({ album }: { album: Album }) {
             bg-black/40 p-4
             transition-[opacity,backdrop-filter] duration-300 ease-out
             motion-reduce:transition-none
-            ${visible ? "opacity-100 backdrop-blur-xl" : "opacity-0 backdrop-blur-none"}
+            ${
+              visible
+                ? "opacity-100 backdrop-blur-xl"
+                : "opacity-0 backdrop-blur-none"
+            }
           `}
         >
           <Image
@@ -182,7 +214,11 @@ export default function AlbumGallery({ album }: { album: Album }) {
               h-auto max-h-[88vh] w-auto max-w-[82vw] object-contain shadow-2xl
               transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]
               motion-reduce:transition-none
-              ${visible ? "scale-100 opacity-100" : "scale-95 opacity-0"}
+              ${
+                visible
+                  ? "scale-100 opacity-100"
+                  : "scale-95 opacity-0"
+              }
             `}
           />
         </div>

@@ -15,23 +15,8 @@ export default function FadeInSection({
 }: FadeInSectionProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
-  const [signatureDone, setSignatureDone] = useState(false);
 
   useEffect(() => {
-    const onComplete = () => {
-      setSignatureDone(true);
-    };
-
-    window.addEventListener("signature-complete", onComplete);
-
-    return () => {
-      window.removeEventListener("signature-complete", onComplete);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!signatureDone) return;
-
     const el = ref.current;
     if (!el) return;
 
@@ -54,7 +39,7 @@ export default function FadeInSection({
     observer.observe(el);
 
     return () => observer.disconnect();
-  }, [signatureDone]);
+  }, []);
 
   return (
     <div
