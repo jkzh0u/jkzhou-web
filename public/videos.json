@@ -1,0 +1,93 @@
+
+[
+  {
+    "title": "tambourine by eve",
+    "tag": "dance video",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/TAMBOURINE.mp4",
+    "poster": "https://assets.jkzhou.ca/videos/TAMBOURINE.jpg",
+    "desc": "for the Adrenalyn dance crew @MWCSS",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "first vlog",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/first-vlog.mp4",
+    "poster": "https://assets.jkzhou.ca/homepage/filmmaker.jpg",
+    "desc": "an introduction. who am i?",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "how to host a summer function",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/summerfunction.mp4",
+    "poster": "https://assets.jkzhou.ca/videos/havefun.jpeg",
+    "desc": "its finally summer!",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "you should make new friends",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/makefriends.mp4",
+    "poster": "https://assets.jkzhou.ca/videos/makefriends.jpeg",
+    "desc": "go outside and make friends!",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "life is like fireworks",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/lifeislike.mp4",
+    "poster": "https://assets.jkzhou.ca/videos/fireworks.jpg",
+    "desc": "those memories burn up fast, so enjoy the show :)",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "monster energy",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/motacycles.mp4",
+    "poster": "https://assets.jkzhou.ca/videos/motacycles.jpg",
+    "desc": "at the calgary stampede",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "welcome to the rockies",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/welcometorockies.mp4",
+    "poster": "https://assets.jkzhou.ca/videos/welcometorockies.jpg",
+    "desc": "some clips from my trip to the Canadian rockies!",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "the world is bigger than your render distance",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/renderdistance.mp4",
+    "poster": "https://assets.jkzhou.ca/videos/renderdistance.jpg",
+    "desc": "minecraft reference!",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "summer is ending",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/summerending.mp4",
+    "poster": "https://assets.jkzhou.ca/videos/summerending.jpg",
+    "desc": "summer is ending, so spend your time wisely",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "robots at ward 2026",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/robotsatward26.mp4",
+    "poster": "https://assets.jkzhou.ca/videos/robotsatward26.jpeg",
+    "desc": "FIRST robotics offseason event!",
+    "aspectRatio": 1.5
+  }
+]

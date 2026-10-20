@@ -10,8 +10,6 @@ import Signature from "./components/signature";
 import MyWork from "./components/MyWork";
 import AboutMe from "./components/AboutMe";
 import CardHero from "./components/CardHero";
-import fs from "node:fs/promises";
-import path from "node:path";
 import type { VideoItem } from "./components/Videomodal";
 
 
