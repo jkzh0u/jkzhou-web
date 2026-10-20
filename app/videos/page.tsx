@@ -2,11 +2,20 @@ import { promises as fs } from "fs";
 import path from "path";
 import VideoGallery, { type VideoItem } from "../components/VideoGallery";
 
+
 async function getVideos(): Promise<VideoItem[]> {
-  const filePath = path.join(process.cwd(), "public", "videos", "videos.json");
-  const file = await fs.readFile(filePath, "utf-8");
-  return JSON.parse(file);
+  const filePath = path.join(
+    process.cwd(),
+    "public",
+    "videos",
+    "videos.json"
+  );
+
+  const fileContents = await fs.readFile(filePath, "utf8");
+
+  return JSON.parse(fileContents) as VideoItem[];
 }
+
 
 export const dynamic = "force-dynamic"; // always re-read the file, never cache
 
