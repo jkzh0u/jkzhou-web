@@ -2,7 +2,7 @@
 
 Personal portfolio website for photography, videography, and creative projects.
 
-Website: jkzhou.ca
+Website: https://jkzhou.ca
 
 ## ✨ Features
 
