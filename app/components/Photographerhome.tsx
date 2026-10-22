@@ -31,10 +31,12 @@ interface Tile {
     state: {
         p: number;
         a: number;
+        fade: number; // mobile intro: 0 = invisible, 1 = fully faded in
         flip: number;
         direction: number;
     };
     ready: boolean;
+    fadeStarted: boolean;
     flipCooldownUntil: number;
 }
 
@@ -73,6 +75,10 @@ const CONFIG = {
     unlockLeadTime: 1.5,
     aboutGapPull: -1,
     aboutExtraGapVh: -0.32,
+
+    // Mobile intro: each tile fades in over this many seconds, staggered by the gap below.
+    mobileFadeDuration: 0.9,
+    mobileFadeGap: 0.06,
 } as const;
 
 const HERO_SLOTS_DESKTOP: HeroSlot[] = [
@@ -382,6 +388,29 @@ export default function PhotographerHome({
 
         let cancelled = false;
 
+        // ---------------------------------------------------------
+        // MOBILE INTRO: tiles simply fade in (no stacking / spreading)
+        // ---------------------------------------------------------
+
+        // Becomes true once the overlay starts lifting. A tile whose image is ready by then fades in
+        // right away; a tile whose image arrives later fades in the moment it is ready (no pop-in).
+        let introReleased = false;
+
+        const fadeTile = (t: Tile, i: number) => {
+            if (t.fadeStarted) return;
+
+            t.fadeStarted = true;
+
+            gsap.to(t.state, {
+                fade: 1,
+                duration: reduceMotion ? 0.01 : CONFIG.mobileFadeDuration,
+                delay: reduceMotion ? 0 : i * CONFIG.mobileFadeGap,
+                ease: 'power2.out',
+            });
+        };
+
+        const mobileFade = isMobile && !skipIntro;
+
         const tiles: Tile[] = tileEls.map((el, i) => {
             const depth = parseFloat(el.dataset.depth ?? '1');
             const url = tileImages[i];
@@ -417,12 +446,15 @@ export default function PhotographerHome({
                 sy: 0,
                 rot: (Math.random() - 0.5) * 0.6,
                 state: {
-                    p: skipIntro ? 1 : 0,
-                    a: skipIntro ? 1 : 0,
+                    // on mobile the tiles start (and stay) in their final spots
+                    p: skipIntro || isMobile ? 1 : 0,
+                    a: skipIntro || isMobile ? 1 : 0,
+                    fade: mobileFade ? 0 : 1,
                     flip: 0,
                     direction: 1,
                 },
                 ready: false,
+                fadeStarted: false,
                 flipCooldownUntil: 0,
             };
 
@@ -456,6 +488,8 @@ export default function PhotographerHome({
                         }
 
                         tile.ready = true;
+
+                        if (mobileFade && introReleased) fadeTile(tile, i);
                     },
                     undefined,
                     () => {
@@ -642,6 +676,12 @@ export default function PhotographerHome({
         let mobilePositionsBaked = false;
 
         const onResize = () => {
+            // Phones fire "resize" whenever the address bar slides in or out while you scroll. That only
+            // changes the height, so it must NOT re-run the layout work below; a real change of width
+            // (rotation, window resize) does.
+            const widthChanged = window.innerWidth !== vw;
+            const heightDelta = Math.abs(window.innerHeight - vh);
+
             vw = window.innerWidth;
             vh = window.innerHeight;
 
@@ -651,41 +691,62 @@ export default function PhotographerHome({
             lastScrollY = window.scrollY;
             smoothedVelocity = 0;
 
-            mobilePositionsBaked = false;
+            if (isMobile && !widthChanged && heightDelta < 150) return;
 
-            tiles.forEach((t) => {
-                t.sx = 0;
-                t.sy = 0;
-            });
+            if (widthChanged) {
+                // new width = new layout, so the pushed-away positions are worked out again (once)
+                mobilePositionsBaked = false;
+
+                tiles.forEach((t) => {
+                    t.sx = 0;
+                    t.sy = 0;
+                });
+            }
 
             measure();
         };
 
         window.addEventListener('resize', onResize);
 
+        // Works out where each mobile tile sits, pushing away any tile that would cover the name.
+        // It is computed ONCE, as if the page were at the very top with the name in the centre of the
+        // screen, and then left alone: it does not depend on the current scroll position or on where
+        // the name currently is, so scrolling (or the address bar resizing) can never move the tiles.
         const bakeMobilePositions = () => {
             if (!isMobile || mobilePositionsBaked) return;
 
-            const logoRect = logo.getBoundingClientRect();
+            // The name's natural size (offsetWidth/Height ignore the scale/translate we animate),
+            // centred on the screen, where it sits before any scrolling.
+            const lw = logo.offsetWidth;
+            const lh = logo.offsetHeight;
+
+            const logoRect = {
+                left: vw / 2 - lw / 2,
+                right: vw / 2 + lw / 2,
+                top: vh / 2 - lh / 2,
+                bottom: vh / 2 + lh / 2,
+            };
+
             const paddingX = 8;
             const paddingY = 12;
+            const spreadTightness = 0.9;
+
+            // while the intro locks the page, the body is shifted by -savedScrollY instead of scrolled
+            const scrollNow = scrollLocked ? savedScrollY : window.scrollY;
 
             for (const t of tiles) {
                 const r = t.el.getBoundingClientRect();
-                const spreadTightness = 0.9;
 
-                const gx =
-                    (r.left + r.width / 2 - vw / 2) *
-                    spreadTightness;
+                // document-space centre of the tile = where it is when the page is scrolled to the top
+                const docCenterX = r.left + r.width / 2;
+                const docCenterY = r.top + scrollNow + r.height / 2;
 
-                const offY = r.top + r.height / 2 - vh / 2;
+                const gx = (docCenterX - vw / 2) * spreadTightness;
 
-                const gy =
-                    -(
-                        offY + offY * (1 - t.depth) * 0.12
-                    ) *
-                    spreadTightness -
-                    window.scrollY * 0.4 * (t.depth - 0.8);
+                const offY = docCenterY - vh / 2;
+
+                // (no scroll-based parallax term: this is the scroll = 0 position)
+                const gy = -(offY + offY * (1 - t.depth) * 0.12) * spreadTightness;
 
                 const mw = r.width;
                 const mh = r.height;
@@ -882,7 +943,7 @@ export default function PhotographerHome({
                     backRatio.set(1, flipAspect / planeAspect);
                 }
 
-                t.material.uniforms.uOpacity.value = 1;
+                t.material.uniforms.uOpacity.value = t.state.fade;
                 t.material.uniforms.uBend.value = bend;
                 t.material.uniforms.uRadius.value = radius;
             }
@@ -1085,63 +1146,20 @@ export default function PhotographerHome({
             });
 
             if (isMobile) {
-                // reveal the site navbar
+                // Phones: no stacking or spreading. The tiles are already in their final spots and just
+                // fade in; the navbar appears and scrolling unlocks almost immediately.
                 tl.add(() => html.classList.remove('pa-intro'), 0.3);
 
                 tl.add(() => {
+                    introReleased = true;
+
+                    tiles.forEach((t, i) => {
+                        if (t.ready) fadeTile(t, i);
+                    });
+
                     measure();
                     lastScrollY = window.scrollY;
                 }, 0.3);
-
-                const stackStart = 0.9;
-                const stackGap = reduceMotion ? 0 : 0.07;
-                const stackDuration = reduceMotion ? 0.01 : 0.55;
-
-                tiles.forEach((t, i) => {
-                    tl.to(
-                        t.state,
-                        {
-                            a: 1,
-                            duration: stackDuration,
-                            ease: 'power3.out',
-                        },
-                        stackStart + i * stackGap
-                    );
-                });
-
-                const stackComplete =
-                    stackStart +
-                    Math.max(0, tiles.length - 1) * stackGap +
-                    stackDuration;
-
-                const spreadStart = stackComplete + 0.05;
-                const spreadGap = reduceMotion ? 0 : 0.06;
-                const spreadDuration = reduceMotion
-                    ? 0.01
-                    : CONFIG.introDuration;
-
-                tiles.forEach((t, i) => {
-                    tl.to(
-                        t.state,
-                        {
-                            p: 1,
-                            duration: spreadDuration,
-                            ease: 'expo.out',
-                        },
-                        spreadStart + i * spreadGap
-                    );
-                });
-
-                // Schedule relative to the actual final mobile spread tween.
-                const lastSpreadStart =
-                    spreadStart +
-                    Math.max(0, tiles.length - 1) * spreadGap;
-
-                const lastSpreadEnd = lastSpreadStart + spreadDuration;
-                const unlockAt = Math.max(
-                    0,
-                    lastSpreadEnd - CONFIG.unlockLeadTime
-                );
 
                 tl.call(
                     () => {
@@ -1150,13 +1168,8 @@ export default function PhotographerHome({
                         lastScrollY = window.scrollY;
                     },
                     [],
-                    unlockAt
+                    0.6
                 );
-
-                tl.add(() => {
-                    measure();
-                    lastScrollY = window.scrollY;
-                }, lastSpreadEnd);
             } else {
                 const appearGap = reduceMotion ? 0.01 : 0.16;
                 const appearDur = reduceMotion ? 0.01 : 0.7;
