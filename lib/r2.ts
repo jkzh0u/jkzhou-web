@@ -50,53 +50,68 @@ function getR2Config() {
   return { client, bucketName };
 }
 
-export const getAlbumPhotos = unstable_cache(
-  async (slug: string): Promise<string[]> => {
-    const { client, bucketName } = getR2Config();
+/**
+ * Lists images directly inside an R2 folder.
+ * Ignores hidden files and nested folders.
+ */
+async function listImagesInFolder(
+  folder: string
+): Promise<string[]> {
+  const { client, bucketName } = getR2Config();
 
-    const photos: string[] = [];
-    let continuationToken: string | undefined;
-    const prefix = `photos/${slug}/`;
+  const photos: string[] = [];
+  let continuationToken: string | undefined;
 
-    do {
-      const response = await client.send(
-        new ListObjectsV2Command({
-          Bucket: bucketName,
-          Prefix: prefix,
-          ContinuationToken: continuationToken,
-        })
-      );
+  const prefix = `${folder.replace(/^\/+|\/+$/g, "")}/`;
 
-      for (const object of response.Contents ?? []) {
-        if (!object.Key) continue;
-
-        const filename = object.Key.slice(prefix.length);
-
-        // Only include images directly inside this album folder.
-        if (!filename || filename.includes("/")) continue;
-        if (filename.startsWith(".")) continue;
-
-        const dotIndex = filename.lastIndexOf(".");
-        if (dotIndex === -1) continue;
-
-        const extension = filename.slice(dotIndex).toLowerCase();
-
-        if (imageExtensions.has(extension)) {
-          photos.push(filename);
-        }
-      }
-
-      continuationToken = response.IsTruncated
-        ? response.NextContinuationToken
-        : undefined;
-    } while (continuationToken);
-
-    return photos.sort((a, b) =>
-      a.localeCompare(b, undefined, {
-        numeric: true,
-        sensitivity: "base",
+  do {
+    const response = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucketName,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
       })
     );
+
+    for (const object of response.Contents ?? []) {
+      if (!object.Key) continue;
+
+      const filename = object.Key.slice(prefix.length);
+
+      // Only include images directly inside this folder.
+      if (!filename || filename.includes("/")) continue;
+      if (filename.startsWith(".")) continue;
+
+      const dotIndex = filename.lastIndexOf(".");
+      if (dotIndex === -1) continue;
+
+      const extension = filename.slice(dotIndex).toLowerCase();
+
+      if (imageExtensions.has(extension)) {
+        photos.push(filename);
+      }
+    }
+
+    continuationToken = response.IsTruncated
+      ? response.NextContinuationToken
+      : undefined;
+  } while (continuationToken);
+
+  return photos.sort((a, b) =>
+    a.localeCompare(b, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    })
+  );
+}
+
+/**
+ * Gets photos from photos/<slug>/.
+ * Cached and revalidated after one hour.
+ */
+export const getAlbumPhotos = unstable_cache(
+  async (slug: string): Promise<string[]> => {
+    return listImagesInFolder(`photos/${slug}`);
   },
   ["r2-album-photos"],
   {
@@ -104,12 +119,34 @@ export const getAlbumPhotos = unstable_cache(
   }
 );
 
+const R2_PUBLIC_URL = "https://assets.jkzhou.ca";
+
+export function getR2Url(path: string): string {
+  return `${R2_PUBLIC_URL}/${path.replace(/^\/+/, "")}`;
+}
+
+/**
+ * Generates a public URL for an R2 image.
+ *
+ * Album:
+ * getPhotoUrl("wave2earth2026", "1.jpg")
+ *
+ * Homepage:
+ * getPhotoUrl("", "hero.jpg", "homepage")
+ */
 export function getPhotoUrl(
   slug: string,
-  filename: string
+  filename: string,
+  folder = "photos"
 ): string {
+  const safeFolder = folder
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+
   const safeSlug = slug
     .split("/")
+    .filter(Boolean)
     .map(encodeURIComponent)
     .join("/");
 
@@ -118,5 +155,9 @@ export function getPhotoUrl(
     .map(encodeURIComponent)
     .join("/");
 
-  return `${r2PublicUrl}/photos/${safeSlug}/${safeFilename}`;
+  const path = safeSlug
+    ? `${safeFolder}/${safeSlug}/${safeFilename}`
+    : `${safeFolder}/${safeFilename}`;
+
+  return `${r2PublicUrl}/${path}`;
 }

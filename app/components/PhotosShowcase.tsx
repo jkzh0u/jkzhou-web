@@ -161,7 +161,7 @@ export default function PhotosShowcase() {
   const smallX = -index * (smallWidth + smallGap)
 
   return (
-    <section className="flex min-h-[calc(100vh-56px)] w-full flex-col justify-center overflow-hidden bg-neutral-950 py-8 text-white">
+    <section className="flex min-h-[calc(100vh-56px)] w-full flex-col justify-center overflow-hidden bg-white py-8 text-neutral-900">
       <div
         ref={wrapperRef}
         className="relative overflow-hidden overscroll-x-contain"
@@ -192,6 +192,7 @@ export default function PhotosShowcase() {
                       loading={i === heroItems.length ? "eager" : "lazy"}
                       className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                     />
+                    {/* dark gradient keeps the white text readable on top of the photo */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent transition-opacity duration-500 group-hover:opacity-20" />
                     <div className="absolute bottom-6 left-0 right-0 px-4 text-center text-white sm:bottom-8 sm:left-8 sm:right-auto sm:px-0 sm:text-left">
                       <h2 className="mb-2 text-4xl font-bold sm:text-5xl">{item.title}</h2>
@@ -242,13 +243,14 @@ export default function PhotosShowcase() {
           {heroItems.map((_, i) => (
             <button
               key={i}
+              aria-label={`Go to slide ${i + 1}`}
               onClick={() => {
                 if (lockedRef.current) return
                 lockedRef.current = true
                 setTransition(true)
                 setIndex(heroItems.length + i)
               }}
-              className={`h-2 rounded-full transition-all duration-300 ${i === activeIndex ? 'w-7 bg-white' : 'w-2 bg-white/40'}`}
+              className={`h-2 rounded-full transition-all duration-300 ${i === activeIndex ? 'w-7 bg-neutral-900' : 'w-2 bg-neutral-900/30'}`}
             />
           ))}
         </div>

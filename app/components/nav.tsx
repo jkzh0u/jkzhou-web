@@ -1,78 +1,137 @@
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 
-type NavItem = {
+type NavLink = {
   name: string
   path: string
-  icon?: React.ReactNode
+  external?: boolean
+  icon?: ReactNode
 }
 
-const navItems: Record<number, NavItem> = {
-  1: { name: 'jackson zhou.', path: '/#' },
-  2: { name: 'home', path: '/' },
-  3: { name: 'photos', path: '/photos' },
-  4: { name: 'videos', path: '/videos' },
-  5: { name: 'contact', path: '/contact' },
-  6: {
+const SITE_NAME = 'jackson zhou.'
+
+// Left side
+const leftLinks: NavLink[] = [
+  { name: 'photos', path: '/photos' },
+  { name: 'videos', path: '/videos' },
+]
+
+// Right side: contact first, then the socials
+const rightLinks: NavLink[] = [
+  { name: 'contact', path: '/contact' },
+  {
+    name: 'instagram',
+    path: 'https://www.instagram.com/jkzhouu/',
+    external: true,
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+      </svg>
+    ),
+  },
+  {
     name: 'linkedin',
     path: 'https://www.linkedin.com/in/jackson-zhou-9a5703297/',
+    external: true,
     icon: (
-  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-  </svg>
-)
+      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+      </svg>
+    ),
   },
-  7: {
-    name: 'instagram',
-    path: 'https://www.instagram.com/jkz.mov/',
-    icon: (
-  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-  </svg>
-)
+]
+
+const linkClass =
+  'flex items-center px-2 py-1 transition-opacity hover:opacity-60'
+
+function NavItem({ name, path, external, icon }: NavLink) {
+  if (external) {
+    return (
+      <a
+        href={path}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={name}
+        className={linkClass}
+      >
+        {icon ?? name}
+      </a>
+    )
   }
+
+  return (
+    <Link href={path} className={linkClass}>
+      {icon ?? name}
+    </Link>
+  )
 }
+
+// 1) While the home page intro is playing it adds `pa-intro` to <html>, which hides the navbar;
+//    the navbar fades in when the intro removes it. On every other page the class is never set.
+//
+// 2) The centred name. It matches the name PhotographerHome shrinks into the navbar:
+//    36px * 0.42 = 15.12px on desktop, 26px * 0.54 = 14.04px on mobile (<= 1000px).
+//    - On pages WITHOUT PhotographerHome it is simply visible.
+//    - On pages WITH PhotographerHome (it renders a [data-pa-home] marker) it is invisible, because
+//      PhotographerHome draws the name itself and animates it into this exact spot. It only becomes
+//      clickable once PhotographerHome adds `pa-docked` to <html> (name has reached the navbar),
+//      so a transparent click target sits right on top of the animated name.
+const css = `
+  .site-nav { transition: opacity 0.8s ease; }
+  html.pa-intro .site-nav { opacity: 0; pointer-events: none; }
+
+  .site-nav-name {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 15.12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    color: #000;
+    white-space: nowrap;
+    transition: opacity 0.3s ease;
+  }
+  @media (max-width: 1000px) {
+    .site-nav-name { font-size: 14.04px; }
+  }
+
+  html:has([data-pa-home]) .site-nav-name { opacity: 0; pointer-events: none; }
+  html:has([data-pa-home]).pa-docked .site-nav-name { pointer-events: auto; }
+`
 
 export function Navbar() {
   return (
-    <aside>
-      <div>
-<nav
-  className="flex flex-col items-center text-center px-2.5 py-2.5 sm:flex-row sm:justify-between sm:text-left"
-  id="nav"
->
-          {/* Left: jackson zhou. */}
-          <div className="flex-shrink-0">
-            {Object.entries(navItems)
-              .filter(([_, { name }]) => name === 'jackson zhou.')
-              .map(([id, { name, path }]) => (
-                <Link
-                  key={path}
-                  href={path}
-                  className="transition-all hover:text-neutral-800 dark:hover:text-neutral-200 py-1 px-2 m-1 font-bold"
-                >
-                  {name}
-                </Link>
-              ))}
-          </div>
+    <>
+      <style>{css}</style>
+      <header data-site-nav className="site-nav fixed inset-x-0 top-0 z-40 text-[#0f0f15]">
+        <nav
+          aria-label="Main"
+          className="relative flex items-center justify-between px-2 py-2.5 text-sm sm:text-[15px] font-medium"
+        >
+          <ul className="flex items-center">
+            {leftLinks.map((link) => (
+              <li key={link.path}>
+                <NavItem {...link} />
+              </li>
+            ))}
+          </ul>
 
-          {/* Right: links */}
-          <div className="flex flex-wrap items-center justify-center md:justify-end">
-            {Object.entries(navItems)
-              .filter(([_, { name }]) => name !== 'jackson zhou.')
-              .map(([id, { name, path, icon }]) => (
-                <Link
-                  key={path}
-                  href={path}
-                  target={path.startsWith('https') ? '_blank' : undefined}
-                  rel={path.startsWith('https') ? 'noopener noreferrer' : undefined}
-                  className="transition-all hover:text-neutral-800 dark:hover:text-neutral-200 py-1 px-2 m-1"
-                >
-                  {icon ?? name}
-                </Link>
-              ))}
-          </div>
+          <Link href="/" aria-label="Home" className="site-nav-name">
+            {SITE_NAME}
+          </Link>
+
+          <ul className="flex items-center">
+            {rightLinks.map((link) => (
+              <li key={link.path}>
+                <NavItem {...link} />
+              </li>
+            ))}
+          </ul>
         </nav>
-      </div>
-    </aside>
+      </header>
+    </>
   )
 }
