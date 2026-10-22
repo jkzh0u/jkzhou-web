@@ -82,10 +82,10 @@ const CONFIG = {
 } as const;
 
 const HERO_SLOTS_DESKTOP: HeroSlot[] = [
-    { r: 2, c: 4, d: 0.56, w: 88 },
+    { r: 0, c: 4, d: 0.56, w: 88 },
     { r: 4, c: 1, d: 0.88, w: 86 },
     { r: 3, c: 6, d: 0.72, w: 84 },
-    { r: 3, c: 8, d: 1.0, w: 80 },
+    { r: 5, c: 8, d: 1.0, w: 80 },
     { r: 6, c: 3, d: 0.62, w: 84 },
     { r: 9, c: 2, d: 0.94, w: 82 },
     { r: 9, c: 6, d: 0.78, w: 84 },
@@ -1414,7 +1414,7 @@ export default function PhotographerHome({
                 ))}
             </section>
 
-            <div id="contact" style={{ height: '40vh' }} />
+
         </div>
     );
 }
@@ -1472,14 +1472,15 @@ const css = `
     cursor: pointer;
   }
 
-  .pa-hero {
+.pa-hero {
     position: relative;
     z-index: 2;
     width: 100%;
     min-height: 235vh;
-    /* invisible placeholder layer: let clicks fall through to the name underneath */
+    padding-bottom: 0;
+    margin-bottom: 0;
     pointer-events: none;
-  }
+}
 
   .pa-grid {
     display: grid;
@@ -1495,26 +1496,31 @@ const css = `
     min-width: 0;
   }
 
-  .pa-about {
+ .pa-about {
     position: relative;
     z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+
     min-height: 100vh;
-    padding: 14vh 0;
+    box-sizing: border-box;
+
+    /* Consistent spacing after the hero section */
     margin: 0 auto;
+    padding: 14vh 0;
+
     width: min(980px, 48vw);
     text-align: center;
-  }
+}
 
-  .pa-portrait {
+.pa-portrait {
     aspect-ratio: 4 / 5;
-    width: min(14vw, 220px);
-    min-width: 140px;
+    width: clamp(180px, calc(300px - 8vw), 260px);
+    min-width: 0;
     margin-bottom: 40px;
-  }
+}
 
   .pa-portrait img {
     display: block;
@@ -1525,12 +1531,12 @@ const css = `
     transition: opacity 0.5s ease;
   }
 
-  .pa-about-text {
-    margin: 0 0 0.95em;
-    font-size: 22px;
-    line-height: 1.24;
-    letter-spacing: -0.01em;
-  }
+.pa-about-text {
+  margin: 0 0 0.95em;
+  font-size: clamp(22px, calc(32px - 1vw), 30px);
+  line-height: 1.24;
+  letter-spacing: -0.01em;
+}
 
   .pa-word {
     display: inline-block;
@@ -1539,9 +1545,11 @@ const css = `
   }
 
   @media (max-width: 1000px) {
-    .pa-m .pa-hero {
-      min-height: 0;
-    }
+.pa-m .pa-hero {
+    min-height: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
 
     .pa-m .pa-grid {
       grid-template-columns: repeat(2, 50vw);
@@ -1579,15 +1587,15 @@ const css = `
       min-height: 100svh;
     }
 
-    .pa-m .pa-portrait {
-      width: 38vw;
-      min-width: 0;
-      margin-bottom: 32px;
-    }
+.pa-m .pa-portrait {
+    width: clamp(155px, 32vw, 220px);
+    min-width: 0;
+    margin-bottom: 32px;
+}
 
-    .pa-m .pa-about-text {
-      font-size: 17px;
-    }
+.pa-m .pa-about-text {
+  font-size: clamp(20px, calc(28px - 2vw), 24px);
+}
 
     .pa-m .pa-logo {
       font-size: 26px;
