@@ -599,7 +599,9 @@ export default function PhotographerHome({
             if (cancelled) return;
 
             measureNav();
-            fitGap();
+const fitGap = () => {
+    about.style.marginTop = '0px';
+};
 
             words.forEach((w) => {
                 w.el.style.transform = 'none';
@@ -1487,7 +1489,7 @@ const css = `
     width: 100%;
     grid-template-columns: repeat(8, minmax(0, 1fr));
     grid-auto-rows: 10vh;
-    padding: 2vh 0 18vh;
+    padding: 2vh 0 80px;
   }
 
   .pa-tile {
@@ -1496,7 +1498,7 @@ const css = `
     min-width: 0;
   }
 
- .pa-about {
+.pa-about {
     position: relative;
     z-index: 2;
     display: flex;
@@ -1507,9 +1509,8 @@ const css = `
     min-height: 100vh;
     box-sizing: border-box;
 
-    /* Consistent spacing after the hero section */
     margin: 0 auto;
-    padding: 14vh 0;
+    padding: 80px 0;
 
     width: min(980px, 48vw);
     text-align: center;
@@ -1582,10 +1583,11 @@ const css = `
       translate: 0 0;
     }
 
-    .pa-m .pa-about {
-      width: 88vw;
-      min-height: 100svh;
-    }
+.pa-m .pa-about {
+    width: 88vw;
+    min-height: 100svh;
+    padding: 60px 0;
+}
 
 .pa-m .pa-portrait {
     width: clamp(155px, 32vw, 220px);
