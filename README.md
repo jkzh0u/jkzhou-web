@@ -4,23 +4,15 @@ Personal portfolio website for photography, videography, and creative projects.
 
 Website: https://jkzhou.ca
 
-## ✨ Features
+## what did I do?
 
-- 📸 Photography galleries organized by album and event
-- 🎞️ Animated photo showcase carousel
-- 🎥 Video gallery for videography projects
-- 📱 Responsive layouts for desktop and mobile
-- 💫 Image loading skeletons and smooth transitions
-- ☁️ Cloud-hosted media delivery
-- 🚀 Automated Docker builds and deployment
+- used next.js framework to program the site
+- added a photos, videos, and contact page
+- contact page uses
+- CI/CD on my homelab to host the website using github actions
+- used github container registry for docker image hosting
+- learned how to use cloudfare and DNS to host my own website
 
-## 🛠️ Tech Stack
 
-- ⚡ **Next.js** for the web framework
-- ⚛️ **React** for UI components
-- 🔷 **TypeScript** for type safety
-- 🎨 **Tailwind CSS** for styling
-- ☁️ **Cloudflare R2** for media storage
-- 🐳 **Docker** for containerization
-- 🔄 **GitHub Actions** for CI/CD
-- 📦 **GitHub Container Registry** for Docker image hosting
+## notice: 
+AI was used in the development of this site.
