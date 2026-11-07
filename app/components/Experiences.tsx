@@ -161,8 +161,8 @@ const css = `
 
   .ex-logo img {
     object-fit: contain;
-    filter: grayscale(1);
-    opacity: 0.55;
+    filter: brightness(0);
+    opacity: 0.4;
     transition:
       filter 0.45s ease,
       opacity 0.45s ease,

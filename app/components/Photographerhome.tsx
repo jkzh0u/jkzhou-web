@@ -1238,7 +1238,7 @@ export default function PhotographerHome({
 
             // Tell the navbar when the name has reached it, so its (invisible) click target
             // sitting on top of the name can switch on.
-            const docked = p > 0.985;
+            const docked = p >= 0.999;
 
             if (docked !== wasDocked) {
                 wasDocked = docked;
@@ -1656,6 +1656,11 @@ const css = `
   html.pa-docked .pa-logo-link {
     pointer-events: auto;
     cursor: pointer;
+  }
+
+  html.pa-docked .pa-logo {
+    opacity: 0;
+    pointer-events: none;
   }
 
 .pa-hero {

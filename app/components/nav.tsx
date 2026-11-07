@@ -99,8 +99,8 @@ const css = `
     .site-nav-name { font-size: 14.04px; }
   }
 
-  html:has([data-pa-home]) .site-nav-name { opacity: 0; pointer-events: none; }
-  html:has([data-pa-home]).pa-docked .site-nav-name { pointer-events: auto; }
+  html:has([data-pa-home]) .site-nav-name { opacity: 0; pointer-events: none; transition: none; }
+  html:has([data-pa-home]).pa-docked .site-nav-name { opacity: 1; pointer-events: auto; }
 
   .nm {
     display: inline-grid;
