@@ -90,7 +90,7 @@ const css = `
     font-weight: 600;
     letter-spacing: 0.02em;
     line-height: 1.2;
-    color: #000;
+    color: inherit;
     white-space: nowrap;
     transition: opacity 0.3s ease;
   }
@@ -106,7 +106,7 @@ export function Navbar() {
   return (
     <>
       <style>{css}</style>
-      <header data-site-nav className="site-nav fixed inset-x-0 top-0 z-40 text-[#0f0f15]">
+      <header data-site-nav className="site-nav fixed inset-x-0 top-0 z-40 text-white">
         <nav
           aria-label="Main"
           className="relative flex items-center justify-between px-2 py-2.5 text-sm sm:text-[15px] font-medium"

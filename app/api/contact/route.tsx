@@ -26,13 +26,15 @@ export async function POST(req: Request) {
     if (
       typeof name !== "string" ||
       typeof email !== "string" ||
+      typeof subject !== "string" ||
       typeof message !== "string" ||
       !name.trim() ||
       !email.trim() ||
+      !subject.trim() ||
       !message.trim()
     ) {
       return NextResponse.json(
-        { error: "name, email, and message are required" },
+        { error: "name, email, subject, and message are required" },
         { status: 400 }
       );
     }
@@ -49,15 +51,13 @@ export async function POST(req: Request) {
       to: TO_ADDRESS,
       replyTo: email,
 
-      subject: subject?.trim()
-        ? `Contact form: ${subject.trim()}`
-        : `New message from ${name.trim()}`,
+      subject: `Contact form: ${subject.trim()}`,
 
       react: (
         <ContactEmail
           name={name.trim()}
           email={email.trim()}
-          subject={subject?.trim()}
+          subject={subject.trim()}
           message={message.trim()}
         />
       ),

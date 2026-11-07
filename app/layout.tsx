@@ -41,15 +41,13 @@ export default function RootLayout({
 <body>
   <SmoothScroll />
   <ThemeChecker>
-    <div className="sticky top-0 z-50 backdrop-blur-xl bg-background/60">
+    <div className="sticky top-0 z-50 mix-blend-difference">
       <Navbar />
     </div>
 
     {children}
 
-    <div className="px-4 sm:px-8 lg:px-28">
-      <Footer />
-    </div>
+    <Footer />
   </ThemeChecker>
 </body>
     </html>

@@ -52,12 +52,14 @@ const Thumb = memo(function Thumb({
   priority: boolean;
   onSelect: (src: string) => void;
 }) {
+  const [loaded, setLoaded] = useState(false);
+
   return (
     <button
       type="button"
       onClick={() => onSelect(src)}
       aria-label={`Open ${alt}`}
-      className="group block w-full overflow-hidden text-left"
+      className={`ag-thumb group block w-full overflow-hidden text-left${loaded ? " is-loaded" : ""}`}
     >
       <Image
         src={src}
@@ -68,9 +70,11 @@ const Thumb = memo(function Thumb({
         height={1067}
         sizes={THUMB_SIZES}
         priority={priority}
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
         className="
-          h-auto w-full
-          transition-[transform,filter] duration-500 ease-out
+          ag-img h-auto w-full
+          transition-[transform,filter,opacity] duration-500 ease-out
           group-hover:scale-[1.015] group-hover:brightness-105
           motion-reduce:transition-none
         "
@@ -86,6 +90,7 @@ export default function AlbumGallery({
 }) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
+  const [bigLoaded, setBigLoaded] = useState(false);
   const closeTimer = useRef<number | null>(null);
 
   const columnCount = useSyncExternalStore(
@@ -118,6 +123,7 @@ export default function AlbumGallery({
     }
 
     setVisible(false);
+    setBigLoaded(false);
     setSelectedPhoto(src);
   }, []);
 
@@ -168,6 +174,7 @@ export default function AlbumGallery({
 
   return (
     <>
+      <style>{css}</style>
       <div className="flex items-start gap-5">
         {columns.map((col, c) => (
           <div key={c} className="flex min-w-0 flex-1 flex-col gap-5">
@@ -204,18 +211,23 @@ export default function AlbumGallery({
             }
           `}
         >
+          {!bigLoaded && (
+            <span className="ag-spin" aria-hidden="true" />
+          )}
           <Image
             src={selectedPhoto}
             alt={`${album.title} enlarged photo`}
             width={2400}
             height={1600}
             sizes="82vw"
+            onLoad={() => setBigLoaded(true)}
+            onError={() => setBigLoaded(true)}
             className={`
               h-auto max-h-[88vh] w-auto max-w-[82vw] object-contain shadow-2xl
               transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]
               motion-reduce:transition-none
               ${
-                visible
+                visible && bigLoaded
                   ? "scale-100 opacity-100"
                   : "scale-95 opacity-0"
               }
@@ -226,3 +238,72 @@ export default function AlbumGallery({
     </>
   );
 }
+
+const css = `
+  .ag-thumb {
+    position: relative;
+    background: color-mix(in srgb, currentColor 6%, transparent);
+  }
+
+  .ag-thumb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      color-mix(in srgb, currentColor 8%, transparent) 50%,
+      transparent 80%
+    );
+    background-size: 220% 100%;
+    animation: ag-shimmer 1.4s linear infinite;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+
+  .ag-thumb.is-loaded {
+    background: none;
+  }
+
+  .ag-thumb.is-loaded::after {
+    opacity: 0;
+    animation: none;
+  }
+
+  .ag-img {
+    opacity: 0;
+  }
+
+  .ag-thumb.is-loaded .ag-img {
+    opacity: 1;
+  }
+
+  .ag-spin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 28px;
+    height: 28px;
+    margin: -14px 0 0 -14px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 999px;
+    animation: ag-rot 0.9s linear infinite;
+  }
+
+  @keyframes ag-shimmer {
+    from { background-position: 120% 0; }
+    to { background-position: -120% 0; }
+  }
+
+  @keyframes ag-rot {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ag-thumb::after,
+    .ag-spin {
+      animation: none;
+    }
+  }
+`;

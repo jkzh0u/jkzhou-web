@@ -31,8 +31,8 @@ export default async function AlbumPage({
   );
 
   return (
-    <div className="px-4 sm:px-8 lg:px-28">
-      <p className="text-5xl font-bold mt-7">{album.title}</p>
+    <div className="px-4 pt-24 sm:px-8 sm:pt-28 lg:px-28 lg:pt-32">
+      <p className="text-5xl font-bold">{album.title}</p>
 
       <p className="mb-7 text-neutral-600 dark:text-neutral-400">
         {album.subtitle}

@@ -38,6 +38,7 @@ interface Tile {
     ready: boolean;
     fadeStarted: boolean;
     flipCooldownUntil: number;
+    
 }
 
 interface Word {
@@ -73,8 +74,9 @@ const CONFIG = {
     // Seconds before the final photo finishes spreading.
     // Increase this to unlock scrolling earlier.
     unlockLeadTime: 1.5,
-    aboutGapPull: -1,
-    aboutExtraGapVh: -0.32,
+    // While the portrait is centred, how far (px) above the top of the screen the lowest
+    // hero photo must be, so nothing else is visible around the about section.
+    aboutClearance: 40,
 
     // Mobile intro: each tile fades in over this many seconds, staggered by the gap below.
     mobileFadeDuration: 0.9,
@@ -389,6 +391,134 @@ export default function PhotographerHome({
         let cancelled = false;
 
         // ---------------------------------------------------------
+        // TEXTURE LOADING (performance)
+        // ---------------------------------------------------------
+        // The source photos are full-resolution (several MB each). Handing them straight to
+        // THREE.TextureLoader makes the browser decode + upload each one on the main thread the
+        // first time its tile is drawn, which freezes frames mid-intro. Instead: decode off the
+        // main thread (createImageBitmap), downscale to the largest size a tile is ever shown at,
+        // and upload to the GPU right away (initTexture) so nothing heavy happens during the
+        // animation. Falls back to TextureLoader if any of that isn't supported.
+
+        const pixelRatio = renderer.getPixelRatio();
+        // biggest on-screen tile is the intro stack: ~460 x 613 css px
+        const maxShortSide = Math.min(1280, Math.ceil(650 * pixelRatio));
+        const maxLongSide = 2048;
+
+        const decodeToCanvas = async (url: string) => {
+            const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const blob = await res.blob();
+
+            let source: ImageBitmap | HTMLImageElement;
+            let objectUrl: string | null = null;
+
+            if (typeof createImageBitmap === 'function') {
+                source = await createImageBitmap(blob, {
+                    imageOrientation: 'from-image',
+                });
+            } else {
+                objectUrl = URL.createObjectURL(blob);
+                const img = new Image();
+                img.src = objectUrl;
+                await img.decode();
+                source = img;
+            }
+
+            try {
+                const w = source.width;
+                const h = source.height;
+
+                const scale = Math.min(
+                    1,
+                    maxShortSide / Math.min(w, h),
+                    maxLongSide / Math.max(w, h)
+                );
+
+                const cw = Math.max(1, Math.round(w * scale));
+                const ch = Math.max(1, Math.round(h * scale));
+
+                // resize off the main thread too, when the browser supports it
+                let drawSource: CanvasImageSource = source;
+                let resized: ImageBitmap | null = null;
+
+                if (scale < 1 && source instanceof ImageBitmap) {
+                    try {
+                        resized = await createImageBitmap(source, {
+                            resizeWidth: cw,
+                            resizeHeight: ch,
+                            resizeQuality: 'high',
+                        });
+                        drawSource = resized;
+                    } catch {
+                        /* not supported: drawImage below does the resize */
+                    }
+                }
+
+                const c = document.createElement('canvas');
+                c.width = cw;
+                c.height = ch;
+
+                const ctx = c.getContext('2d');
+                if (!ctx) throw new Error('2d context unavailable');
+
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(drawSource, 0, 0, cw, ch);
+
+                resized?.close();
+
+                return { canvas: c, width: w, height: h };
+            } finally {
+                if (source instanceof ImageBitmap) source.close();
+                if (objectUrl) URL.revokeObjectURL(objectUrl);
+            }
+        };
+
+        const loadTexture = (
+            url: string,
+            onLoad: (tex: THREE.Texture, width: number, height: number) => void,
+            onError: () => void
+        ) => {
+            const finish = (tex: THREE.Texture, w: number, h: number) => {
+                if (cancelled) {
+                    tex.dispose();
+                    return;
+                }
+
+                tex.colorSpace = THREE.SRGBColorSpace;
+                tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+                // upload now, not on the first frame the tile is visible
+                renderer.initTexture(tex);
+
+                onLoad(tex, w, h);
+            };
+
+            decodeToCanvas(url)
+                .then(({ canvas: c, width, height }) => {
+                    finish(new THREE.CanvasTexture(c), width, height);
+                })
+                .catch(() => {
+                    if (cancelled) return;
+
+                    loader.load(
+                        url,
+                        (tex) => {
+                            const img = tex.image as
+                                | { width?: number; height?: number }
+                                | undefined;
+
+                            finish(tex, img?.width ?? 0, img?.height ?? 0);
+                        },
+                        undefined,
+                        onError
+                    );
+                });
+        };
+
+        // ---------------------------------------------------------
         // MOBILE INTRO: tiles simply fade in (no stacking / spreading)
         // ---------------------------------------------------------
 
@@ -464,34 +594,19 @@ export default function PhotographerHome({
             scene.add(tile.mesh);
 
             if (url) {
-                loader.load(
+                loadTexture(
                     url,
-                    (tex) => {
-                        if (cancelled) {
-                            tex.dispose();
-                            return;
-                        }
-
-                        tex.colorSpace = THREE.SRGBColorSpace;
-
-                        tex.anisotropy =
-                            renderer.capabilities.getMaxAnisotropy();
-
+                    (tex, w, h) => {
                         material.uniforms.uTexture.value = tex;
 
-                        const img = tex.image as
-                            | { width?: number; height?: number }
-                            | undefined;
-
-                        if (img?.width && img?.height) {
-                            tile.imgAspect = img.width / img.height;
+                        if (w && h) {
+                            tile.imgAspect = w / h;
                         }
 
                         tile.ready = true;
 
                         if (mobileFade && introReleased) fadeTile(tile, i);
                     },
-                    undefined,
                     () => {
                         console.warn(
                             `[PhotographerHome] Failed to load image: ${url}`
@@ -507,34 +622,19 @@ export default function PhotographerHome({
         let flipAspect = 1;
 
         if (flipimage) {
-            loader.load(
+            loadTexture(
                 flipimage,
-                (tex) => {
-                    if (cancelled) {
-                        tex.dispose();
-                        return;
-                    }
-
-                    tex.colorSpace = THREE.SRGBColorSpace;
-
-                    tex.anisotropy =
-                        renderer.capabilities.getMaxAnisotropy();
-
+                (tex, w, h) => {
                     flipTexture = tex;
 
-                    const img = tex.image as
-                        | { width?: number; height?: number }
-                        | undefined;
-
-                    if (img?.width && img?.height) {
-                        flipAspect = img.width / img.height;
+                    if (w && h) {
+                        flipAspect = w / h;
                     }
 
                     tiles.forEach((t) => {
                         t.material.uniforms.uBackTexture.value = tex;
                     });
                 },
-                undefined,
                 () => {
                     console.warn(
                         `[PhotographerHome] Failed to load flip image: ${flipimage}`
@@ -542,6 +642,17 @@ export default function PhotographerHome({
                 }
             );
         }
+
+        // Compile the tile shader now, while the white overlay is still up, instead of
+        // on the first frame a tile appears (compile() skips invisible meshes).
+        tiles.forEach((t) => (t.mesh.visible = true));
+        renderer.compile(scene, camera);
+        tiles.forEach((t) => (t.mesh.visible = false));
+
+        // hover hit-testing checks the top-most tile first; renderOrder never changes
+        const tilesTopFirst = [...tiles].sort(
+            (a, b) => b.mesh.renderOrder - a.mesh.renderOrder
+        );
 
         const words: Word[] = Array.from(
             about.querySelectorAll<HTMLElement>('[data-word]')
@@ -563,45 +674,73 @@ export default function PhotographerHome({
         let measureFrame1 = 0;
         let measureFrame2 = 0;
 
+        // Sets the about section's top margin so that, when the portrait is centred on screen,
+        // the lowest photo sits a fixed distance above it on every screen size.
+        // The photos are drawn by WebGL with parallax and a 1.4x spread scale, so their visible
+        // position isn't their DOM position: this uses the same maths as update() below.
         const fitGap = () => {
             about.style.marginTop = '0px';
 
-            const scrollY = window.scrollY;
-            let lastBottom = 0;
+            // while the intro locks the page, the body is shifted by -savedScrollY instead of scrolled
+            const scrollNow = scrollLocked ? savedScrollY : window.scrollY;
+            const spreadScale = isMobile ? 1.0 : 1.4;
 
-            tileEls.forEach((el) => {
-                lastBottom = Math.max(
-                    lastBottom,
-                    el.getBoundingClientRect().bottom + scrollY
-                );
+            const photos = tileEls.map((el) => {
+                const r = el.getBoundingClientRect();
+                return {
+                    centre: r.top + scrollNow + r.height / 2,
+                    halfH: (r.height * spreadScale) / 2,
+                    depth: parseFloat(el.dataset.depth ?? '1'),
+                };
             });
 
+            if (photos.length === 0) return;
+
+            // on-screen bottom of the lowest photo when the page is scrolled to S
+            const lowestBottom = (S: number) => {
+                let max = -Infinity;
+                for (const p of photos) {
+                    const offY = p.centre - S - vh / 2;
+                    const y =
+                        vh / 2 +
+                        0.9 * offY * (1 + (1 - p.depth) * 0.12) +
+                        0.4 * S * (p.depth - 0.8) +
+                        p.halfH;
+                    if (y > max) max = y;
+                }
+                return max;
+            };
+
             const pr = portraitEl.getBoundingClientRect();
-            const top = pr.top + scrollY;
+            const portraitTop = pr.top + scrollNow;
 
-            const centred = Math.max(
-                0,
-                top + pr.height / 2 - vh / 2
-            );
+            // While the portrait is centred, every photo must have scrolled fully off the top
+            // of the screen (with some clearance for the mouse-follow shift), so the about
+            // section sits on its own.
+            const wanted = -CONFIG.aboutClearance;
 
-            const gap =
-                top -
-                centred -
-                (lastBottom - CONFIG.photoSpeed * centred);
+            // lowestBottom() only goes down as you scroll, so find the scroll position where it
+            // hits `wanted` by bisection, then work out the margin that centres the portrait there.
+            let lo = -vh * 4;
+            let hi = portraitTop + vh * 4;
 
-            const pull =
-                gap > 0 ? (-CONFIG.aboutGapPull * gap) / CONFIG.photoSpeed : 0;
+            for (let i = 0; i < 40; i++) {
+                const mid = (lo + hi) / 2;
+                if (lowestBottom(mid) > wanted) lo = mid;
+                else hi = mid;
+            }
 
-            about.style.marginTop = `${pull + vh * CONFIG.aboutExtraGapVh}px`;
+            const S = (lo + hi) / 2;
+            const margin = S - (portraitTop + pr.height / 2 - vh / 2);
+
+            about.style.marginTop = `${Math.round(margin)}px`;
         };
 
         const measure = () => {
             if (cancelled) return;
 
             measureNav();
-const fitGap = () => {
-    about.style.marginTop = '0px';
-};
+            fitGap();
 
             words.forEach((w) => {
                 w.el.style.transform = 'none';
@@ -991,13 +1130,8 @@ const fitGap = () => {
                 ) {
                     nextHovered = hoveredTile;
                 } else {
-                    const candidates = [...tiles].sort(
-                        (a, b) =>
-                            b.mesh.renderOrder - a.mesh.renderOrder
-                    );
-
                     nextHovered =
-                        candidates.find(
+                        tilesTopFirst.find(
                             (t) =>
                                 t.state.p > 0.9 &&
                                 containsPointer(t)
