@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import * as THREE from 'three';
 import gsap from 'gsap';
-import { decodeToCanvas } from './decodeImage';
+import { decodeToCanvas, textureUrl } from './decodeImage';
 
 interface RingFooterProps {
     images?: string[];
@@ -445,7 +445,7 @@ export default function RingFooter({
                     return;
                 }
 
-                decodeToCanvas(url, maxSide)
+                decodeToCanvas(textureUrl(url), maxSide)
                     .then(({ canvas, width, height }) =>
                         onTexture(t, i, new THREE.CanvasTexture(canvas), width, height)
                     )

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import * as THREE from 'three';
 import gsap from 'gsap';
+import { textureUrl } from './decodeImage';
 
 interface PhotographerHomeProps {
     images?: string[];
@@ -38,7 +39,7 @@ interface Tile {
     ready: boolean;
     fadeStarted: boolean;
     flipCooldownUntil: number;
-    
+    box: { x: number; y: number; w: number; h: number } | null;
 }
 
 interface Word {
@@ -346,10 +347,10 @@ export default function PhotographerHome({
         const renderer = new THREE.WebGLRenderer({
             canvas,
             alpha: true,
-            antialias: true,
+            antialias: !isMobile,
         });
 
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
         renderer.setSize(vw, vh, false);
         renderer.setClearColor(0xffffff, 0);
 
@@ -389,6 +390,7 @@ export default function PhotographerHome({
         );
 
         let cancelled = false;
+        let needsRender = true;
 
         // ---------------------------------------------------------
         // TEXTURE LOADING (performance)
@@ -406,7 +408,7 @@ export default function PhotographerHome({
         const maxLongSide = 2048;
 
         const decodeToCanvas = async (url: string) => {
-            const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+            const res = await fetch(textureUrl(url), { credentials: 'omit' });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const blob = await res.blob();
@@ -586,6 +588,7 @@ export default function PhotographerHome({
                 ready: false,
                 fadeStarted: false,
                 flipCooldownUntil: 0,
+                box: null,
             };
 
             tile.mesh.renderOrder = i;
@@ -604,6 +607,7 @@ export default function PhotographerHome({
                         }
 
                         tile.ready = true;
+                        needsRender = true;
 
                         if (mobileFade && introReleased) fadeTile(tile, i);
                     },
@@ -634,6 +638,7 @@ export default function PhotographerHome({
                     tiles.forEach((t) => {
                         t.material.uniforms.uBackTexture.value = tex;
                     });
+                    needsRender = true;
                 },
                 () => {
                     console.warn(
@@ -755,6 +760,14 @@ export default function PhotographerHome({
 
                 w.docY = r.top + scrollY + r.height / 2;
             });
+
+            const tileScroll = scrollLocked ? savedScrollY : scrollY;
+            tiles.forEach((t) => {
+                const r = t.el.getBoundingClientRect();
+                t.box = { x: r.left, y: r.top + tileScroll, w: r.width, h: r.height };
+            });
+
+            needsRender = true;
         };
 
         measure();
@@ -793,11 +806,13 @@ export default function PhotographerHome({
 
             pointer.x = e.clientX;
             pointer.y = e.clientY;
+            needsRender = true;
         };
 
         const onPointerLeave = () => {
             pointer.x = -9999;
             pointer.y = -9999;
+            needsRender = true;
         };
 
         window.addEventListener('pointermove', onPointerMove, {
@@ -809,6 +824,11 @@ export default function PhotographerHome({
         let bend = CONFIG.baseBend;
         let smoothedVelocity = 0;
         let lastScrollY = window.scrollY;
+
+        let drawnScroll = Number.NaN;
+        let drawnBend = Number.NaN;
+        let drawnMouseX = Number.NaN;
+        let drawnMouseY = Number.NaN;
 
         // true once the name has reached the navbar (tells the navbar to enable its click target)
         let wasDocked = false;
@@ -828,6 +848,7 @@ export default function PhotographerHome({
 
             renderer.setSize(vw, vh, false);
             fitCamera();
+            needsRender = true;
 
             lastScrollY = window.scrollY;
             smoothedVelocity = 0;
@@ -977,14 +998,40 @@ export default function PhotographerHome({
 
             bend += (targetBend - bend) * bendSmoothing;
 
+            const idle =
+                !needsRender &&
+                scrollY === drawnScroll &&
+                Math.abs(bend - drawnBend) < 0.0005 &&
+                Math.abs(mouse.x - drawnMouseX) < 0.0005 &&
+                Math.abs(mouse.y - drawnMouseY) < 0.0005 &&
+                !tiles.some((t) => gsap.isTweening(t.state));
+
+            if (idle) return;
+
+            needsRender = false;
+            drawnScroll = scrollY;
+            drawnBend = bend;
+            drawnMouseX = mouse.x;
+            drawnMouseY = mouse.y;
+
             const radius = vh * 1.1;
+            const tileScroll = scrollLocked ? savedScrollY : scrollY;
 
             if (isMobile && !mobilePositionsBaked) {
                 bakeMobilePositions();
             }
 
             for (const t of tiles) {
-                const r = t.el.getBoundingClientRect();
+                const b = t.box;
+                const r = b
+                    ? {
+                        left: b.x,
+                        top: b.y - tileScroll,
+                        width: b.w,
+                        height: b.h,
+                        bottom: b.y - tileScroll + b.h,
+                    }
+                    : t.el.getBoundingClientRect();
                 const e = t.state.p;
                 const a = t.state.a;
 
@@ -1477,7 +1524,10 @@ export default function PhotographerHome({
                         }
                     }}
                 >
-                    {name}
+                    <span className="nm">
+                        <span className="nm-en">{name}</span>
+                        <span className="nm-zh" aria-hidden="true">周子冸</span>
+                    </span>
                 </Link>
             </div>
 
@@ -1593,7 +1643,7 @@ const css = `
     letter-spacing: 0.02em;
     color: #000;
     white-space: nowrap;
-    pointer-events: none;
+    pointer-events: auto;
     will-change: transform;
   }
 

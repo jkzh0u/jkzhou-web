@@ -51,3 +51,8 @@ export async function decodeToCanvas(url: string, maxSide: number) {
         bitmap.close();
     }
 }
+
+export function textureUrl(src: string) {
+    const width = window.matchMedia('(max-width: 1000px)').matches ? 1080 : 1920;
+    return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
+}

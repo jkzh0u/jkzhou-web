@@ -419,21 +419,21 @@ const css = `
       gap: 0;
     }
 
-    .ct-left {
+    .ct-body > .ct-left {
       display: contents;
     }
 
-    .ct-intro {
+    .ct-body > .ct-right {
       order: 1;
-      margin-bottom: clamp(28px, 4vh, 40px);
-    }
-
-    .ct-right {
-      order: 2;
       margin-bottom: clamp(56px, 9vh, 80px);
     }
 
-    .ct-rows {
+    .ct-body .ct-intro {
+      order: 2;
+      margin-bottom: clamp(24px, 3.5vh, 36px);
+    }
+
+    .ct-body .ct-rows {
       order: 3;
     }
   }

@@ -24,14 +24,19 @@ export default function VideoListMobile({ videos }: { videos: ReelVideo[] }) {
 
     const activeRef = useRef(0);
     const mutedRef = useRef(true);
-    const reduceMotionRef = useRef(false);
+    const userPausedRef = useRef(false);
 
     const current = videos[active];
 
     useEffect(() => {
         const nav = document.querySelector<HTMLElement>('[data-site-nav]');
         rootRef.current?.style.setProperty('--nav-h', `${nav?.offsetHeight ?? 52}px`);
-        reduceMotionRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        const v = videoRef.current;
+        if (v) {
+            v.defaultMuted = true;
+            v.setAttribute('muted', '');
+        }
     }, []);
 
     useEffect(() => {
@@ -137,6 +142,15 @@ export default function VideoListMobile({ videos }: { videos: ReelVideo[] }) {
             setBuffering(false);
             setStarted(true);
         };
+        const onReady = () => {
+            if (v.paused && !userPausedRef.current) {
+                v.muted = mutedRef.current;
+                v.play().catch(() => {
+                    v.muted = true;
+                    v.play().catch(() => {});
+                });
+            }
+        };
         const onEnded = () => scrollToRow(activeRef.current + 1);
 
         v.addEventListener('play', onPlay);
@@ -144,6 +158,8 @@ export default function VideoListMobile({ videos }: { videos: ReelVideo[] }) {
         v.addEventListener('waiting', onWaiting);
         v.addEventListener('playing', onPlaying);
         v.addEventListener('canplay', onPlaying);
+        v.addEventListener('loadeddata', onReady);
+        v.addEventListener('canplay', onReady);
         v.addEventListener('ended', onEnded);
 
         return () => {
@@ -152,13 +168,16 @@ export default function VideoListMobile({ videos }: { videos: ReelVideo[] }) {
             v.removeEventListener('waiting', onWaiting);
             v.removeEventListener('playing', onPlaying);
             v.removeEventListener('canplay', onPlaying);
+            v.removeEventListener('loadeddata', onReady);
+            v.removeEventListener('canplay', onReady);
             v.removeEventListener('ended', onEnded);
         };
     }, [scrollToRow]);
 
     useEffect(() => {
         const v = videoRef.current;
-        if (!v || reduceMotionRef.current) return;
+        if (!v) return;
+        userPausedRef.current = false;
         v.muted = mutedRef.current;
         v.play().catch(() => {
             if (!v.muted) {
@@ -184,8 +203,13 @@ export default function VideoListMobile({ videos }: { videos: ReelVideo[] }) {
     const togglePlay = () => {
         const v = videoRef.current;
         if (!v) return;
-        if (v.paused) v.play().catch(() => {});
-        else v.pause();
+        if (v.paused) {
+            userPausedRef.current = false;
+            v.play().catch(() => {});
+        } else {
+            userPausedRef.current = true;
+            v.pause();
+        }
     };
 
     const toggleMute = () => {
@@ -230,6 +254,7 @@ export default function VideoListMobile({ videos }: { videos: ReelVideo[] }) {
                         className={`vm-video${started ? ' is-started' : ''}`}
                         src={current.src}
                         muted
+                        autoPlay
                         playsInline
                         preload="auto"
                         aria-label={current.title}
@@ -397,17 +422,15 @@ const css = `
     width: 52px;
     height: 52px;
     margin: -26px 0 0 -26px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.4);
     color: #fff;
-    backdrop-filter: blur(8px);
+    filter: drop-shadow(0 1px 8px rgba(0, 0, 0, 0.45));
     pointer-events: none;
     animation: vm-fade 0.3s ease both;
   }
 
   .vm-center svg {
-    width: 20px;
-    height: 20px;
+    width: 34px;
+    height: 34px;
   }
 
   .vm-play svg {
@@ -517,6 +540,7 @@ const css = `
     border-top: 1px solid var(--line);
     transition: opacity 0.4s ease;
     scroll-snap-align: start;
+    scroll-snap-stop: always;
     scroll-margin-top: calc(var(--stage-h, 400px) + 8px);
   }
 
@@ -533,7 +557,7 @@ const css = `
     grid-template-columns: minmax(0, 1fr);
     row-gap: 4px;
     width: 100%;
-    padding: 16px 0;
+    padding: 30px 0;
     border: 0;
     background: none;
     color: inherit;

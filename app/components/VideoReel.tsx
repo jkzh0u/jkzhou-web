@@ -115,7 +115,7 @@ export default function VideoReel({ videos }: { videos: ReelVideo[] }) {
                 const v = videoRefs.current[activeRef.current];
                 if (!v) return;
                 if (!inViewRef.current) v.pause();
-                else if (!userPausedRef.current && !reduceMotionRef.current) v.play().catch(() => {});
+                else if (!userPausedRef.current) v.play().catch(() => {});
             },
             { threshold: [0, 0.5, 1] }
         );
@@ -152,7 +152,7 @@ export default function VideoReel({ videos }: { videos: ReelVideo[] }) {
             v.preload = 'auto';
             v.muted = mutedRef.current;
 
-            if (reduceMotionRef.current || !inViewRef.current) return;
+            if (!inViewRef.current) return;
 
             v.play().catch(() => {
                 if (!v.muted) {
@@ -649,16 +649,15 @@ const css = `
     width: 64px;
     height: 64px;
     margin: -32px 0 0 -32px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(8px);
+    color: #fff;
+    filter: drop-shadow(0 1px 8px rgba(0, 0, 0, 0.45));
     pointer-events: none;
     animation: vr-fade 0.4s ease both;
   }
 
   .vr-center svg {
-    width: 24px;
-    height: 24px;
+    width: 38px;
+    height: 38px;
   }
 
   .vr-play svg {

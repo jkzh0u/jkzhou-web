@@ -6,6 +6,7 @@ import "./globals.css";
 import MyWork from "./components/MyWork";
 import AboutMe from "./components/AboutMe";
 import PhotographerHome from "./components/Photographerhome";
+import Experiences from "./components/Experiences";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { VideoItem } from "./components/Videomodal";
@@ -58,6 +59,8 @@ export default async function Home() {
         portrait={getR2Url("homepage/photoofme.jpg")}
         flipimage={getR2Url("homepage/cardbacking.jpg")}
       />
+
+      <Experiences />
 
 
     </div>

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { albums } from '@/data/albums';
-import { decodeToCanvas } from './decodeImage';
+import { decodeToCanvas, textureUrl } from './decodeImage';
 
 // An album index: big titles in a list, and a single WebGL "print" showing the cover of the
 // album you're on.
@@ -139,14 +139,6 @@ function RowContent({ item }: { item: (typeof items)[number] }) {
                 <span className="ix-title">{item.title}</span>
             </span>
             <span className="ix-sub">{item.subtitle}</span>
-            <span className="ix-go" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
-                    <path
-                        d="M2.07102 11.3494L0.963068 10.2415L9.2017 1.98864H2.83807L2.85227 0.454545H11.8438V9.46023H10.2955L10.3097 3.09659L2.07102 11.3494Z"
-                        fill="currentColor"
-                    />
-                </svg>
-            </span>
         </>
     );
 }
@@ -329,7 +321,7 @@ export default function PhotosShowcase() {
                 return;
             }
 
-            decodeToCanvas(url, maxSide)
+            decodeToCanvas(textureUrl(url), maxSide)
                 .then(({ canvas: c, width, height }) => {
                     onTexture(i, new THREE.CanvasTexture(c), width, height, c);
                     loadNext();
@@ -879,10 +871,6 @@ const css = `
     max-width: 18em;
   }
 
-  .ix-go {
-    display: none;
-  }
-
   /* ---- phones: pinned photo panel ---- */
 
   .ix-stage {
@@ -960,7 +948,7 @@ const css = `
     }
 
     .ix-link {
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: auto 1fr;
       column-gap: 10px;
       row-gap: 6px;
       padding: 16px 0;
@@ -999,41 +987,11 @@ const css = `
     .ix-list.has-active .ix-row:not(.is-active) {
       opacity: 0.45;
     }
-
-    .ix-go {
-      grid-column: 3;
-      grid-row: 1 / 3;
-      align-self: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
-      background: currentColor;
-      opacity: 0;
-      transform: scale(0.6);
-      transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .ix-go svg {
-      color: var(--background, #fff);
-    }
-
-    .ix-row.is-active .ix-go {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .ix-link:active .ix-go {
-      transform: scale(0.9);
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .ix-title { transform: none !important; transition: none; }
     .ix-link { opacity: 1; transition: none; }
     .ix-frame.is-loading::after { animation: none; }
-    .ix-go { transition: none; }
   }
 `;

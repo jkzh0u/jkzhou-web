@@ -9,6 +9,7 @@ type NavLink = {
 }
 
 const SITE_NAME = 'jackson zhou.'
+const CHINESE_NAME = '周子冸'
 
 // Left side
 const leftLinks: NavLink[] = [
@@ -100,6 +101,48 @@ const css = `
 
   html:has([data-pa-home]) .site-nav-name { opacity: 0; pointer-events: none; }
   html:has([data-pa-home]).pa-docked .site-nav-name { pointer-events: auto; }
+
+  .nm {
+    display: inline-grid;
+    justify-items: center;
+  }
+
+  .nm > span {
+    grid-area: 1 / 1;
+    transition:
+      opacity 0.35s ease,
+      transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .nm-zh {
+    opacity: 0;
+    transform: translateY(0.35em);
+    font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    letter-spacing: 0.08em;
+  }
+
+  @media (hover: hover) {
+    .site-nav-name:hover .nm-en,
+    .pa-logo:hover .nm-en,
+    html:has(.site-nav-name:hover) .pa-logo .nm-en {
+      opacity: 0;
+      transform: translateY(-0.35em);
+    }
+
+    .site-nav-name:hover .nm-zh,
+    .pa-logo:hover .nm-zh,
+    html:has(.site-nav-name:hover) .pa-logo .nm-zh {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nm > span {
+      transform: none !important;
+      transition: opacity 0.2s ease;
+    }
+  }
 `
 
 export function Navbar() {
@@ -120,7 +163,10 @@ export function Navbar() {
           </ul>
 
           <Link href="/" aria-label="Home" className="site-nav-name">
-            {SITE_NAME}
+            <span className="nm">
+              <span className="nm-en">{SITE_NAME}</span>
+              <span className="nm-zh" aria-hidden="true">{CHINESE_NAME}</span>
+            </span>
           </Link>
 
           <ul className="flex items-center">
