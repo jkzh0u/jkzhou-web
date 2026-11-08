@@ -90,13 +90,20 @@ export default function AlbumGallery({
 }) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
-  const [bigLoaded, setBigLoaded] = useState(false);
+  // which enlarged photo has finished loading, so stepping to a new one hides it until it's ready
+  const [loadedPhoto, setLoadedPhoto] = useState<string | null>(null);
+  const bigLoaded = selectedPhoto !== null && loadedPhoto === selectedPhoto;
   const closeTimer = useRef<number | null>(null);
 
   const columnCount = useSyncExternalStore(
     subscribe,
     getColumnCount,
     getServerColumnCount
+  );
+
+  const sorted = useMemo(
+    () => [...album.photos].sort(finderCollator.compare),
+    [album.photos]
   );
 
   // Masonry with left-to-right order: 1 2 3 across the top, then 4 5 6.
@@ -107,14 +114,22 @@ export default function AlbumGallery({
       () => []
     );
 
-    const sorted = [...album.photos].sort(finderCollator.compare);
-
     sorted.forEach((photo, index) => {
       cols[index % columnCount].push({ photo, index });
     });
 
     return cols;
-  }, [album.photos, columnCount]);
+  }, [sorted, columnCount]);
+
+  // Position of the open photo, and its neighbours (wrapping at the ends)
+  const selectedIndex = selectedPhoto ? sorted.indexOf(selectedPhoto) : -1;
+  const neighbours =
+    selectedIndex >= 0 && sorted.length > 1
+      ? [
+          sorted[(selectedIndex - 1 + sorted.length) % sorted.length],
+          sorted[(selectedIndex + 1) % sorted.length],
+        ]
+      : [];
 
   const open = useCallback((src: string) => {
     if (closeTimer.current !== null) {
@@ -123,7 +138,6 @@ export default function AlbumGallery({
     }
 
     setVisible(false);
-    setBigLoaded(false);
     setSelectedPhoto(src);
   }, []);
 
@@ -140,9 +154,23 @@ export default function AlbumGallery({
     }, 300);
   }, []);
 
-  // Fade in after mount, and close on Escape
+  // Step to the previous (-1) or next (+1) photo, wrapping at the ends
+  const step = useCallback(
+    (dir: 1 | -1) => {
+      setSelectedPhoto((current) => {
+        if (!current || sorted.length < 2) return current;
+        const i = sorted.indexOf(current);
+        return sorted[(i + dir + sorted.length) % sorted.length];
+      });
+    },
+    [sorted]
+  );
+
+  const isOpen = selectedPhoto !== null;
+
+  // Fade in after opening; Escape closes, left/right arrows step through the album
   useEffect(() => {
-    if (!selectedPhoto) return;
+    if (!isOpen) return;
 
     let raf2 = 0;
 
@@ -151,7 +179,12 @@ export default function AlbumGallery({
     });
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") {
+        close();
+      } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        step(e.key === "ArrowRight" ? 1 : -1);
+      }
     };
 
     window.addEventListener("keydown", onKey);
@@ -161,7 +194,7 @@ export default function AlbumGallery({
       cancelAnimationFrame(raf2);
       window.removeEventListener("keydown", onKey);
     };
-  }, [selectedPhoto, close]);
+  }, [isOpen, close, step]);
 
   // Clear any pending close timer on unmount
   useEffect(() => {
@@ -215,24 +248,40 @@ export default function AlbumGallery({
             <span className="ag-spin" aria-hidden="true" />
           )}
           <Image
+            // remount per photo so each one fades in on its own once loaded
+            key={selectedPhoto}
             src={selectedPhoto}
             alt={`${album.title} enlarged photo`}
             width={2400}
             height={1600}
             sizes="82vw"
-            onLoad={() => setBigLoaded(true)}
-            onError={() => setBigLoaded(true)}
+            onLoad={() => setLoadedPhoto(selectedPhoto)}
+            onError={() => setLoadedPhoto(selectedPhoto)}
             className={`
               h-auto max-h-[88vh] w-auto max-w-[82vw] object-contain shadow-2xl
               transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]
               motion-reduce:transition-none
               ${
                 visible && bigLoaded
-                  ? "scale-100 opacity-100"
+                  ? "ag-big-in scale-100 opacity-100"
                   : "scale-95 opacity-0"
               }
             `}
           />
+          {/* load the previous and next photos in the background so arrowing is instant */}
+          {neighbours.map((src) => (
+            <Image
+              key={`pre-${src}`}
+              src={src}
+              alt=""
+              aria-hidden="true"
+              width={2400}
+              height={1600}
+              sizes="82vw"
+              loading="eager"
+              className="pointer-events-none absolute h-px w-px opacity-0"
+            />
+          ))}
         </div>
       )}
     </>
@@ -291,6 +340,22 @@ const css = `
     animation: ag-rot 0.9s linear infinite;
   }
 
+  /* Each enlarged photo animates in once loaded. An animation rather than a transition, because
+     a preloaded photo loads before it is ever painted hidden, so a transition would have nothing
+     to start from. Same blur as the site-wide load-reveal (globals.css). Fill mode backwards, so
+     the closing fade (a transition) still works afterwards. */
+  .ag-big-in {
+    animation: ag-big-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+
+  @keyframes ag-big-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+      filter: blur(8px);
+    }
+  }
+
   @keyframes ag-shimmer {
     from { background-position: 120% 0; }
     to { background-position: -120% 0; }
@@ -302,7 +367,8 @@ const css = `
 
   @media (prefers-reduced-motion: reduce) {
     .ag-thumb::after,
-    .ag-spin {
+    .ag-spin,
+    .ag-big-in {
       animation: none;
     }
   }
