@@ -1586,6 +1586,7 @@ export default function HomeHero({
                             src={portraitSrc}
                             alt=""
                             decoding="async"
+                            draggable={false}
                             onLoad={(e) => {
                                 e.currentTarget.style.opacity = '1';
                             }}
@@ -1737,6 +1738,9 @@ const css = `
     object-fit: cover;
     opacity: 0;
     transition: opacity 0.5s ease;
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
 .pa-about-text {
