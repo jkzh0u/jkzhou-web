@@ -28,7 +28,14 @@ function Logo({
             }}
         >
             <span className="ex-logo">
-                <Image src={item.logo} alt="" fill sizes="(max-width: 760px) 180px, 280px" loading="eager" />
+                <Image
+                    src={item.logo}
+                    alt=""
+                    fill
+                    sizes="(max-width: 760px) 180px, 280px"
+                    loading="eager"
+                    draggable={false}
+                />
             </span>
         </span>
     );
@@ -172,6 +179,8 @@ const css = `
 
   .ex-marquee {
     overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
     width: 100%;
     padding: 8px 0;
   }
@@ -211,6 +220,7 @@ const css = `
 
   .ex-logo img {
     object-fit: contain;
+    -webkit-user-drag: none;
     /* grey, with each logo's own shading kept but squeezed towards a mid grey, so dark and
        light logos end up about the same tone */
     filter: grayscale(1) contrast(0.35);
