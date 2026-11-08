@@ -48,13 +48,11 @@ const COLUMNS = [
   ["3 / 2", "3 / 2", "2 / 3"],
 ];
 
-export default function AlbumLoading() {
+export default function AlbumGridSkeleton() {
   return (
-    <div className="al-wrap px-4 pt-24 sm:px-8 sm:pt-28 lg:px-28 lg:pt-32" aria-busy="true">
+    <div className="al-wrap" aria-busy="true">
       <style>{css}</style>
-      <span className="sr-only">loading album</span>
-      <div className="al-skel h-12 w-[min(70%,520px)]" />
-      <div className="al-skel mt-3 mb-7 h-5 w-40" />
+      <span className="sr-only">loading photos</span>
       <div className="flex items-start gap-5">
         {COLUMNS.map((col, c) => (
           <div

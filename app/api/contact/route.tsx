@@ -6,6 +6,10 @@ import ContactEmail from "../../components/ContactEmail";
 const FROM_ADDRESS = "Portfolio <hello@jkzhou.ca>";
 const TO_ADDRESS = "hello@jkzhou.ca";
 
+function emailBody(props: { name: string; email: string; subject: string; message: string }) {
+  return <ContactEmail {...props} />;
+}
+
 export async function POST(req: Request) {
   try {
     const apiKey = process.env.RESEND_API_KEY;
@@ -53,14 +57,12 @@ export async function POST(req: Request) {
 
       subject: `Contact form: ${subject.trim()}`,
 
-      react: (
-        <ContactEmail
-          name={name.trim()}
-          email={email.trim()}
-          subject={subject.trim()}
-          message={message.trim()}
-        />
-      ),
+      react: emailBody({
+        name: name.trim(),
+        email: email.trim(),
+        subject: subject.trim(),
+        message: message.trim(),
+      }),
     });
 
     if (error) {

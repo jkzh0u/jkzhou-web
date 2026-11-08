@@ -347,7 +347,7 @@ export default function VideoReel({ videos }: { videos: ReelVideo[] }) {
                             aria-label={`${video.title}, video ${i + 1} of ${total}`}
                         >
                             <div className="vr-stage">
-                            <p className="vr-count" aria-hidden="true">
+                            <p className="vr-count load-reveal" aria-hidden="true">
                                 {pad2(i + 1)} / {pad2(total)}
                             </p>
                             <div className="vr-ambient" aria-hidden="true">
@@ -422,7 +422,7 @@ export default function VideoReel({ videos }: { videos: ReelVideo[] }) {
                             </div>
                             </div>
                             <div className="vr-info">
-                                <div className="vr-text">
+                                <div className="vr-text load-reveal" style={{ animationDelay: '0.1s' }}>
                                     <p className="vr-meta">
                                         {video.tag} · {video.year}
                                     </p>
@@ -964,7 +964,10 @@ const css = `
     transform: translateX(-50%);
     opacity: 0.7;
     pointer-events: none;
-    animation: vr-bob 1.8s ease-in-out infinite;
+    /* load-reveal: the shared text reveal on load (globals.css) */
+    animation:
+      vr-bob 1.8s ease-in-out infinite,
+      load-reveal 1.2s ease 0.3s backwards;
   }
 
   .vr-hint svg {

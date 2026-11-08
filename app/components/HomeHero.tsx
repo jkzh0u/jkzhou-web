@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import * as THREE from 'three';
 import gsap from 'gsap';
-import { textureUrl } from './decodeImage';
+import { textureUrl } from './imageTextures';
 
-interface PhotographerHomeProps {
+interface HomeHeroProps {
     images?: string[];
     portrait?: string;
     name?: string;
@@ -50,6 +50,14 @@ interface Word {
 
 const MOBILE_QUERY = '(max-width: 1000px)';
 
+const subscribeMobile = (cb: () => void) => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    mq.addEventListener('change', cb);
+    return () => mq.removeEventListener('change', cb);
+};
+const getMobile = () => window.matchMedia(MOBILE_QUERY).matches;
+const getMobileOnServer = () => null;
+
 // Remembers that the intro has already played, so coming back to the homepage from another
 // page of the site (client-side navigation) doesn't replay it. Also stored in sessionStorage
 // so it survives full page loads within the same tab.
@@ -57,6 +65,13 @@ let introPlayed = false;
 const INTRO_SEEN_KEY = 'pa-intro-seen';
 
 const CONFIG = {
+    // about text: how blurred (px) a word is before it fades in
+    wordBlur: 8,
+    // the name fades in with the site-wide load-reveal (globals.css): keep this in sync with
+    // its duration. The photos only start covering it once it's in.
+    nameRevealDuration: 1.2,
+    // pause between the name being fully in and the first photo landing on it (s)
+    nameHold: 0.1,
     baseBend: 0.18,
     velocityBend: 0.8,
     bendSmoothing: 0.1,
@@ -116,7 +131,8 @@ const HERO_SLOTS_MOBILE: HeroSlot[] = [
 ];
 
 const ABOUT_PARAGRAPHS = [
-    "hi! i'm Jackson! a photographer, filmmaker, and creator based in toronto!",
+    "hi! i'm Jackson (周子冸), i am currently interested in medicine & systems design engineering",
+    "i am also a photographer, filmmaker, and creator based in toronto!",
     "lately i've been documenting my life through videos and photos! all of this started in 2023 when i first picked up photography using my dad's old camera.",
 ];
 
@@ -176,12 +192,12 @@ const easeInOut = (t: number) =>
         ? 2 * t * t
         : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
-export default function PhotographerHome({
+export default function HomeHero({
     images = [],
     portrait,
     name = 'jackson zhou.',
     flipimage,
-}: PhotographerHomeProps) {
+}: HomeHeroProps) {
     const rootRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const overlayRef = useRef<HTMLDivElement>(null);
@@ -192,21 +208,7 @@ export default function PhotographerHome({
     const validImages = images.filter(Boolean);
     const portraitSrc = portrait ?? validImages.at(-1);
 
-    const [isMobile, setIsMobile] = useState<boolean | null>(null);
-
-    useEffect(() => {
-        const mq = window.matchMedia(MOBILE_QUERY);
-
-        setIsMobile(mq.matches);
-
-        const onChange = (e: MediaQueryListEvent) => {
-            setIsMobile(e.matches);
-        };
-
-        mq.addEventListener('change', onChange);
-
-        return () => mq.removeEventListener('change', onChange);
-    }, []);
+    const isMobile = useSyncExternalStore(subscribeMobile, getMobile, getMobileOnServer);
 
     useEffect(() => {
         if (isMobile === null) return;
@@ -613,7 +615,7 @@ export default function PhotographerHome({
                     },
                     () => {
                         console.warn(
-                            `[PhotographerHome] Failed to load image: ${url}`
+                            `[HomeHero] Failed to load image: ${url}`
                         );
                     }
                 );
@@ -642,7 +644,7 @@ export default function PhotographerHome({
                 },
                 () => {
                     console.warn(
-                        `[PhotographerHome] Failed to load flip image: ${flipimage}`
+                        `[HomeHero] Failed to load flip image: ${flipimage}`
                     );
                 }
             );
@@ -661,9 +663,11 @@ export default function PhotographerHome({
 
         const words: Word[] = Array.from(
             about.querySelectorAll<HTMLElement>('[data-word]')
-        ).map((el, idx) => ({
+        ).map((el) => ({
             el,
-            idx,
+            // position within its own paragraph, so the reveal stagger doesn't keep growing
+            // as more paragraphs are added
+            idx: Number(el.dataset.word) || 0,
             docY: 0,
         }));
 
@@ -1260,6 +1264,7 @@ export default function PhotographerHome({
 
                 if (yv > vh * 1.2 || yv < -vh * 1.2) {
                     w.el.style.opacity = yv > 0 ? '0' : '1';
+                    w.el.style.filter = '';
                     continue;
                 }
 
@@ -1288,6 +1293,9 @@ export default function PhotographerHome({
                 );
 
                 w.el.style.opacity = String(reveal);
+                // comes into focus as it fades in (no filter at all once fully shown)
+                const blur = reduceMotion ? 0 : (1 - reveal) * CONFIG.wordBlur;
+                w.el.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : '';
 
                 w.el.style.transform =
                     `perspective(1000px) translate3d(0, ${shiftY + (1 - reveal) * 22}px, ${shiftZ}px) rotateX(${-a * k}rad)`;
@@ -1300,9 +1308,15 @@ export default function PhotographerHome({
         // INTRO TIMELINE
         // ---------------------------------------------------------
 
+        const tlDelay = isMobile ? 0.1 : 0.4;
         const tl = gsap.timeline({
-            delay: isMobile ? 0.1 : 0.4,
+            delay: tlDelay,
         });
+
+        // The name fades in with the site-wide load-reveal (a CSS animation on the .nm span,
+        // which starts the moment it renders). On the first visit the photos only start
+        // stacking over it once it's in.
+        const nameRevealEnd = reduceMotion ? 0 : CONFIG.nameRevealDuration;
 
         if (skipIntro) {
             // Coming from another page of the site: no intro. Go straight to the final layout.
@@ -1319,9 +1333,10 @@ export default function PhotographerHome({
                 lastScrollY = window.scrollY;
             }, 0.2);
         } else {
-            tl.to(overlay, {
+            // the white cover lifts straight away too, so the name can be seen fading in
+            gsap.to(overlay, {
                 opacity: 0,
-                duration: 0.6,
+                duration: 0.5,
                 ease: 'power2.out',
                 onComplete: () => {
                     overlay.style.display = 'none';
@@ -1356,7 +1371,9 @@ export default function PhotographerHome({
             } else {
                 const appearGap = reduceMotion ? 0.01 : 0.16;
                 const appearDur = reduceMotion ? 0.01 : 0.7;
-                const appearStart = 0.9;
+                // photos start covering the name only once it has fully faded in (nameRevealEnd
+                // is from page load; the timeline starts tlDelay later)
+                const appearStart = Math.max(0.3, nameRevealEnd + CONFIG.nameHold - tlDelay);
 
                 tiles.forEach((t, i) => {
                     tl.to(
@@ -1465,6 +1482,7 @@ export default function PhotographerHome({
             window.removeEventListener('resize', onResize);
 
             tl.kill();
+            gsap.killTweensOf(overlay);
             gsap.ticker.remove(update);
 
             tiles.forEach((t) => {
@@ -1524,7 +1542,7 @@ export default function PhotographerHome({
                         }
                     }}
                 >
-                    <span className="nm">
+                    <span className="nm load-reveal">
                         <span className="nm-en">{name}</span>
                         <span className="nm-zh" aria-hidden="true">周子冸</span>
                     </span>
@@ -1589,7 +1607,7 @@ export default function PhotographerHome({
                         {para.split(' ').map((word, wi) => (
                             <span key={wi}>
                                 <span
-                                    data-word
+                                    data-word={wi}
                                     className="pa-word"
                                 >
                                     {word}

@@ -150,3 +150,23 @@
   position: absolute;
   inset: 0;
 }
+/* THE site-wide fade-in: text fades in and comes into focus (from 8px blur, "ease", 1.2s).
+   Every reveal uses the load-reveal keyframes, so they all look the same. "backwards" so that
+   once it has played it stops applying, and the element's own opacity / transitions take over.
+   (HomeHero's CONFIG.nameRevealDuration must match the 1.2s.) */
+.load-reveal {
+  animation: load-reveal 1.2s ease backwards;
+}
+
+@keyframes load-reveal {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .load-reveal {
+    animation: none;
+  }
+}

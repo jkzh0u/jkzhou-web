@@ -70,16 +70,20 @@ function NavItem({ name, path, external, icon }: NavLink) {
 // 1) While the home page intro is playing it adds `pa-intro` to <html>, which hides the navbar;
 //    the navbar fades in when the intro removes it. On every other page the class is never set.
 //
-// 2) The centred name. It matches the name PhotographerHome shrinks into the navbar:
+// 2) The centred name. It matches the name HomeHero shrinks into the navbar:
 //    36px * 0.42 = 15.12px on desktop, 26px * 0.54 = 14.04px on mobile (<= 1000px).
-//    - On pages WITHOUT PhotographerHome it is simply visible.
-//    - On pages WITH PhotographerHome (it renders a [data-pa-home] marker) it is invisible, because
-//      PhotographerHome draws the name itself and animates it into this exact spot. It only becomes
-//      clickable once PhotographerHome adds `pa-docked` to <html> (name has reached the navbar),
+//    - On pages WITHOUT HomeHero it is simply visible.
+//    - On pages WITH HomeHero (it renders a [data-pa-home] marker) it is invisible, because
+//      HomeHero draws the name itself and animates it into this exact spot. It only becomes
+//      clickable once HomeHero adds `pa-docked` to <html> (name has reached the navbar),
 //      so a transparent click target sits right on top of the animated name.
 const css = `
-  .site-nav { transition: opacity 0.8s ease; }
-  html.pa-intro .site-nav { opacity: 0; pointer-events: none; }
+  /* fades in like the site-wide load-reveal (globals.css), as a transition */
+  .site-nav { transition: opacity 1.2s ease, filter 1.2s ease; }
+  html.pa-intro .site-nav { opacity: 0; filter: blur(8px); pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) {
+    html.pa-intro .site-nav { filter: none; }
+  }
 
   .site-nav-name {
     position: absolute;
@@ -124,14 +128,14 @@ const css = `
   @media (hover: hover) {
     .site-nav-name:hover .nm-en,
     .pa-logo:hover .nm-en,
-    html:has(.site-nav-name:hover) .pa-logo .nm-en {
+    html.pa-docked:has(.site-nav-name:hover) .pa-logo .nm-en {
       opacity: 0;
       transform: translateY(-0.35em);
     }
 
     .site-nav-name:hover .nm-zh,
     .pa-logo:hover .nm-zh,
-    html:has(.site-nav-name:hover) .pa-logo .nm-zh {
+    html.pa-docked:has(.site-nav-name:hover) .pa-logo .nm-zh {
       opacity: 1;
       transform: none;
     }

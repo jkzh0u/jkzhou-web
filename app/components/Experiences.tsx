@@ -1,26 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { experiences, type Experience } from '@/data/experiences';
 
 const REPEATS = 3;
+// how often (ms) to check which logo is in the middle of the marquee
+const CENTER_CHECK_MS = 100;
 
 function Logo({
     item,
     on,
-    copy,
     onShow,
 }: {
     item: Experience;
     on: boolean;
-    copy: boolean;
     onShow: (touch: boolean) => void;
 }) {
     return (
         <span
             className={`ex-item${on ? ' is-on' : ''}`}
-            data-copy={copy ? '' : undefined}
             onPointerEnter={(e) => {
                 if (e.pointerType === 'mouse') onShow(false);
             }}
@@ -35,17 +34,67 @@ function Logo({
     );
 }
 
+// Every rendered logo has a "slot": its position in the track, counting across both groups and
+// all repeats. slot % experiences.length is the experience it shows.
+const experienceAt = (slot: number) => experiences[slot % experiences.length];
+
 export default function Experiences() {
-    const [hovering, setHovering] = useState<number | null>(null);
-    const current = hovering === null ? null : experiences[hovering];
+    // the logo being hovered (or tapped), which overrides the centred one
+    const [hoverSlot, setHoverSlot] = useState<number | null>(null);
+    // the logo nearest the middle of the marquee
+    const [centerSlot, setCenterSlot] = useState<number | null>(null);
+    const marqueeRef = useRef<HTMLDivElement>(null);
+    const activeSlot = hoverSlot ?? centerSlot;
+    const current = activeSlot === null ? null : experienceAt(activeSlot);
+
+    useEffect(() => {
+        const marquee = marqueeRef.current;
+        if (!marquee) return;
+        const items = Array.from(marquee.querySelectorAll<HTMLElement>('.ex-item'));
+
+        let raf = 0;
+        let last = -Infinity;
+        const check = (now: number) => {
+            raf = requestAnimationFrame(check);
+            if (now - last < CENTER_CHECK_MS) return;
+            last = now;
+            const box = marquee.getBoundingClientRect();
+            const mid = box.left + box.width / 2;
+            let best = -1;
+            let bestDist = Infinity;
+            items.forEach((el, slot) => {
+                const r = el.getBoundingClientRect();
+                const d = Math.abs(r.left + r.width / 2 - mid);
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = slot;
+                }
+            });
+            if (best >= 0) setCenterSlot(best);
+        };
+
+        // only track while the section is on screen
+        const io = new IntersectionObserver(([entry]) => {
+            cancelAnimationFrame(raf);
+            if (entry.isIntersecting) {
+                last = -Infinity;
+                raf = requestAnimationFrame(check);
+            }
+        });
+        io.observe(marquee);
+        return () => {
+            io.disconnect();
+            cancelAnimationFrame(raf);
+        };
+    }, []);
 
     return (
         <section className="ex-root" aria-labelledby="experience-label">
             <style>{css}</style>
 
-            <p id="experience-label" className="ex-label">
-                experience
-            </p>
+            <h2 id="experience-label" className="ex-label">
+                side quests
+            </h2>
 
             <ul className="sr-only">
                 {experiences.map((item) => (
@@ -57,27 +106,30 @@ export default function Experiences() {
             </ul>
 
             <div
-                className={`ex-marquee${hovering !== null ? ' is-paused' : ''}`}
+                ref={marqueeRef}
+                className={`ex-marquee${hoverSlot !== null ? ' is-paused' : ''}`}
                 aria-hidden="true"
                 onPointerLeave={(e) => {
-                    if (e.pointerType === 'mouse') setHovering(null);
+                    if (e.pointerType === 'mouse') setHoverSlot(null);
                 }}
             >
                 <div className="ex-track">
                     {[0, 1].map((group) => (
                         <div key={group} className="ex-group">
                             {Array.from({ length: REPEATS }).flatMap((_, rep) =>
-                                experiences.map((item, i) => (
-                                    <Logo
-                                        key={`${rep}-${item.name}`}
-                                        item={item}
-                                        on={hovering === i}
-                                        copy={group > 0 || rep > 0}
-                                        onShow={(touch) =>
-                                            setHovering((h) => (touch && h === i ? null : i))
-                                        }
-                                    />
-                                ))
+                                experiences.map((item, i) => {
+                                    const slot = (group * REPEATS + rep) * experiences.length + i;
+                                    return (
+                                        <Logo
+                                            key={`${rep}-${item.name}`}
+                                            item={item}
+                                            on={activeSlot === slot}
+                                            onShow={(touch) =>
+                                                setHoverSlot((h) => (touch && h === slot ? null : slot))
+                                            }
+                                        />
+                                    );
+                                })
                             )}
                         </div>
                     ))}
@@ -102,22 +154,20 @@ const css = `
     --gap: clamp(44px, 6vw, 104px);
     position: relative;
     z-index: 2;
-    padding: 4vh 0 12vh;
+    padding: 10vh 0 12vh;
     background: var(--background, #fff);
     font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
     text-align: center;
   }
 
+  /* section heading, same display style as the contact page titles */
   .ex-label {
-    font-size: 10px;
+    margin: 0 0 clamp(28px, 3vw, 48px);
+    padding: 0 clamp(16px, 4vw, 64px);
+    font-size: clamp(28px, 3vw, 44px);
     font-weight: 600;
-    line-height: 1.6;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .ex-label {
-    margin: 0 0 32px;
+    line-height: 1;
+    letter-spacing: -0.025em;
   }
 
   .ex-marquee {
@@ -129,7 +179,7 @@ const css = `
   .ex-track {
     display: flex;
     width: max-content;
-    animation: ex-scroll 55s linear infinite;
+    animation: ex-scroll 90s linear infinite;
   }
 
   .ex-group {
@@ -161,8 +211,10 @@ const css = `
 
   .ex-logo img {
     object-fit: contain;
-    filter: brightness(0);
-    opacity: 0.4;
+    /* grey, with each logo's own shading kept but squeezed towards a mid grey, so dark and
+       light logos end up about the same tone */
+    filter: grayscale(1) contrast(0.35);
+    opacity: 0.75;
     transition:
       filter 0.45s ease,
       opacity 0.45s ease,
@@ -194,7 +246,8 @@ const css = `
 
   .ex-caption-body {
     max-width: 34em;
-    animation: ex-fade 0.4s ease both;
+    /* the site-wide fade-in (globals.css), sped up because it follows the pointer */
+    animation: load-reveal 0.45s ease both;
   }
 
   .ex-caption-name {
@@ -212,25 +265,8 @@ const css = `
     color: color-mix(in srgb, currentColor 65%, transparent);
   }
 
-  @keyframes ex-fade {
-    from { opacity: 0; }
-  }
 
   @media (prefers-reduced-motion: reduce) {
-    .ex-marquee {
-      overflow-x: auto;
-    }
-
-    .ex-track {
-      animation: none;
-      padding: 0 clamp(16px, 4vw, 64px);
-    }
-
-    .ex-group + .ex-group,
-    .ex-item[data-copy] {
-      display: none;
-    }
-
     .ex-caption-body {
       animation: none;
     }

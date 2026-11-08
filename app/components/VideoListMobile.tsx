@@ -318,11 +318,13 @@ export default function VideoListMobile({ videos }: { videos: ReelVideo[] }) {
                             onClick={() => (i === active ? togglePlay() : scrollToRow(i))}
                             aria-current={i === active ? 'true' : undefined}
                         >
-                            <span className="vm-title">{video.title}</span>
-                            <span className="vm-meta">
+                            <span className="vm-title load-reveal">{video.title}</span>
+                            <span className="vm-meta load-reveal" style={{ animationDelay: '0.08s' }}>
                                 {video.tag} · {video.year}
                             </span>
-                            <span className="vm-desc">{video.desc}</span>
+                            <span className="vm-desc load-reveal" style={{ animationDelay: '0.16s' }}>
+                                {video.desc}
+                            </span>
                         </button>
                     </li>
                 ))}

@@ -159,7 +159,7 @@ function Sky() {
   );
 }
 
-export default function Contact() {
+export default function ContactSection() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const leaveTimer = useRef<number | undefined>(undefined);
@@ -389,7 +389,7 @@ const css = `
 
   .ct-line {
     display: inline-block;
-    animation: ct-fade 1.4s ease both;
+    animation: load-reveal 1.4s ease both;
   }
 
   .ct-fade {
@@ -398,6 +398,13 @@ const css = `
 
   @keyframes ct-fade {
     from { opacity: 0; }
+  }
+
+  /* text fades in and comes into focus: the site-wide load-reveal (globals.css). Photos and
+     the form just fade. */
+  .ct-intro.ct-fade,
+  .ct-rows.ct-fade {
+    animation-name: load-reveal;
   }
 
   .ct-body {
@@ -718,7 +725,7 @@ const css = `
   .ct-sent-title,
   .ct-sent-sub,
   .ct-again {
-    animation: ct-fade 1s ease both;
+    animation: load-reveal 1s ease both;
   }
 
   .ct-sent-title { animation-delay: 0s; }

@@ -1,12 +1,22 @@
 import type { Metadata } from "next";
-import { Navbar } from "./components/nav";
-import Footer from "./components/footer";
+import { Navbar } from "./components/Navbar";
+import Footer from "./components/Footer";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeChecker } from "./components/ThemeChecker";
-import "leaflet/dist/leaflet.css";
 import SmoothScroll from "./components/SmoothScroll";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description:
+    "photographer, filmmaker and creator based in toronto.",
+};
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 

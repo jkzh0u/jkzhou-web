@@ -5,9 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import gsap from 'gsap';
 
-export type BillboardPhoto = { href: string; image: string };
+export type BannerPhoto = { href: string; image: string };
 
-function BillboardImage({ src, priority }: { src: string; priority: boolean }) {
+function BannerImage({ src, priority }: { src: string; priority: boolean }) {
     const [loaded, setLoaded] = useState(false);
 
     return (
@@ -34,11 +34,11 @@ const CONFIG = {
     smoothing: 0.08,
 } as const;
 
-function BillboardSet({
+function BannerSet({
     photos,
     setRef,
 }: {
-    photos: BillboardPhoto[];
+    photos: BannerPhoto[];
     setRef?: React.Ref<HTMLDivElement>;
 }) {
     return (
@@ -52,14 +52,14 @@ function BillboardSet({
 
                     className={`bb-item${i % 2 === 1 ? ' bb-item--wide' : ''}`}
                 >
-                    <BillboardImage src={item.image} priority={i < 4} />
+                    <BannerImage src={item.image} priority={i < 4} />
                 </Link>
             ))}
         </div>
     );
 }
 
-export default function PhotoBillboard({ photos }: { photos: BillboardPhoto[] }) {
+export default function AlbumBanner({ photos }: { photos: BannerPhoto[] }) {
     const rootRef = useRef<HTMLDivElement>(null);
     const trackRef = useRef<HTMLDivElement>(null);
     const setRef = useRef<HTMLDivElement>(null);
@@ -133,8 +133,8 @@ export default function PhotoBillboard({ photos }: { photos: BillboardPhoto[] })
         <div ref={rootRef} className="bb-root" aria-hidden="true">
             <style>{css}</style>
             <div ref={trackRef} className="bb-track">
-                <BillboardSet photos={photos} setRef={setRef} />
-                <BillboardSet photos={photos} />
+                <BannerSet photos={photos} setRef={setRef} />
+                <BannerSet photos={photos} />
             </div>
         </div>
     );

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { albums } from '@/data/albums';
-import { decodeToCanvas, textureUrl } from './decodeImage';
+import { decodeToCanvas, textureUrl } from './imageTextures';
 
 // An album index: big titles in a list, and a single WebGL "print" showing the cover of the
 // album you're on.
@@ -143,7 +143,7 @@ function RowContent({ item }: { item: (typeof items)[number] }) {
     );
 }
 
-export default function PhotosShowcase() {
+export default function AlbumIndex() {
     const rootRef = useRef<HTMLElement>(null);
     const listRef = useRef<HTMLOListElement>(null);
     const overRef = useRef<HTMLOListElement>(null);
@@ -311,7 +311,7 @@ export default function PhotosShowcase() {
                     },
                     undefined,
                     () => {
-                        console.warn(`[PhotosShowcase] Failed to load image: ${url}`);
+                        console.warn(`[AlbumIndex] Failed to load image: ${url}`);
                         loadNext();
                     }
                 );
@@ -829,12 +829,21 @@ const css = `
     padding: clamp(14px, 2.4vh, 26px) 0;
     color: inherit;
     text-decoration: none;
+    /* same look as the site-wide load-reveal (globals.css), as a transition */
     opacity: 0;
-    transition: opacity 1.2s ease;
+    filter: blur(8px);
+    transition:
+      opacity 1.2s ease,
+      filter 1.2s ease;
   }
 
   .ix-row.is-in .ix-link {
     opacity: 1;
+    filter: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ix-link { filter: none; }
   }
 
   .ix-num {

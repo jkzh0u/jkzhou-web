@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import * as THREE from 'three';
 import gsap from 'gsap';
-import { decodeToCanvas, textureUrl } from './decodeImage';
+import { decodeToCanvas, textureUrl } from './imageTextures';
 
 interface RingFooterProps {
     images?: string[];
@@ -13,9 +13,11 @@ interface RingFooterProps {
 }
 
 const CONFIG = {
-    // ring tilt: X tips the back of the ring up, Z raises the right side (like the sketch)
-    tiltX: 0.5,
-    tiltZ: 0.2,
+    // ring tilt: X tips the back of the ring up, Z raises the right side (like the sketch).
+    // The ring is as flat as it can be while "contact me" still fits at full size in the
+    // opening, somewhere between these two. Wide screens end up flat, narrow ones taller.
+    tiltX: { flat: 0.32, steep: 0.62 },
+    tiltZ: { flat: 0.1, steep: 0.2 },
     mouseTilt: 0.08,
     mouseSmoothing: 0.05,
 
@@ -132,7 +134,7 @@ export default function RingFooter({
         let tileW = 0;
 
         const MAX_TILE_SIZE = 1.15; // biggest per-photo size factor (see tile.size)
-        const tileWFor = (R: number) => Math.min(Math.max(R * 0.26, 46), 170);
+        const tileWFor = (R: number) => Math.min(Math.max(R * 0.26, 46), 110);
         const cameraDistFor = (R: number) => Math.max(1400, R * 3.6);
 
         // Where a photo at angle theta lands on screen: centre (x right, y up, px from the ring
@@ -162,13 +164,23 @@ export default function RingFooter({
             };
         };
 
+        // the ring's resting tilt (see CONFIG.tiltX); layout() picks it
+        const tilt: { x: number; z: number } = { x: CONFIG.tiltX.flat, z: CONFIG.tiltZ.flat };
         // every tilt the mouse can push the ring to
-        const tilts = [-1, 1].flatMap((my) =>
-            [-1, 1].map((mx) => ({
-                a: CONFIG.tiltX - my * CONFIG.mouseTilt,
-                b: CONFIG.tiltZ + mx * CONFIG.mouseTilt * 0.6,
-            }))
-        );
+        let tilts: { a: number; b: number }[] = [];
+
+        // flatness: 1 = flattest ring, 0 = steepest
+        const setTilt = (flatness: number) => {
+            tilt.x = lerp(CONFIG.tiltX.steep, CONFIG.tiltX.flat, flatness);
+            tilt.z = lerp(CONFIG.tiltZ.steep, CONFIG.tiltZ.flat, flatness);
+
+            tilts = [-1, 1].flatMap((my) =>
+                [-1, 1].map((mx) => ({
+                    a: tilt.x - my * CONFIG.mouseTilt,
+                    b: tilt.z + mx * CONFIG.mouseTilt * 0.6,
+                }))
+            );
+        };
         const SAMPLES = 96;
 
         // The ring's on-screen bounding box (any photo, any angle, any mouse tilt).
@@ -191,30 +203,97 @@ export default function RingFooter({
 
         const label = labelRef.current;
 
+        // Biggest ring (at the current tilt) that fits the width and the screen height
+        // (bisection: the ring's height grows with its radius).
+        const fitRadius = (maxH: number) => {
+            let lo = 0;
+            // cap keeps the ring (and its photos) from getting huge on big screens
+            let hi = Math.min(w * 0.42, 520);
+
+            if (ringBounds(hi).top - ringBounds(hi).bottom <= maxH) return hi;
+
+            for (let i = 0; i < 30; i++) {
+                const mid = (lo + hi) / 2;
+                const bb = ringBounds(mid);
+                if (bb.top - bb.bottom > maxH) hi = mid;
+                else lo = mid;
+            }
+            return lo;
+        };
+
+        // Where "contact me" can go at this font size, on a ring of radius R at the current
+        // tilt, with no front photo (any angle, any mouse tilt) ever passing over it: the
+        // centre of the ring's opening, or nudged at most 15% of the opening's height from
+        // it. null if it doesn't fit.
+        const labelSpot = (R: number, size: number, widthPerPx: number) => {
+            const tw = tileWFor(R);
+            const D = cameraDistFor(R);
+
+            // the opening: between the bottom of the back photo and the top of the front one
+            const back = project(R, tw, D, tilt.x, tilt.z, -Math.PI / 2);
+            const front = project(R, tw, D, tilt.x, tilt.z, Math.PI / 2);
+            const holeCentre = (back.y - back.halfH + front.y + front.halfH) / 2;
+            const holeH = back.y - back.halfH - (front.y + front.halfH);
+
+            const twMax = tw * MAX_TILE_SIZE;
+            const margin = 6;
+            const halfW = (widthPerPx * size) / 2 + margin;
+            const halfH = (size * 0.8) / 2 + margin; // visible glyph height ≈ 0.8em
+
+            const clear = (labelY: number) => {
+                for (const { a, b } of tilts) {
+                    for (let i = 0; i < SAMPLES; i++) {
+                        const p = project(R, twMax, D, a, b, (i / SAMPLES) * Math.PI * 2);
+                        if (p.z < 0) continue; // back photos are behind the text: fine
+
+                        if (
+                            Math.abs(p.x) < p.halfW + halfW &&
+                            Math.abs(p.y - labelY) < p.halfH + halfH
+                        ) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            };
+
+            const maxNudge = Math.max(0, holeH * 0.15);
+            for (let dy = 0; dy <= maxNudge; dy += 2) {
+                if (clear(holeCentre + dy)) return holeCentre + dy;
+                if (clear(holeCentre - dy)) return holeCentre - dy;
+            }
+            return null;
+        };
+
+        const TILT_STEPS = 12;
+
         const layout = () => {
             w = root.clientWidth;
             const viewportH = window.innerHeight;
 
             // breathing room above and below the ring
             const pad = Math.round(Math.min(64, Math.max(28, w * 0.04)));
-
-            // Biggest ring that fits the width and the screen height (bisection: the ring's
-            // height grows with its radius).
-            let lo = 0;
-            // cap keeps the ring (and its photos) from getting huge on big screens
-            let hi = Math.min(w * 0.42, 420);
             const maxH = viewportH - pad * 2;
 
-            if (ringBounds(hi).top - ringBounds(hi).bottom > maxH) {
-                for (let i = 0; i < 30; i++) {
-                    const mid = (lo + hi) / 2;
-                    const bb = ringBounds(mid);
-                    if (bb.top - bb.bottom > maxH) hi = mid;
-                    else lo = mid;
-                }
-                radius = lo;
-            } else {
-                radius = hi;
+            // the label's full (CSS) size, and its width per px of font size
+            let cssSize = 40;
+            let widthPerPx = 5;
+            if (label) {
+                label.style.fontSize = '';
+                cssSize = parseFloat(getComputedStyle(label).fontSize) || 40;
+                widthPerPx = label.offsetWidth / cssSize;
+            }
+
+            // The flattest ring that still fits "contact me" at full size in its opening. Wide
+            // screens stay flat and fill the width; narrower ones tip up only as much as needed.
+            let labelY: number | null = null;
+            for (let i = TILT_STEPS; i >= 0; i--) {
+                setTilt(i / TILT_STEPS);
+                radius = fitRadius(maxH);
+                if (!label) break;
+
+                labelY = labelSpot(radius, cssSize, widthPerPx);
+                if (labelY !== null) break;
             }
 
             tileW = tileWFor(radius);
@@ -243,61 +322,17 @@ export default function RingFooter({
 
             if (!label) return;
 
-            // "contact me" goes in the middle of the ring's opening: between the bottom of the
-            // back photo and the top of the front photo.
-            const base = { a: CONFIG.tiltX, b: CONFIG.tiltZ };
-            const back = project(radius, tileW, D, base.a, base.b, -Math.PI / 2);
-            const front = project(radius, tileW, D, base.a, base.b, Math.PI / 2);
-            const holeCentre = (back.y - back.halfH + front.y + front.halfH) / 2;
-            const holeH = back.y - back.halfH - (front.y + front.halfH);
-
-            // Then pick the biggest font size where no front photo (any angle, any mouse
-            // tilt) can ever pass over the text.
-            const twMax = tileW * MAX_TILE_SIZE;
-            const margin = 6;
-
-            label.style.fontSize = '';
-            const cssSize = parseFloat(getComputedStyle(label).fontSize) || 40;
-            const widthPerPx = label.offsetWidth / cssSize;
-
-            const clear = (size: number, labelY: number) => {
-                const halfW = (widthPerPx * size) / 2 + margin;
-                const halfH = (size * 0.8) / 2 + margin; // visible glyph height ≈ 0.8em
-
-                for (const { a, b } of tilts) {
-                    for (let i = 0; i < SAMPLES; i++) {
-                        const p = project(radius, twMax, D, a, b, (i / SAMPLES) * Math.PI * 2);
-                        if (p.z < 0) continue; // back photos are behind the text: fine
-
-                        if (
-                            Math.abs(p.x) < p.halfW + halfW &&
-                            Math.abs(p.y - labelY) < p.halfH + halfH
-                        ) {
-                            return false;
-                        }
-                    }
-                }
-                return true;
-            };
-
-            // Largest size that fits with the text at the centre of the opening, or nudged at
-            // most 15% of the opening's height up or down from it.
-            const findY = (size: number) => {
-                const maxNudge = Math.max(0, holeH * 0.15);
-                for (let dy = 0; dy <= maxNudge; dy += 2) {
-                    if (clear(size, holeCentre + dy)) return holeCentre + dy;
-                    if (clear(size, holeCentre - dy)) return holeCentre - dy;
-                }
-                return null;
-            };
-
+            // even the steepest ring is too tight: shrink the text until it fits
             let size = cssSize;
-            let labelY = findY(size);
             while (labelY === null && size > 16) {
                 size *= 0.97;
-                labelY = findY(size);
+                labelY = labelSpot(radius, size, widthPerPx);
             }
-            if (labelY === null) labelY = holeCentre;
+            if (labelY === null) {
+                const back = project(radius, tileW, D, tilt.x, tilt.z, -Math.PI / 2);
+                const front = project(radius, tileW, D, tilt.x, tilt.z, Math.PI / 2);
+                labelY = (back.y - back.halfH + front.y + front.halfH) / 2;
+            }
 
             label.style.fontSize = `${size.toFixed(1)}px`;
             // screen y points down, and the picture was shifted by centreY
@@ -559,8 +594,8 @@ export default function RingFooter({
             mouse.x += (target.x - mouse.x) * CONFIG.mouseSmoothing;
             mouse.y += (target.y - mouse.y) * CONFIG.mouseSmoothing;
 
-            const a = CONFIG.tiltX - mouse.y * CONFIG.mouseTilt;
-            const b = CONFIG.tiltZ + mouse.x * CONFIG.mouseTilt * 0.6;
+            const a = tilt.x - mouse.y * CONFIG.mouseTilt;
+            const b = tilt.z + mouse.x * CONFIG.mouseTilt * 0.6;
             const sinA = Math.sin(a);
             const cosA = Math.cos(a);
             const sinB = Math.sin(b);
@@ -706,15 +741,5 @@ const css = `
     white-space: nowrap;
     color: inherit;
     text-decoration: none;
-    background-image: linear-gradient(currentColor, currentColor);
-    background-repeat: no-repeat;
-    background-position: 0 100%;
-    background-size: 0% 2px;
-    transition: background-size 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .rf-label:hover,
-  .rf-label:focus-visible {
-    background-size: 100% 2px;
   }
 `;

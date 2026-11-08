@@ -5,8 +5,8 @@ import VideosView from "../components/VideosView";
 import type { ReelVideo } from "../components/VideoReel";
 
 export const metadata: Metadata = {
-  title: "jackson zhou: videos",
-  description: "vlogs and short films by jackson zhou.",
+  title: "videos",
+  description: "vlogs and short films by jackson zhou, shot in toronto and beyond.",
 };
 
 async function getVideos(): Promise<ReelVideo[]> {
