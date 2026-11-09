@@ -10,7 +10,9 @@ import { decodeToCanvas, textureUrl } from './imageTextures';
 
 // An album index: big titles in a list, and a single WebGL "print" showing the cover of the
 // album you're on.
-//   desktop: the print trails the cursor, bends with its speed and morphs between covers.
+//   desktop: with the cursor on the list, the print trails it, bends with its speed and
+//            morphs between covers. Otherwise it rests in the empty space on the right,
+//            showing the album crossing the middle of the screen as you scroll.
 //            Text crossing the print switches to light or dark depending on the photo.
 //   phones:  the print sits in a panel pinned under the navbar; the album scrolling past
 //            just below the panel is the active one.
@@ -36,6 +38,10 @@ const CONFIG = {
     revealDuration: 0.6,
     openDuration: 0.8,
     lightPhoto: 0.55, // average brightness above this counts as a light photo
+    // desktop, cursor off the list: where the print rests
+    parkWidth: { vw: 0.24, min: 240, max: 440 }, // px, from the window width
+    parkRightGap: 300, // px between the print's right edge and the list's, leaves room for subtitles
+    parkLine: 0.5, // the album whose row has crossed this height (fraction of the window) is shown
 } as const;
 
 const TOUCH_QUERY = '(hover: none), (max-width: 760px)';
@@ -396,8 +402,8 @@ export default function AlbumIndex() {
 
             if (active >= 0) forRow(active, (el) => el.classList.remove('is-active'));
             active = i;
-            list.classList.toggle('has-active', i >= 0);
-            over?.classList.toggle('has-active', i >= 0);
+            // desktop dims the other rows only while hovering (see the frame loop)
+            if (touch) list.classList.toggle('has-active', i >= 0);
 
             if (i >= 0) {
                 forRow(i, (el) => el.classList.add('is-active'));
@@ -480,6 +486,13 @@ export default function AlbumIndex() {
 
         const pos = { x: vw / 2, y: vh / 2 };
         const vel = { x: 0, y: 0 };
+        const restW = () =>
+            clamp(vw * CONFIG.parkWidth.vw, CONFIG.parkWidth.min, CONFIG.parkWidth.max);
+        // desktop: resting spot, kept up to date by pickParked
+        const parked = { x: vw / 2, y: vh / 2, w: restW() };
+        let sizeW = parked.w; // desktop: current print width, eased between hover and resting sizes
+        let hovering = false; // desktop: cursor is on the list
+        let dimmed = false;
         let lastScrollY = window.scrollY;
         let overColor = '';
         let overHidden = false;
@@ -503,6 +516,33 @@ export default function AlbumIndex() {
             return next;
         };
 
+        // desktop, cursor off the list: the album whose row has crossed the reading line, with
+        // the print resting on the right, level with the middle of the window but kept inside the
+        // list. -1 (hidden) while the list isn't across the middle of the window.
+        const pickParked = () => {
+            const lr = list.getBoundingClientRect();
+            const line = vh * CONFIG.parkLine;
+            if (lr.top > line || lr.bottom < line) return -1;
+
+            let next = 0;
+            rows.forEach((row, i) => {
+                if (row.getBoundingClientRect().top <= line) next = i;
+            });
+
+            const w = restW();
+            const h = w / printAspect;
+            parked.w = w;
+            parked.x = Math.max(lr.left + w / 2, lr.right - CONFIG.parkRightGap - w / 2);
+            parked.y = clamp(vh / 2, lr.top + h / 2, Math.max(lr.top + h / 2, lr.bottom - h / 2));
+            return next;
+        };
+
+        const pickDesktop = () => {
+            const i = pickActiveDesktop();
+            hovering = i >= 0;
+            return hovering ? i : pickParked();
+        };
+
         const pickActiveTouch = () => {
             // the last row whose top has passed a "reading line" a little below the panel
             const fr = frame!.getBoundingClientRect();
@@ -521,7 +561,16 @@ export default function AlbumIndex() {
             const scrollDelta = scrollY - lastScrollY;
             lastScrollY = scrollY;
 
-            if (!opening) setActive(touch ? pickActiveTouch() : pickActiveDesktop());
+            if (!opening) setActive(touch ? pickActiveTouch() : pickDesktop());
+
+            if (!touch) {
+                const dim = hovering && active >= 0;
+                if (dim !== dimmed) {
+                    list.classList.toggle('has-active', dim);
+                    over?.classList.toggle('has-active', dim);
+                    dimmed = dim;
+                }
+            }
 
             const u = material.uniforms;
             const motion = reduceMotion ? 0 : 1;
@@ -539,30 +588,35 @@ export default function AlbumIndex() {
                 (u.uVel.value as THREE.Vector2).set(0, -vel.y);
                 u.uZoom.value = 1 + Math.min(Math.abs(vel.y), 0.5) * 0.2;
             } else {
-                // ---- desktop: the print trails the cursor ----
+                // ---- desktop: the print trails the cursor, or rests on the right ----
                 const baseW = clamp(vw * 0.22, 220, 400);
+                const targetX = hovering ? pointer.x : parked.x;
+                const targetY = hovering ? pointer.y : parked.y;
+                const targetW = hovering ? baseW : parked.w;
 
                 // appear right where it's needed instead of flying in from somewhere else
                 if (state.reveal < 0.02 && !opening) {
-                    pos.x = pointer.x;
-                    pos.y = pointer.y;
+                    pos.x = targetX;
+                    pos.y = targetY;
+                    sizeW = targetW;
                 }
 
                 const prevX = pos.x;
                 const prevY = pos.y;
                 const follow = reduceMotion ? 1 : CONFIG.follow;
-                pos.x += (pointer.x - pos.x) * follow;
-                pos.y += (pointer.y - pos.y) * follow;
+                pos.x += (targetX - pos.x) * follow;
+                pos.y += (targetY - pos.y) * follow;
+                sizeW += (targetW - sizeW) * follow;
 
-                const rawVx = ((pos.x - prevX) / baseW) * motion;
-                const rawVy = ((pos.y - prevY) / baseW) * motion;
+                const rawVx = ((pos.x - prevX) / sizeW) * motion;
+                const rawVy = ((pos.y - prevY) / sizeW) * motion;
                 vel.x += (clamp(rawVx, -0.6, 0.6) - vel.x) * CONFIG.velocitySmoothing;
                 vel.y += (clamp(rawVy, -0.6, 0.6) - vel.y) * CONFIG.velocitySmoothing;
 
                 // open animation: from the print to full screen
                 const o = state.open;
                 const coverW = Math.max(vw, vh * printAspect) * 1.04;
-                const w = lerp(baseW, coverW, o) * lerp(0.8, 1, state.reveal);
+                const w = lerp(sizeW, coverW, o) * lerp(0.8, 1, state.reveal);
                 const h = w / printAspect;
                 const cx = lerp(pos.x, vw / 2, o);
                 const cy = lerp(pos.y, vh / 2, o);
@@ -664,7 +718,7 @@ export default function AlbumIndex() {
     }, [touch, router]);
 
     const head = (
-        <div className="ix-head">
+        <div className="ix-head load-reveal" style={{ animationDelay: '0.2s' }}>
             <span>photo vault</span>
         </div>
     );
@@ -682,7 +736,7 @@ export default function AlbumIndex() {
             {touch === true && (
                 <div className="ix-stage">
                     {head}
-                    <div ref={frameRef} className="ix-frame is-loading">
+                    <div ref={frameRef} className="ix-frame media-reveal is-loading">
                         <canvas ref={frameCanvasRef} aria-hidden="true" />
                     </div>
                 </div>

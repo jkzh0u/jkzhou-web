@@ -246,9 +246,15 @@ export default function VideoListMobile({ videos }: { videos: ReelVideo[] }) {
         <section ref={rootRef} className="vm-root" data-lenis-prevent>
             <style>{css}</style>
             <div ref={stageRef} className="vm-stage">
-                <div ref={panelRef} className="vm-panel" onClick={togglePlay}>
+                <div ref={panelRef} className="vm-panel media-reveal" onClick={togglePlay}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img key={current.poster} className="vm-poster" src={current.poster} alt="" />
+                    <img
+                        key={current.poster}
+                        className="vm-poster"
+                        src={current.poster}
+                        alt=""
+                        onLoad={(e) => e.currentTarget.classList.add('is-loaded')}
+                    />
                     <video
                         ref={videoRef}
                         className={`vm-video${started ? ' is-started' : ''}`}
@@ -285,7 +291,7 @@ export default function VideoListMobile({ videos }: { videos: ReelVideo[] }) {
                         <span ref={fillRef} className="vm-fill" />
                     </div>
                 </div>
-                <div className="vm-controls">
+                <div className="vm-controls load-reveal" style={{ animationDelay: '0.15s' }}>
                     <span className="vm-now">{current.title}</span>
                     <div className="vm-buttons">
                         <button type="button" className="vm-btn" onClick={toggleMute} aria-pressed={!muted}>
@@ -389,8 +395,14 @@ const css = `
     object-fit: cover;
   }
 
+  /* fades in once loaded (and again for each video's poster) instead of popping in */
   .vm-poster {
-    animation: vm-fade 0.5s ease both;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+
+  .vm-poster.is-loaded {
+    opacity: 1;
   }
 
   .vm-video {
@@ -605,7 +617,6 @@ const css = `
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .vm-poster,
     .vm-center,
     .vm-spin svg {
       animation: none;

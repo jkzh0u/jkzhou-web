@@ -165,8 +165,22 @@
   }
 }
 
+/* The same reveal for photos and videos: also settles from slightly smaller. */
+.media-reveal {
+  animation: media-reveal 1.2s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes media-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+    filter: blur(8px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .load-reveal {
+  .load-reveal,
+  .media-reveal {
     animation: none;
   }
 }

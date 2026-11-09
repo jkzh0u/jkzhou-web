@@ -3,6 +3,17 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Lenis from "lenis";
+import gsap from "gsap";
+
+let activeLenis: Lenis | null = null;
+
+// The exact scroll position for this frame. window.scrollY only moves in whole pixels, which
+// shows up as stepping in anything drawn from it during the slow end of a smooth scroll.
+export function getScrollY() {
+  return activeLenis?.isScrolling === "smooth"
+    ? activeLenis.animatedScroll
+    : window.scrollY;
+}
 
 export default function SmoothScroll() {
   const lenisRef = useRef<Lenis | null>(null);
@@ -16,13 +27,12 @@ export default function SmoothScroll() {
       touchMultiplier: 1.2,
     });
     lenisRef.current = lenis;
+    activeLenis = lenis;
 
-    let rafId: number;
-    function raf(time: number) {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
-    }
-    rafId = requestAnimationFrame(raf);
+    // Runs on GSAP's ticker, ahead of every other listener, so anything animating on the ticker
+    // sees this frame's scroll position instead of the previous frame's.
+    const tick = () => lenis.raf(performance.now());
+    gsap.ticker.add(tick, false, true);
 
     // Re-measure whenever the page height changes
     const ro = new ResizeObserver(() => lenis.resize());
@@ -33,11 +43,12 @@ export default function SmoothScroll() {
     window.addEventListener("load", onLoad);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      gsap.ticker.remove(tick);
       ro.disconnect();
       window.removeEventListener("load", onLoad);
       lenis.destroy();
       lenisRef.current = null;
+      activeLenis = null;
     };
   }, []);
 

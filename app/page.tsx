@@ -4,7 +4,7 @@ import Experiences from "./components/Experiences";
 import { getR2Url } from "@/lib/r2";
 
 export const metadata: Metadata = {
-  title: { absolute: "jackson zhou. photographer and filmmaker in toronto" },
+  title: { absolute: "jackson zhou." },
   description:
     "jackson zhou is a photographer, filmmaker and creator based in toronto, documenting life through photos and videos.",
 };

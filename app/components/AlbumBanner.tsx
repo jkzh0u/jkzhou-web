@@ -27,6 +27,9 @@ function BannerImage({ src, priority }: { src: string; priority: boolean }) {
     );
 }
 
+// seconds between each banner photo's reveal on load
+const BANNER_STAGGER = 0.07;
+
 const CONFIG = {
     baseSpeed: 45,
     scrollBoost: 0.45,
@@ -50,7 +53,9 @@ function BannerSet({
                     tabIndex={-1}
                     draggable={false}
 
-                    className={`bb-item${i % 2 === 1 ? ' bb-item--wide' : ''}`}
+                    className={`bb-item media-reveal${i % 2 === 1 ? ' bb-item--wide' : ''}`}
+                    // the shared photo reveal (globals.css), left to right
+                    style={{ animationDelay: `${i * BANNER_STAGGER}s` }}
                 >
                     <BannerImage src={item.image} priority={i < 4} />
                 </Link>

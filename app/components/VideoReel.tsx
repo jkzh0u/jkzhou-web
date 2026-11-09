@@ -346,13 +346,18 @@ export default function VideoReel({ videos }: { videos: ReelVideo[] }) {
                             style={{ '--ar': video.aspectRatio ?? 16 / 9 } as CSSProperties}
                             aria-label={`${video.title}, video ${i + 1} of ${total}`}
                         >
-                            <div className="vr-stage">
+                            <div className="vr-stage media-reveal">
                             <p className="vr-count load-reveal" aria-hidden="true">
                                 {pad2(i + 1)} / {pad2(total)}
                             </p>
                             <div className="vr-ambient" aria-hidden="true">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={video.poster} alt="" loading={near ? 'eager' : 'lazy'} />
+                                <img
+                                    src={video.poster}
+                                    alt=""
+                                    loading={near ? 'eager' : 'lazy'}
+                                    onLoad={(e) => e.currentTarget.classList.add('is-loaded')}
+                                />
                                 <canvas
                                     ref={(el) => {
                                         glowRefs.current[i] = el;
@@ -374,6 +379,7 @@ export default function VideoReel({ videos }: { videos: ReelVideo[] }) {
                                     src={video.poster}
                                     alt=""
                                     loading={near ? 'eager' : 'lazy'}
+                                    onLoad={(e) => e.currentTarget.classList.add('is-loaded')}
                                 />
                                 <video
                                     ref={(el) => {
@@ -429,7 +435,7 @@ export default function VideoReel({ videos }: { videos: ReelVideo[] }) {
                                     <h2 className="vr-title">{video.title}</h2>
                                     <p className="vr-desc">{video.desc}</p>
                                 </div>
-                                <div className="vr-controls">
+                                <div className="vr-controls load-reveal" style={{ animationDelay: '0.2s' }}>
                                     <button
                                         type="button"
                                         className="vr-btn vr-btn--label"
@@ -480,7 +486,8 @@ export default function VideoReel({ videos }: { videos: ReelVideo[] }) {
                     <button
                         key={video.src}
                         type="button"
-                        className={i === active ? 'is-active' : ''}
+                        className={`load-reveal${i === active ? ' is-active' : ''}`}
+                        style={{ animationDelay: `${0.15 + i * 0.05}s` }}
                         aria-current={i === active ? 'true' : undefined}
                         onClick={() => go(i)}
                     >
@@ -488,7 +495,7 @@ export default function VideoReel({ videos }: { videos: ReelVideo[] }) {
                     </button>
                 ))}
             </nav>
-            <div className="vr-arrows">
+            <div className="vr-arrows load-reveal" style={{ animationDelay: '0.3s' }}>
                 <button
                     type="button"
                     className={`vr-arrow${active === 0 ? ' is-disabled' : ''}`}
@@ -582,6 +589,18 @@ const css = `
     transform: translateZ(0);
   }
 
+  /* posters fade in once loaded instead of popping in */
+  .vr-ambient img,
+  .vr-poster {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+
+  .vr-ambient img.is-loaded,
+  .vr-poster.is-loaded {
+    opacity: 1;
+  }
+
   .vr-ambient img,
   .vr-ambient canvas {
     position: absolute;
@@ -605,7 +624,8 @@ const css = `
     width: 100%;
     aspect-ratio: var(--ar);
     overflow: hidden;
-    background: #000;
+    /* soft placeholder until the poster arrives */
+    background: color-mix(in srgb, currentColor 6%, transparent);
     cursor: pointer;
   }
 
@@ -631,6 +651,7 @@ const css = `
     width: 100%;
     height: 100%;
     aspect-ratio: auto;
+    background: #000;
     box-shadow: none;
   }
 
