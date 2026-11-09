@@ -2,16 +2,62 @@ import type { Metadata } from "next";
 import HomeHero from "./components/HomeHero";
 import Experiences from "./components/Experiences";
 import { getR2Url } from "@/lib/r2";
+import { pageMetadata } from "@/lib/seo";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: { absolute: "jackson zhou." },
-  description:
-    "jackson zhou is a photographer, filmmaker and creator based in toronto, documenting life through photos and videos.",
+const description =
+  "jackson zhou is a photographer, filmmaker and creator based in toronto, documenting life through photos and videos.";
+
+export const metadata: Metadata = pageMetadata({
+  title: "jackson zhou. photographer and filmmaker in toronto",
+  absoluteTitle: true,
+  description,
+  path: "/",
+});
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: SITE_NAME,
+      publisher: { "@id": `${SITE_URL}/#person` },
+    },
+    {
+      "@type": "Person",
+      "@id": `${SITE_URL}/#person`,
+      name: "Jackson Zhou",
+      alternateName: "周子冸",
+      url: SITE_URL,
+      image: getR2Url("homepage/photoofme.jpg"),
+      jobTitle: "Photographer and filmmaker",
+      description,
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Toronto",
+        addressRegion: "ON",
+        addressCountry: "CA",
+      },
+      sameAs: [
+        "https://www.instagram.com/jkzhouu/",
+        "https://www.linkedin.com/in/jackson-zhou-9a5703297/",
+      ],
+    },
+  ],
 };
 
 export default function Home() {
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <h1 className="sr-only">jackson zhou, photographer and filmmaker in toronto</h1>
       <HomeHero
         images={[
           getR2Url("photos/wave2earth2026/5.jpg"),

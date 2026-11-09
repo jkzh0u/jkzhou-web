@@ -3,11 +3,13 @@ import path from "path";
 import type { Metadata } from "next";
 import VideosView from "../components/VideosView";
 import type { ReelVideo } from "../components/VideoReel";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "videos",
   description: "vlogs and short films by jackson zhou, shot in toronto and beyond.",
-};
+  path: "/videos",
+});
 
 async function getVideos(): Promise<ReelVideo[]> {
   const filePath = path.join(process.cwd(), "public", "videos.json");
@@ -22,7 +24,7 @@ export default async function VideosPage() {
 
   return (
     <main className="bg-background text-foreground">
-      <h1 className="sr-only">video vault</h1>
+      <h1 className="sr-only">jackson zhou&apos;s video vault: vlogs and short films</h1>
       <VideosView videos={videos} />
     </main>
   );

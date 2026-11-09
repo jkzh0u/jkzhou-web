@@ -3,12 +3,14 @@ import AlbumIndex from "../components/AlbumIndex";
 import AlbumBanner, { type BannerPhoto } from "../components/AlbumBanner";
 import { albums } from "@/data/albums";
 import { getR2Url } from "@/lib/r2";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "photos",
   description:
     "photo albums by jackson zhou: concerts, school events, robotics and friends around toronto.",
-};
+  path: "/photos",
+});
 
 const bannerPhotos: BannerPhoto[] = albums.map((album) => ({
   href: `/photos/${album.slug}`,
@@ -18,7 +20,7 @@ const bannerPhotos: BannerPhoto[] = albums.map((album) => ({
 export default function Home() {
   return (
     <main className="min-h-screen overflow-x-clip bg-background text-foreground">
-      <h1 className="sr-only">photo vault: life through my lens</h1>
+      <h1 className="sr-only">jackson zhou&apos;s photo vault: life through my lens</h1>
       <header className="pt-12">
         <AlbumBanner photos={bannerPhotos} />
       </header>

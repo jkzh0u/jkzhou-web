@@ -17,6 +17,20 @@ const getNarrowOnServer = () => null;
 export default function VideosView({ videos }: { videos: ReelVideo[] }) {
     const narrow = useSyncExternalStore(subscribe, getNarrow, getNarrowOnServer);
 
-    if (narrow === null) return <div style={{ minHeight: '100svh' }} />;
+    // The layout depends on the screen, so the server can't render it. Send the video list
+    // as text instead, so crawlers that don't run JS still see what's on the page.
+    if (narrow === null) {
+        return (
+            <div style={{ minHeight: '100svh' }}>
+                <ul className="sr-only">
+                    {videos.map((video) => (
+                        <li key={video.src}>
+                            {video.title}: {video.desc}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        );
+    }
     return narrow ? <VideoListMobile videos={videos} /> : <VideoReel videos={videos} />;
 }

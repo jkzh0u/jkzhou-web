@@ -5,6 +5,7 @@ import { albums } from "@/data/albums";
 import AlbumGallery from "../../components/AlbumGallery";
 import AlbumGridSkeleton from "./AlbumGridSkeleton";
 import { getAlbumPhotos, getPhotoUrl } from "@/lib/r2";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +21,12 @@ export async function generateMetadata({
 
   if (!album) return { title: "album not found" };
 
-  return {
-    title: album.title,
-    description: `${album.subtitle}. photos by jackson zhou.`,
-  };
+  return pageMetadata({
+    title: album.metaTitle,
+    description: album.metaDescription,
+    path: `/photos/${album.slug}`,
+    image: getPhotoUrl(album.slug, album.cover),
+  });
 }
 
 async function AlbumPhotos({ album }: { album: Album }) {
@@ -45,7 +48,7 @@ export default async function AlbumPage({
 
   return (
     <div className="px-4 pt-24 sm:px-8 sm:pt-28 lg:px-28 lg:pt-32">
-      <p className="load-reveal text-5xl font-bold">{album.title}</p>
+      <h1 className="load-reveal text-5xl font-bold">{album.title}</h1>
 
       <p
         className="load-reveal mb-7 text-neutral-600 dark:text-neutral-400"
