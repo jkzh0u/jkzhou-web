@@ -6,7 +6,7 @@ import { pageMetadata } from "@/lib/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 const description =
-  "jackson zhou is a photographer, filmmaker and creator based in toronto, documenting life through photos and videos.";
+  "jackson zhou.";
 
 export const metadata: Metadata = pageMetadata({
   title: "jackson zhou. photographer and filmmaker in toronto",
