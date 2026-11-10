@@ -21,6 +21,9 @@ const SETTLE_RATE = 3;
 const BASE_BEND = 0.18;
 const VELOCITY_BEND = 0.8;
 const TEXT_MAX_BEND = 0.3;
+// px each line of text starts after the line above it. In the about text this comes from the
+// per-word offset adding up down the block; here it's per line, so a line's words stay together.
+const LINE_OFFSET = 24;
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -124,8 +127,8 @@ export default function SideQuests() {
         let bend = BASE_BEND;
         let lastLogoReveal = -1;
 
-        const revealAt = (yFromCentre: number, vh: number) =>
-            clamp((vh * 0.75 - yFromCentre) / (vh * 0.45), 0, 1);
+        const revealAt = (yFromCentre: number, vh: number, offset = 0) =>
+            clamp((vh * 0.75 - yFromCentre - offset) / (vh * 0.45), 0, 1);
 
         // The same scroll effect as the about text in HomeHero, word by word: each word's fade
         // and rise come from its own place on screen, on a curve that bends more with scroll speed.
@@ -169,14 +172,16 @@ export default function SideQuests() {
                     return r.top + r.height / 2 + toSmooth;
                 });
 
+                let line = 0;
                 words.forEach((el, idx) => {
                     const yv = ys[idx];
+                    if (idx > 0 && Math.abs(yv - ys[idx - 1]) > 4) line++;
                     if (yv > vh * 1.2 || yv < -vh * 1.2) {
                         el.style.opacity = yv > 0 ? '0' : '1';
                         return;
                     }
 
-                    const reveal = revealAt(yv, vh);
+                    const reveal = revealAt(yv, vh, line * LINE_OFFSET);
                     el.style.opacity = String(reveal);
 
                     if (reduceMotion) return;

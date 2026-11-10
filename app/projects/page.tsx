@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
 import { pageMetadata } from "@/lib/seo";
 import { projects, type Project } from "@/data/projects";
 import ProjectVideo from "../components/ProjectVideo";
@@ -62,21 +64,35 @@ function ProjectCard({ project }: { project: Project }) {
     // The title link stretches over the whole card, so the repo icon can be its own link
     <div className="group relative">
       <div
-        className={`aspect-[3/2] overflow-hidden ${project.comingSoon ? "pj-skel" : "bg-neutral-100"}`}
+        className={`relative aspect-[3/2] overflow-hidden ${project.comingSoon ? "pj-skel" : "bg-neutral-100"}`}
       >
-        {project.video && (
+        {project.video ? (
           <ProjectVideo
             src={project.video}
             poster={project.poster}
             label={`${project.name} demo`}
           />
+        ) : (
+          project.poster && (
+            <Image
+              src={project.poster}
+              alt={`${project.name} preview`}
+              fill
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="object-cover"
+            />
+          )
         )}
       </div>
 
       <div className="mt-8 flex items-baseline justify-between gap-6">
         <div className="flex items-center gap-2.5">
           <h2 className="text-xl font-semibold sm:text-2xl">
-            {project.href ? (
+            {project.slug ? (
+              <Link href={`/projects/${project.slug}`} className="after:absolute after:inset-0">
+                {project.name}
+              </Link>
+            ) : project.href ? (
               <a
                 href={project.href}
                 target="_blank"
