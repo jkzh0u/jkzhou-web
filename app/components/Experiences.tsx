@@ -2,11 +2,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import gsap from 'gsap';
 import { experiences, type Experience } from '@/data/experiences';
 
 const REPEATS = 3;
 // how often (ms) to check which logo is in the middle of the marquee
 const CENTER_CHECK_MS = 100;
+// seconds the marquee takes to drift through one group of logos
+const LOOP_SECONDS = 90;
+// px the pointer must move before a press counts as a drag, so taps still work
+const DRAG_THRESHOLD = 4;
+// fastest a release can throw the marquee, in px per second
+const MAX_THROW = 2400;
+// how quickly a throw settles back into the drift, higher is quicker
+const SETTLE_RATE = 3;
 
 function Logo({
     item,
@@ -51,13 +60,99 @@ export default function Experiences() {
     // the logo nearest the middle of the marquee
     const [centerSlot, setCenterSlot] = useState<number | null>(null);
     const marqueeRef = useRef<HTMLDivElement>(null);
+    const trackRef = useRef<HTMLDivElement>(null);
+    const pausedRef = useRef(false);
     const activeSlot = hoverSlot ?? centerSlot;
     const current = activeSlot === null ? null : experienceAt(activeSlot);
 
     useEffect(() => {
+        pausedRef.current = hoverSlot !== null;
+    }, [hoverSlot]);
+
+    useEffect(() => {
         const marquee = marqueeRef.current;
-        if (!marquee) return;
+        const track = trackRef.current;
+        const group = track?.firstElementChild;
+        if (!marquee || !track || !group) return;
         const items = Array.from(marquee.querySelectorAll<HTMLElement>('.ex-item'));
+
+        // one group's width: the track repeats after this distance
+        let loopW = group.getBoundingClientRect().width;
+        const ro = new ResizeObserver(() => {
+            loopW = group.getBoundingClientRect().width;
+        });
+        ro.observe(group);
+
+        let visible = false;
+        let x = 0;
+        let velocity = -loopW / LOOP_SECONDS;
+        let dragging = false;
+        let pointerId: number | null = null;
+        let lastX = 0;
+        let lastT = 0;
+
+        const tick = (_time: number, deltaMs: number) => {
+            const dt = Math.min(deltaMs, 50) / 1000;
+            if (!visible || dt <= 0 || loopW <= 0) return;
+
+            if (!dragging) {
+                const target = pausedRef.current ? 0 : -loopW / LOOP_SECONDS;
+                velocity += (target - velocity) * (1 - Math.exp(-dt * SETTLE_RATE));
+                x += velocity * dt;
+            }
+
+            // keep x in (-loopW, 0], whichever way it was dragged
+            x = ((x % loopW) - loopW) % loopW;
+            track.style.transform = `translate3d(${x}px, 0, 0)`;
+        };
+        gsap.ticker.add(tick);
+
+        const onDown = (e: PointerEvent) => {
+            if (e.button !== 0) return;
+            pointerId = e.pointerId;
+            lastX = e.clientX;
+            lastT = e.timeStamp;
+        };
+
+        const onMove = (e: PointerEvent) => {
+            if (e.pointerId !== pointerId) return;
+
+            if (!dragging) {
+                if (Math.abs(e.clientX - lastX) < DRAG_THRESHOLD) return;
+                dragging = true;
+                velocity = 0;
+                marquee.setPointerCapture(e.pointerId);
+                marquee.classList.add('is-dragging');
+                // the caption follows the centred logo while dragging
+                setHoverSlot(null);
+                lastX = e.clientX;
+                lastT = e.timeStamp;
+                return;
+            }
+
+            const dx = e.clientX - lastX;
+            const dt = (e.timeStamp - lastT) / 1000;
+            x += dx;
+            if (dt > 0) velocity = 0.7 * (dx / dt) + 0.3 * velocity;
+            lastX = e.clientX;
+            lastT = e.timeStamp;
+        };
+
+        const onEnd = (e: PointerEvent) => {
+            if (e.pointerId !== pointerId) return;
+            pointerId = null;
+            if (!dragging) return;
+            dragging = false;
+            marquee.classList.remove('is-dragging');
+            // held still before letting go: no throw
+            if (e.timeStamp - lastT > 80) velocity = 0;
+            velocity = Math.max(-MAX_THROW, Math.min(MAX_THROW, velocity));
+        };
+
+        marquee.addEventListener('pointerdown', onDown);
+        marquee.addEventListener('pointermove', onMove);
+        marquee.addEventListener('pointerup', onEnd);
+        marquee.addEventListener('pointercancel', onEnd);
 
         let raf = 0;
         let last = -Infinity;
@@ -82,6 +177,7 @@ export default function Experiences() {
 
         // only track while the section is on screen
         const io = new IntersectionObserver(([entry]) => {
+            visible = entry.isIntersecting;
             cancelAnimationFrame(raf);
             if (entry.isIntersecting) {
                 last = -Infinity;
@@ -92,6 +188,12 @@ export default function Experiences() {
         return () => {
             io.disconnect();
             cancelAnimationFrame(raf);
+            ro.disconnect();
+            gsap.ticker.remove(tick);
+            marquee.removeEventListener('pointerdown', onDown);
+            marquee.removeEventListener('pointermove', onMove);
+            marquee.removeEventListener('pointerup', onEnd);
+            marquee.removeEventListener('pointercancel', onEnd);
         };
     }, []);
 
@@ -114,13 +216,13 @@ export default function Experiences() {
 
             <div
                 ref={marqueeRef}
-                className={`ex-marquee${hoverSlot !== null ? ' is-paused' : ''}`}
+                className="ex-marquee"
                 aria-hidden="true"
                 onPointerLeave={(e) => {
                     if (e.pointerType === 'mouse') setHoverSlot(null);
                 }}
             >
-                <div className="ex-track">
+                <div ref={trackRef} className="ex-track">
                     {[0, 1].map((group) => (
                         <div key={group} className="ex-group">
                             {Array.from({ length: REPEATS }).flatMap((_, rep) =>
@@ -183,12 +285,19 @@ const css = `
     -webkit-user-select: none;
     width: 100%;
     padding: 8px 0;
+    cursor: grab;
+    /* phones: vertical swipes still scroll the page, horizontal ones drag the logos */
+    touch-action: pan-y;
+  }
+
+  .ex-marquee.is-dragging {
+    cursor: grabbing;
   }
 
   .ex-track {
     display: flex;
     width: max-content;
-    animation: ex-scroll 90s linear infinite;
+    will-change: transform;
   }
 
   .ex-group {
@@ -196,14 +305,6 @@ const css = `
     align-items: center;
     gap: var(--gap);
     padding-right: var(--gap);
-  }
-
-  .ex-marquee.is-paused .ex-track {
-    animation-play-state: paused;
-  }
-
-  @keyframes ex-scroll {
-    to { transform: translateX(-50%); }
   }
 
   .ex-item {
