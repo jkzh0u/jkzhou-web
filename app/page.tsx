@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import HomeHero from "./components/HomeHero";
-import Experiences from "./components/Experiences";
+import SideQuests from "./components/SideQuests";
 import { getR2Url } from "@/lib/r2";
 import { pageMetadata } from "@/lib/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
@@ -80,7 +80,7 @@ export default function Home() {
         flipimage={getR2Url("homepage/cardbacking.jpg")}
       />
 
-      <Experiences />
+      <SideQuests />
     </div>
   );
 }

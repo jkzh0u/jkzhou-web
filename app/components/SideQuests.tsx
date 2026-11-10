@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import gsap from 'gsap';
 import { experiences, type Experience } from '@/data/experiences';
+import { getScrollY } from './SmoothScroll';
 
 const REPEATS = 3;
 // how often (ms) to check which logo is in the middle of the marquee
@@ -16,6 +17,13 @@ const DRAG_THRESHOLD = 4;
 const MAX_THROW = 2400;
 // how quickly a throw settles back into the drift, higher is quicker
 const SETTLE_RATE = 3;
+// the text bend, same values as HomeHero's CONFIG
+const BASE_BEND = 0.18;
+const VELOCITY_BEND = 0.8;
+const TEXT_MAX_BEND = 0.3;
+
+const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 function Logo({
     item,
@@ -50,15 +58,30 @@ function Logo({
     );
 }
 
+// .ex-w is positioned from the scroll on every frame (updateReveal). The outer span stays still so
+// it can be measured.
+function RevealWords({ text }: { text: string }) {
+    return (
+        <>
+            {text.split(' ').map((word, i) => (
+                <span key={i}>
+                    <span className="ex-w">{word}</span>{' '}
+                </span>
+            ))}
+        </>
+    );
+}
+
 // Every rendered logo has a "slot": its position in the track, counting across both groups and
 // all repeats. slot % experiences.length is the experience it shows.
 const experienceAt = (slot: number) => experiences[slot % experiences.length];
 
-export default function Experiences() {
+export default function SideQuests() {
     // the logo being hovered (or tapped), which overrides the centred one
     const [hoverSlot, setHoverSlot] = useState<number | null>(null);
     // the logo nearest the middle of the marquee
     const [centerSlot, setCenterSlot] = useState<number | null>(null);
+    const sectionRef = useRef<HTMLElement>(null);
     const marqueeRef = useRef<HTMLDivElement>(null);
     const trackRef = useRef<HTMLDivElement>(null);
     const pausedRef = useRef(false);
@@ -91,7 +114,83 @@ export default function Experiences() {
         let lastX = 0;
         let lastT = 0;
 
+        const section = sectionRef.current;
+        const logoRow = marquee.parentElement;
+        const wordBlocks = [section?.querySelector('.ex-label'), section?.querySelector('.ex-caption')];
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        let lastScrollY = getScrollY();
+        let smoothedVelocity = 0;
+        let bend = BASE_BEND;
+        let lastLogoReveal = -1;
+
+        const revealAt = (yFromCentre: number, vh: number) =>
+            clamp((vh * 0.75 - yFromCentre) / (vh * 0.45), 0, 1);
+
+        // The same scroll effect as the about text in HomeHero, word by word: each word's fade
+        // and rise come from its own place on screen, on a curve that bends more with scroll speed.
+        const updateReveal = () => {
+            const scrollY = getScrollY();
+            const frameDelta = Math.min(Math.abs(scrollY - lastScrollY), 60);
+            lastScrollY = scrollY;
+
+            const rawVelocity = reduceMotion ? 0 : frameDelta;
+            smoothedVelocity +=
+                (rawVelocity - smoothedVelocity) * (rawVelocity > smoothedVelocity ? 0.22 : 0.1);
+            const targetBend = clamp(
+                BASE_BEND + clamp(smoothedVelocity / 40, 0, 1) * VELOCITY_BEND,
+                0,
+                1
+            );
+            bend += (targetBend - bend) * (targetBend < bend ? 0.12 : 0.1);
+
+            if (!section || !logoRow) return;
+            const vh = window.innerHeight;
+            const box = section.getBoundingClientRect();
+            if (box.bottom < -vh || box.top > vh * 2) return;
+
+            // the page's real scroll is in whole pixels; this converts to the smooth position
+            const toSmooth = window.scrollY - scrollY - vh / 2;
+            const row = logoRow.getBoundingClientRect();
+            const logoReveal = revealAt(row.top + row.height / 2 + toSmooth, vh);
+            if (logoReveal !== lastLogoReveal) {
+                lastLogoReveal = logoReveal;
+                logoRow.style.setProperty('--reveal', String(logoReveal));
+            }
+
+            const radius = vh * 1.1;
+            const k = clamp(bend * 1.1, 0, TEXT_MAX_BEND);
+
+            for (const block of wordBlocks) {
+                if (!block) continue;
+                const words = Array.from(block.querySelectorAll<HTMLElement>('.ex-w'));
+                const ys = words.map((el) => {
+                    const r = (el.parentElement ?? el).getBoundingClientRect();
+                    return r.top + r.height / 2 + toSmooth;
+                });
+
+                words.forEach((el, idx) => {
+                    const yv = ys[idx];
+                    if (yv > vh * 1.2 || yv < -vh * 1.2) {
+                        el.style.opacity = yv > 0 ? '0' : '1';
+                        return;
+                    }
+
+                    const reveal = revealAt(yv, vh);
+                    el.style.opacity = String(reveal);
+
+                    if (reduceMotion) return;
+                    const a = clamp(yv / radius, -1.3, 1.3);
+                    const shiftY = lerp(yv, radius * Math.sin(a), k) - yv;
+                    const shiftZ = radius * (Math.cos(a) - 1) * k;
+                    el.style.transform = `perspective(1000px) translate3d(0, ${shiftY + (1 - reveal) * 22}px, ${shiftZ}px) rotateX(${-a * k}rad)`;
+                });
+            }
+        };
+
         const tick = (_time: number, deltaMs: number) => {
+            updateReveal();
+
             const dt = Math.min(deltaMs, 50) / 1000;
             if (!visible || dt <= 0 || loopW <= 0) return;
 
@@ -198,11 +297,11 @@ export default function Experiences() {
     }, []);
 
     return (
-        <section className="ex-root" aria-labelledby="experience-label">
+        <section ref={sectionRef} className="ex-root" aria-labelledby="experience-label">
             <style>{css}</style>
 
             <h2 id="experience-label" className="ex-label">
-                side quests
+                <RevealWords text="side quests" />
             </h2>
 
             <ul className="sr-only">
@@ -214,42 +313,51 @@ export default function Experiences() {
                 ))}
             </ul>
 
-            <div
-                ref={marqueeRef}
-                className="ex-marquee"
-                aria-hidden="true"
-                onPointerLeave={(e) => {
-                    if (e.pointerType === 'mouse') setHoverSlot(null);
-                }}
-            >
-                <div ref={trackRef} className="ex-track">
-                    {[0, 1].map((group) => (
-                        <div key={group} className="ex-group">
-                            {Array.from({ length: REPEATS }).flatMap((_, rep) =>
-                                experiences.map((item, i) => {
-                                    const slot = (group * REPEATS + rep) * experiences.length + i;
-                                    return (
-                                        <Logo
-                                            key={`${rep}-${item.name}`}
-                                            item={item}
-                                            on={activeSlot === slot}
-                                            onShow={(touch) =>
-                                                setHoverSlot((h) => (touch && h === slot ? null : slot))
-                                            }
-                                        />
-                                    );
-                                })
-                            )}
-                        </div>
-                    ))}
+            {/* the wrapper is what gets measured, so the marquee's own rise can't affect it */}
+            <div>
+                <div
+                    ref={marqueeRef}
+                    className="ex-marquee"
+                    aria-hidden="true"
+                    onPointerLeave={(e) => {
+                        if (e.pointerType === 'mouse') setHoverSlot(null);
+                    }}
+                >
+                    <div ref={trackRef} className="ex-track">
+                        {[0, 1].map((group) => (
+                            <div key={group} className="ex-group">
+                                {Array.from({ length: REPEATS }).flatMap((_, rep) =>
+                                    experiences.map((item, i) => {
+                                        const slot = (group * REPEATS + rep) * experiences.length + i;
+                                        return (
+                                            <Logo
+                                                key={`${rep}-${item.name}`}
+                                                item={item}
+                                                on={activeSlot === slot}
+                                                onShow={(touch) =>
+                                                    setHoverSlot((h) => (touch && h === slot ? null : slot))
+                                                }
+                                            />
+                                        );
+                                    })
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
             <div className="ex-caption" aria-hidden="true">
                 {current && (
                     <div key={current.name} className="ex-caption-body">
-                        <p className="ex-caption-name">{current.name}</p>
-                        {current.blurb && <p className="ex-caption-blurb">{current.blurb}</p>}
+                        <p className="ex-caption-name">
+                            <RevealWords text={current.name} />
+                        </p>
+                        {current.blurb && (
+                            <p className="ex-caption-blurb">
+                                <RevealWords text={current.blurb} />
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
@@ -288,6 +396,13 @@ const css = `
     cursor: grab;
     /* phones: vertical swipes still scroll the page, horizontal ones drag the logos */
     touch-action: pan-y;
+    opacity: var(--reveal, 1);
+    translate: 0 calc((1 - var(--reveal, 1)) * 22px);
+  }
+
+  .ex-w {
+    display: inline-block;
+    will-change: transform, opacity;
   }
 
   .ex-marquee.is-dragging {
@@ -380,6 +495,10 @@ const css = `
   @media (prefers-reduced-motion: reduce) {
     .ex-caption-body {
       animation: none;
+    }
+
+    .ex-marquee {
+      translate: none;
     }
   }
 `;
