@@ -1,6 +1,7 @@
 import { TURBO_TRACE_DEFAULT_MEMORY_LIMIT } from 'next/dist/shared/lib/constants'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { MobileMenu } from './MobileMenu'
 
 type NavLink = {
   name: string
@@ -55,7 +56,7 @@ const rightLinks: NavLink[] = [
 ]
 
 const linkClass =
-  'flex items-center px-2 py-1 transition-opacity hover:opacity-60'
+  'flex items-center px-1.5 py-1 transition-opacity hover:opacity-60 sm:px-2'
 
 function NavItem({ name, path, external, icon }: NavLink) {
   if (external) {
@@ -159,6 +160,13 @@ const css = `
       transition: opacity 0.2s ease;
     }
   }
+
+  /* phones: the open menu takes over the row (MobileMenu.tsx).
+     !important because the home page rule above that reveals the name is more specific. */
+  @media (width < 40rem) {
+    html.nav-open .site-nav-name { opacity: 0 !important; pointer-events: none !important; }
+    html.nav-open .site-nav-right { display: none; }
+  }
 `
 
 export function Navbar() {
@@ -170,7 +178,13 @@ export function Navbar() {
           aria-label="Main"
           className="relative flex items-center justify-between px-2 py-2.5 text-sm sm:text-[15px] font-medium"
         >
-          <ul className="flex items-center">
+          <MobileMenu
+            links={[...leftLinks, ...rightLinks.filter((link) => !link.external)].map(
+              ({ name, path }) => ({ name, path }),
+            )}
+          />
+
+          <ul className="hidden items-center sm:flex">
             {leftLinks.map((link) => (
               <li key={link.path}>
                 <NavItem {...link} />
@@ -185,9 +199,9 @@ export function Navbar() {
             </span>
           </Link>
 
-          <ul className="flex items-center">
+          <ul className="site-nav-right flex items-center">
             {rightLinks.map((link) => (
-              <li key={link.path}>
+              <li key={link.path} className={link.external ? undefined : 'hidden sm:block'}>
                 <NavItem {...link} />
               </li>
             ))}

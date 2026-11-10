@@ -9,7 +9,7 @@ const description =
   "jackson zhou.";
 
 export const metadata: Metadata = pageMetadata({
-  title: "jackson zhou. photographer and filmmaker in toronto",
+  title: "jackson zhou.",
   absoluteTitle: true,
   description,
   path: "/",
