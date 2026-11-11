@@ -30,4 +30,9 @@ export const experiences: Experience[] = [
     logo: "/experiences/com.png",
     blurb: "I work as a lifeguard & swim instructor since 2024"
   },
+  {
+    name: "Insta360",
+    logo: "/experiences/insta360.png",
+    blurb: "I am an affiliate partner with insta360"
+  },
 ];
