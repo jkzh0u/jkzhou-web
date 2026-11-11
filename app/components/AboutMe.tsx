@@ -6,9 +6,9 @@ import gsap from 'gsap';
 import { getScrollY } from './SmoothScroll';
 
 const ABOUT_PARAGRAPHS = [
-    "hi! i'm Jackson (周子冸), i am currently interested in medicine & systems design engineering",
-    "i am also a photographer, filmmaker, and creator based in toronto!",
-    "lately i've been documenting my life through videos and photos! all of this started in 2023 when i first picked up photography using my dad's old camera.",
+    "hi! I'm Jackson (周子冸), I am currently interested in medicine & systems design engineering",
+    "I am also a photographer, filmmaker, and creator based in toronto!",
+    "lately I've been documenting my life through videos and photos! all of this started in 2023 when I first picked up photography using my dad's old camera.",
 ];
 
 const BASE_BEND = 0.18;

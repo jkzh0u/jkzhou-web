@@ -54,7 +54,7 @@ export const projects: Project[] = [
       {
         heading: "what is this?",
         paragraphs: [
-          "this was my first ever big hardware project. I'm very interested in radios, and always wanted to monitor the TTC radios. in Toronto, the Toronto Transit Commission (TTC) uses TETRA to communicate between control, subway operators, station attendants, and more. I actually struggled to find an application that can demodulate TETRA that was ran on linux. I ended up using gnuradio with an application called telive & osmotetra to demodulate the signal coming from my closest TTC frequency."
+          "this was my first ever big hardware project. I'm very interested in radios, and always wanted to monitor the TTC radios. in Toronto, the Toronto Transit Commission (TTC) uses TETRA to communicate between control, subway operators, station attendants, and more. I actually struggled to find an application that can demodulate TETRA that runs on linux. I ended up using gnuradio with an application called telive & osmotetra to demodulate the signal coming from my closest TTC frequency."
         ],
       },
       {
@@ -77,7 +77,7 @@ export const projects: Project[] = [
       {
         heading: "the TTC network",
         paragraphs: [
-          "the TTC's network is split into sites, each with its own short list of frequencies in the 400 mhz range. underground zones 1 to 13 serves the subway, and the rest are above ground sites named after where they are, like cn tower and finch.",
+          "the TTC's network is split into sites, each with its own short list of frequencies in the 400 mhz range. underground zones 1 to 13 serve the subway, and the rest are above ground sites named after where they are, like cn tower and finch.",
           "following a site's control channel is how you see every call on it, even when the voice itself is on another frequency.",
         ],
         sites: [
@@ -97,8 +97,8 @@ export const projects: Project[] = [
       {
         heading: "problems",
         paragraphs: [
-          "I have a few problems with this project. the most annoying one being that I believe the UPS I received was defective. for some reason, if I keep it charging, it stays on, but after a while on battery, the pi experiences a low power event and shuts off. I have no idea why this happens and its a hassle to always have to reboot the pi.",
-          "another thing is the antenna. the foldable UHF antenna I find it to be very spotty. in my house, it only recevied in some areas as you move around. my solution to this is to connect the piSDR to an old TV antenna that is mounted on the roof, suprisingly works very well even though the TV antenna isn't in its tuned range."
+          "I have a few problems with this project. the most annoying one being that I believe the UPS I received was defective. for some reason, if I keep it charging, it stays on, but after a while on battery, the pi experiences a low power event and shuts off. I have no idea why this happens and it's a hassle to always have to reboot the pi.",
+          "another thing is the antenna. I find the foldable UHF antenna to be very spotty. in my house, it only received in some areas as you move around. my solution to this is to connect the piSDR to an old TV antenna that is mounted on the roof, surprisingly works very well even though the TV antenna isn't in its tuned range."
         ]
       },
       

@@ -67,13 +67,13 @@ export default function Home() {
           { src: getR2Url("videos/makefriends.jpeg"), back: "content creator friends" },
           { src: getR2Url("videos/motacycles.jpg"), back: "calgary stampede 2026" },
           { src: getR2Url("homepage/bluecntower.jpg"), back: "toronto oooo" },
-          { src: getR2Url("homepage/aboutme.jpg"), back: "i <3 music garden" },
+          { src: getR2Url("homepage/aboutme.jpg"), back: "I <3 music garden" },
           { src: getR2Url("homepage/hiking.jpg"), back: "hiking w micah & laura" },
           { src: getR2Url("photos/wave2earth2026/2.jpg"), back: "woahh daniel kim from w2e?" },
           { src: getR2Url("homepage/morefriends.jpg"), back: "view from biidaasige park" },
           { src: getR2Url("homepage/HOSA.jpg"), back: "HOSA 2026 with trixie!" },
           { src: getR2Url("homepage/yearning.jpg"), back: "yearning at rc harris" },
-          { src: getR2Url("homepage/climbing.jpg"), back: "rock cimbing larp larp" },
+          { src: getR2Url("homepage/climbing.jpg"), back: "rock climbing larp larp" },
           { src: getR2Url("homepage/thanksjoy.jpg"), back: "camp o 2025, thanks joy" },
           { src: getR2Url("homepage/kananaskis.jpg"), back: "hiking in kananaskis (keep it niche)" },
           { src: getR2Url("homepage/aquarium.jpg"), back: "ripleys!" },
@@ -94,13 +94,13 @@ export default function Home() {
             label: "content creation",
             src: getR2Url("homepage/filmmaker.jpg"),
             description:
-              "I love creating cinematic photos, and espcially photos. I rarely leave the house a camera nowadays.",
+              "I love creating cinematic photos, and especially videos. I rarely leave the house without a camera nowadays.",
           },
           {
             label: "climbing",
             src: getR2Url("homepage/deadclimbing.jpg"),
             description:
-              "climbing is my favourite way to switch my brain off. its kinda like problem solving, but with my whole body.",
+              "climbing is my favourite way to switch my brain off. it's kinda like problem solving, but with my whole body.",
           },
           {
             label: "hiking",
@@ -112,12 +112,12 @@ export default function Home() {
           {
             label: "swimming",
             src: getR2Url("homepage/pool.jpg"),
-            description: "im not that good, but my 50 free time is 29s!.",
+            description: "I'm not that good, but my 50 free time is 29s!",
           },
           {
             label: "daniel caesar",
             src: getR2Url("homepage/dc.jpg"),
-            description: "fav song is sign of the times, or ochos rios. photo from son of spergy tour in toronto!",
+            description: "fav song is sign of the times, or ocho rios. photo from son of spergy tour in toronto!",
           },
           {
             label: "wave to earth",
