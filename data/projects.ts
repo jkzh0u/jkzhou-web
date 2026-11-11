@@ -54,7 +54,7 @@ export const projects: Project[] = [
       {
         heading: "what is this?",
         paragraphs: [
-          "this was my first ever big hardware project. I'm very interested in radios, and always wanted to monitor the TTC radios. in Toronto, the Toronto Transit Commission (TTC) uses TETRA to communicate between control, subway operators, station attendants, and more. I actually struggled to find an application that can demodulate tetra that was avalible on linux. I ended up using gnuradio with an application called telive & osmotetra to demodulate the signal coming from my closest ttc relay."
+          "this was my first ever big hardware project. I'm very interested in radios, and always wanted to monitor the TTC radios. in Toronto, the Toronto Transit Commission (TTC) uses TETRA to communicate between control, subway operators, station attendants, and more. I actually struggled to find an application that can demodulate TETRA that was ran on linux. I ended up using gnuradio with an application called telive & osmotetra to demodulate the signal coming from my closest TTC frequency."
         ],
       },
       {
@@ -101,6 +101,7 @@ export const projects: Project[] = [
           "another thing is the antenna. the foldable UHF antenna I find it to be very spotty. in my house, it only recevied in some areas as you move around. my solution to this is to connect the piSDR to an old TV antenna that is mounted on the roof, suprisingly works very well even though the TV antenna isn't in its tuned range."
         ]
       },
+      
     ],
   },
 ];
