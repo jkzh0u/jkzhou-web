@@ -7,7 +7,7 @@
     "src": "https://assets.jkzhou.ca/videos/TAMBOURINE.mp4",
     "poster": "https://assets.jkzhou.ca/videos/TAMBOURINE.jpg",
     "desc": "for the Adrenalyn dance crew @MWCSS",
-    "aspectRatio": 1.7778
+    "aspectRatio": 1.5
   },
   {
     "title": "first vlog",
@@ -88,6 +88,30 @@
     "src": "https://assets.jkzhou.ca/videos/robotsatward26.mp4",
     "poster": "https://assets.jkzhou.ca/videos/robotsatward26.jpeg",
     "desc": "FIRST robotics offseason event!",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "senior sunrise",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/seniorsunrise.mp4",
+    "desc": "class of 2027's senior sunrise @mwcss",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "cute snoopy video!",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/snoopyvideo.mp4",
+    "desc": "a video I did in parnership with insta360",
+    "aspectRatio": 1.5
+  },
+  {
+    "title": "my last high school id",
+    "tag": "vlog",
+    "year": "2026",
+    "src": "https://assets.jkzhou.ca/videos/lasthsid.mp4",
+    "desc": "senior video, a video about how I will never get another high school id!",
     "aspectRatio": 1.5
   }
 ]
