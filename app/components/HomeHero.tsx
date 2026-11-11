@@ -7,9 +7,14 @@ import gsap from 'gsap';
 import { textureUrl } from './imageTextures';
 import { getScrollY } from './SmoothScroll';
 
+// A photo, optionally with text that shows on the back of its card when it flips.
+export interface HomeCard {
+    src: string;
+    back?: string;
+}
+
 interface PhotographerHomeProps {
-    images?: string[];
-    portrait?: string;
+    images?: (string | HomeCard)[];
     name?: string;
     flipimage?: string;
 }
@@ -43,12 +48,6 @@ interface Tile {
     box: { x: number; y: number; w: number; h: number } | null;
 }
 
-interface Word {
-    el: HTMLElement;
-    idx: number;
-    docY: number;
-}
-
 const MOBILE_QUERY = '(max-width: 1000px)';
 
 // Remembers that the intro has already played, so coming back to the homepage from another
@@ -68,10 +67,19 @@ const CONFIG = {
     introDuration: 1.8,
     cameraDistance: 1000,
     photoSpeed: 1,
-    textMaxBend: 0.3,
     nameRange: 1.2,
     flipDuration: 0.8,
     flipCooldown: 100,
+
+    // Text on the back of a flipped card. Size is in px on a card drawn backTextWidth px wide,
+    // and shrinks to fit. The text block is centred at backTextCentre down the card (0 top,
+    // 1 bottom) and kept within backTextMaxHeight of the card's height, clear of the ":)".
+    backTextWidth: 768,
+    backTextSize: 76,
+    backTextWeight: 700,
+    backTextColor: '#33333d',
+    backTextCentre: 0.5,
+    backTextMaxHeight: 0.6,
 
     // Seconds before the final photo finishes spreading.
     // Increase this to unlock scrolling earlier.
@@ -116,12 +124,6 @@ const HERO_SLOTS_MOBILE: HeroSlot[] = [
     { r: 74, c: 1, d: 0.70, w: 0 },
 ];
 
-const ABOUT_PARAGRAPHS = [
-    "hi! i'm Jackson (周子冸), i am currently interested in medicine & systems design engineering",
-    "i am also a photographer, filmmaker, and creator based in toronto!",
-    "lately i've been documenting my life through videos and photos! all of this started in 2023 when i first picked up photography using my dad's old camera.",
-];
-
 const VERTEX = /* glsl */ `
     uniform float uBend;
     uniform float uRadius;
@@ -143,6 +145,8 @@ const VERTEX = /* glsl */ `
 const FRAGMENT = /* glsl */ `
     uniform sampler2D uTexture;
     uniform sampler2D uBackTexture;
+    uniform sampler2D uBackText;
+    uniform float uHasBackText;
     uniform float uOpacity;
     uniform vec2 uRatio;
     uniform vec2 uBackRatio;
@@ -159,6 +163,12 @@ const FRAGMENT = /* glsl */ `
             vec2 uv = (vUv - 0.5) * uBackRatio + 0.5;
             uv.x = 1.0 - uv.x;
             tex = texture2D(uBackTexture, uv);
+
+            // the card's own text, drawn over the backing across the whole card
+            if (uHasBackText > 0.5) {
+                vec4 txt = texture2D(uBackText, vec2(1.0 - vUv.x, vUv.y));
+                tex.rgb = mix(tex.rgb, txt.rgb, txt.a);
+            }
         }
 
         gl_FragColor = vec4(tex.rgb, tex.a * uOpacity);
@@ -180,7 +190,6 @@ const easeInOut = (t: number) =>
 
 export default function PhotographerHome({
     images = [],
-    portrait,
     name = 'jackson zhou.',
     flipimage,
 }: PhotographerHomeProps) {
@@ -188,11 +197,10 @@ export default function PhotographerHome({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const overlayRef = useRef<HTMLDivElement>(null);
     const logoRef = useRef<HTMLDivElement>(null);
-    const aboutRef = useRef<HTMLElement>(null);
-    const portraitRef = useRef<HTMLDivElement>(null);
 
-    const validImages = images.filter(Boolean);
-    const portraitSrc = portrait ?? validImages.at(-1);
+    const validCards = images
+        .map((card) => (typeof card === 'string' ? { src: card } : card))
+        .filter((card) => Boolean(card.src));
 
     const [isMobile, setIsMobile] = useState<boolean | null>(null);
 
@@ -217,8 +225,10 @@ export default function PhotographerHome({
         const canvas = canvasRef.current;
         const overlay = overlayRef.current;
         const logo = logoRef.current;
-        const about = aboutRef.current;
-        const portraitEl = portraitRef.current;
+        // The about section is its own component (AboutMe), right after this one on the page.
+        const about = document.querySelector<HTMLElement>('[data-about]');
+        const aboutStage = document.querySelector<HTMLElement>('[data-about-stage]');
+        const aboutSlot = document.querySelector<HTMLElement>('[data-about-slot]');
 
         if (
             !root ||
@@ -226,7 +236,8 @@ export default function PhotographerHome({
             !overlay ||
             !logo ||
             !about ||
-            !portraitEl
+            !aboutStage ||
+            !aboutSlot
         ) {
             return;
         }
@@ -385,9 +396,9 @@ export default function PhotographerHome({
             root.querySelectorAll<HTMLElement>('[data-tile]')
         );
 
-        const tileImages = tileEls.map((_, i) =>
-            validImages.length > 0
-                ? validImages[i % validImages.length]
+        const tileCards = tileEls.map((_, i) =>
+            validCards.length > 0
+                ? validCards[i % validCards.length]
                 : undefined
         );
 
@@ -558,7 +569,7 @@ export default function PhotographerHome({
 
         const tiles: Tile[] = tileEls.map((el, i) => {
             const depth = parseFloat(el.dataset.depth ?? '1');
-            const url = tileImages[i];
+            const url = tileCards[i]?.src;
 
             const material = new THREE.ShaderMaterial({
                 vertexShader: VERTEX,
@@ -569,6 +580,8 @@ export default function PhotographerHome({
                 uniforms: {
                     uTexture: { value: null },
                     uBackTexture: { value: null },
+                    uBackText: { value: null },
+                    uHasBackText: { value: 0 },
                     uOpacity: { value: 1 },
                     uBend: { value: CONFIG.baseBend },
                     uRadius: { value: vh },
@@ -661,6 +674,86 @@ export default function PhotographerHome({
             );
         }
 
+        // Each card's back text is drawn to its own transparent canvas the same shape as the card
+        // (3:4) and laid over the backing. Cards showing the same text share one texture.
+        const backTextTextures = new Map<string, THREE.CanvasTexture>();
+
+        const drawBackText = (text: string) => {
+            const W = CONFIG.backTextWidth;
+            const H = (W * 4) / 3;
+            const c = document.createElement('canvas');
+            c.width = W;
+            c.height = H;
+            const ctx = c.getContext('2d');
+            if (!ctx) return null;
+
+            const maxW = W * 0.74;
+            const maxH = H * CONFIG.backTextMaxHeight;
+            const font = (px: number) => `${CONFIG.backTextWeight} ${px}px "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif`;
+
+            // wrap to the card's width, shrinking the type until it all fits
+            const wrap = (px: number) => {
+                ctx.font = font(px);
+                const lines: string[] = [];
+                for (const para of text.split('\n')) {
+                    let line = '';
+                    for (const word of para.split(/\s+/).filter(Boolean)) {
+                        const test = line ? `${line} ${word}` : word;
+                        if (line && ctx.measureText(test).width > maxW) {
+                            lines.push(line);
+                            line = word;
+                        } else {
+                            line = test;
+                        }
+                    }
+                    lines.push(line);
+                }
+                return lines;
+            };
+
+            let px = CONFIG.backTextSize;
+            let lines = wrap(px);
+            while (px > 16 && (lines.length * px * 1.24 > maxH || lines.some((l) => ctx.measureText(l).width > maxW))) {
+                px -= 2;
+                lines = wrap(px);
+            }
+
+            const lineH = px * 1.24;
+            ctx.fillStyle = CONFIG.backTextColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const top = H * CONFIG.backTextCentre - ((lines.length - 1) * lineH) / 2;
+            lines.forEach((l, i) => ctx.fillText(l, W / 2, top + i * lineH));
+
+            const tex = new THREE.CanvasTexture(c);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            return tex;
+        };
+
+        const applyBackText = () => {
+            if (cancelled) return;
+            tiles.forEach((t, i) => {
+                const text = tileCards[i]?.back?.trim();
+                if (!text) return;
+                let tex = backTextTextures.get(text);
+                if (!tex) {
+                    const drawn = drawBackText(text);
+                    if (!drawn) return;
+                    tex = drawn;
+                    backTextTextures.set(text, tex);
+                }
+                t.material.uniforms.uBackText.value = tex;
+                t.material.uniforms.uHasBackText.value = 1;
+            });
+            needsRender = true;
+        };
+
+        // wait for the site font, or the canvas would draw the text in a fallback font
+        if (!isMobile) {
+            (document.fonts?.ready ?? Promise.resolve()).then(applyBackText);
+        }
+
         // Compile the tile shader now, while the white overlay is still up, instead of
         // on the first frame a tile appears (compile() skips invisible meshes).
         tiles.forEach((t) => (t.mesh.visible = true));
@@ -671,14 +764,6 @@ export default function PhotographerHome({
         const tilesTopFirst = [...tiles].sort(
             (a, b) => b.mesh.renderOrder - a.mesh.renderOrder
         );
-
-        const words: Word[] = Array.from(
-            about.querySelectorAll<HTMLElement>('[data-word]')
-        ).map((el, idx) => ({
-            el,
-            idx,
-            docY: 0,
-        }));
 
         // Where the name should stop: the vertical centre of the site navbar (falls back to 28px).
         let navCenterY = 28;
@@ -696,6 +781,10 @@ export default function PhotographerHome({
         // the lowest photo sits a fixed distance above it on every screen size.
         // The photos are drawn by WebGL with parallax and a 1.4x spread scale, so their visible
         // position isn't their DOM position: this uses the same maths as update() below.
+        // the scroll position where every hero photo has left the screen
+        let clearScroll = Infinity;
+        let canvasHidden = false;
+
         const fitGap = () => {
             about.style.marginTop = '0px';
 
@@ -729,8 +818,13 @@ export default function PhotographerHome({
                 return max;
             };
 
-            const pr = portraitEl.getBoundingClientRect();
-            const portraitTop = pr.top + scrollNow;
+            // The portrait's stage is sticky, so measure from the section's top plus the portrait's
+            // place inside the stage: that stays correct while the section is locked.
+            const pr = aboutSlot.getBoundingClientRect();
+            const portraitTop =
+                about.getBoundingClientRect().top +
+                scrollNow +
+                (pr.top - aboutStage.getBoundingClientRect().top);
 
             // While the portrait is centred, every photo must have scrolled fully off the top
             // of the screen (with some clearance for the mouse-follow shift), so the about
@@ -749,6 +843,7 @@ export default function PhotographerHome({
             }
 
             const S = (lo + hi) / 2;
+            clearScroll = S;
             const margin = S - (portraitTop + pr.height / 2 - vh / 2);
 
             about.style.marginTop = `${Math.round(margin)}px`;
@@ -760,20 +855,7 @@ export default function PhotographerHome({
             measureNav();
             fitGap();
 
-            words.forEach((w) => {
-                w.el.style.transform = 'none';
-            });
-
-            void about.offsetHeight;
-
             const scrollY = window.scrollY;
-
-            words.forEach((w) => {
-                const r = w.el.getBoundingClientRect();
-
-                w.docY = r.top + scrollY + r.height / 2;
-            });
-
             const tileScroll = scrollLocked ? savedScrollY : scrollY;
             tiles.forEach((t) => {
                 const r = t.el.getBoundingClientRect();
@@ -1241,7 +1323,14 @@ export default function PhotographerHome({
                 }
             }
 
-            renderer.render(scene, camera);
+            // Past the hero the canvas is empty, but presenting it still costs a full-screen frame.
+            // The margin covers the photos being pulled back on screen by a fast scroll's bend.
+            const heroCleared = scrollY > clearScroll + vh * 0.1;
+            if (heroCleared !== canvasHidden) {
+                canvasHidden = heroCleared;
+                canvas.style.visibility = heroCleared ? 'hidden' : '';
+            }
+            if (!heroCleared) renderer.render(scene, camera);
 
             const p = easeInOut(
                 clamp(scrollY / (vh * CONFIG.nameRange), 0, 1)
@@ -1265,44 +1354,6 @@ export default function PhotographerHome({
 
             logo.style.transform =
                 `translate(-50%, -50%) translate3d(0, ${dy}px, 0) scale(${s})`;
-
-            for (const w of words) {
-                const yv = w.docY - scrollY - vh / 2;
-
-                if (yv > vh * 1.2 || yv < -vh * 1.2) {
-                    w.el.style.opacity = yv > 0 ? '0' : '1';
-                    continue;
-                }
-
-                const k = clamp(
-                    bend * 1.1,
-                    0,
-                    CONFIG.textMaxBend
-                );
-
-                const a = clamp(yv / radius, -1.3, 1.3);
-
-                const shiftY =
-                    lerp(yv, radius * Math.sin(a), k) - yv;
-
-                const shiftZ =
-                    radius * (Math.cos(a) - 1) * k;
-
-                const revealStart = vh * 0.75;
-                const revealDistance = vh * 0.45;
-
-                const reveal = clamp(
-                    (revealStart - yv - w.idx * 2) /
-                    revealDistance,
-                    0,
-                    1
-                );
-
-                w.el.style.opacity = String(reveal);
-
-                w.el.style.transform =
-                    `perspective(1000px) translate3d(0, ${shiftY + (1 - reveal) * 22}px, ${shiftZ}px) rotateX(${-a * k}rad)`;
-            }
         };
 
         gsap.ticker.add(update);
@@ -1491,6 +1542,7 @@ export default function PhotographerHome({
             });
 
             flipTexture?.dispose();
+            backTextTextures.forEach((tex) => tex.dispose());
             geometry.dispose();
             renderer.dispose();
         };
@@ -1569,51 +1621,6 @@ export default function PhotographerHome({
                         ))}
                 </div>
             </section>
-
-            <section ref={aboutRef} className="pa-about">
-                <div
-                    ref={portraitRef}
-                    className="pa-portrait"
-                    aria-hidden="true"
-                >
-                    {portraitSrc && (
-                        <img
-                            src={portraitSrc}
-                            alt=""
-                            decoding="async"
-                            onLoad={(e) => {
-                                e.currentTarget.style.opacity = '1';
-                            }}
-                            onError={() => {
-                                console.error(
-                                    'Portrait failed to load:',
-                                    portraitSrc
-                                );
-                            }}
-                            style={{
-                                opacity: 1,
-                            }}
-                        />
-                    )}
-                </div>
-
-                {ABOUT_PARAGRAPHS.map((para, pi) => (
-                    <p key={pi} className="pa-about-text">
-                        {para.split(' ').map((word, wi) => (
-                            <span key={wi}>
-                                <span
-                                    data-word
-                                    className="pa-word"
-                                >
-                                    {word}
-                                </span>{' '}
-                            </span>
-                        ))}
-                    </p>
-                ))}
-            </section>
-
-
         </div>
     );
 }
@@ -1700,53 +1707,6 @@ const css = `
     min-width: 0;
   }
 
-.pa-about {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-
-    min-height: 100vh;
-    box-sizing: border-box;
-
-    margin: 0 auto;
-    padding: 80px 0;
-
-    width: min(980px, 48vw);
-    text-align: center;
-}
-
-.pa-portrait {
-    aspect-ratio: 4 / 5;
-    width: clamp(180px, calc(300px - 8vw), 260px);
-    min-width: 0;
-    margin-bottom: 40px;
-}
-
-  .pa-portrait img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-  }
-
-.pa-about-text {
-  margin: 0 0 0.95em;
-  font-size: clamp(22px, calc(32px - 1vw), 30px);
-  line-height: 1.24;
-  letter-spacing: -0.01em;
-}
-
-  .pa-word {
-    display: inline-block;
-    opacity: 0;
-    will-change: transform, opacity;
-  }
-
   @media (max-width: 1000px) {
 .pa-m .pa-hero {
     min-height: 0;
@@ -1784,22 +1744,6 @@ const css = `
     .pa-m .pa-tile:nth-child(3n) {
       translate: 0 0;
     }
-
-.pa-m .pa-about {
-    width: 88vw;
-    min-height: 100svh;
-    padding: 60px 0;
-}
-
-.pa-m .pa-portrait {
-    width: clamp(155px, 32vw, 220px);
-    min-width: 0;
-    margin-bottom: 32px;
-}
-
-.pa-m .pa-about-text {
-  font-size: clamp(20px, calc(28px - 2vw), 24px);
-}
 
     .pa-m .pa-logo {
       font-size: 26px;

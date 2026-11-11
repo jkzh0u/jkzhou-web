@@ -15,6 +15,10 @@ export function getScrollY() {
     : window.scrollY;
 }
 
+export function getLenis() {
+  return activeLenis;
+}
+
 export default function SmoothScroll() {
   const lenisRef = useRef<Lenis | null>(null);
   const pathname = usePathname();
