@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import gsap from 'gsap';
-import { experiences, type Experience } from '@/data/experiences';
+import { experiences, type Experience } from '@/data/sidequests';
 import { getScrollY } from './SmoothScroll';
 
 const REPEATS = 3;
