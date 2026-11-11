@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import gsap from 'gsap';
 import { experiences, type Experience } from '@/data/sidequests';
 import { getScrollY } from './SmoothScroll';
@@ -61,14 +62,79 @@ function Logo({
     );
 }
 
+// a link written in the text as [words](/url)
+const LINK = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+
+type Piece = { text: string; href?: string };
+
+// Splits text into words, turning [words](/url) into links. Pieces with no space between them,
+// like a link and the "!" after it, stay in one word.
+function parseWords(text: string): Piece[][] {
+    const words: Piece[][] = [];
+    let joinNext = false;
+    const add = (chunk: string, href?: string) => {
+        for (const part of chunk.split(/(\s+)/)) {
+            if (!part) continue;
+            if (/^\s+$/.test(part)) {
+                joinNext = false;
+                continue;
+            }
+            if (joinNext && words.length) words[words.length - 1].push({ text: part, href });
+            else words.push([{ text: part, href }]);
+            joinNext = true;
+        }
+    };
+    let last = 0;
+    for (const m of text.matchAll(LINK)) {
+        add(text.slice(last, m.index));
+        add(m[1], m[2]);
+        last = m.index + m[0].length;
+    }
+    add(text.slice(last));
+    return words;
+}
+
 // .ex-w is positioned from the scroll on every frame (updateReveal). The outer span stays still so
 // it can be measured.
 function RevealWords({ text }: { text: string }) {
     return (
         <>
-            {text.split(' ').map((word, i) => (
+            {parseWords(text).map((word, i) => (
                 <span key={i}>
-                    <span className="ex-w">{word}</span>{' '}
+                    {word.map((piece, j) =>
+                        piece.href ? (
+                            // the caption is hidden from screen readers, which get the links in the
+                            // sr-only list instead, so these are kept out of the tab order too
+                            <Link key={j} href={piece.href} className="ex-link" tabIndex={-1}>
+                                <span className="ex-w">{piece.text}</span>
+                            </Link>
+                        ) : (
+                            <span key={j} className="ex-w">
+                                {piece.text}
+                            </span>
+                        )
+                    )}{' '}
+                </span>
+            ))}
+        </>
+    );
+}
+
+// the blurb for screen readers, with real links
+function PlainBlurb({ text }: { text: string }) {
+    return (
+        <>
+            {parseWords(text).map((word, i) => (
+                <span key={i}>
+                    {word.map((piece, j) =>
+                        piece.href ? (
+                            <Link key={j} href={piece.href}>
+                                {piece.text}
+                            </Link>
+                        ) : (
+                            piece.text
+                        )
+                    )}{' '}
                 </span>
             ))}
         </>
@@ -313,20 +379,28 @@ export default function SideQuests() {
                 {experiences.map((item) => (
                     <li key={item.name}>
                         {item.name}
-                        {item.blurb ? `: ${item.blurb}` : ''}
+                        {item.blurb && (
+                            <>
+                                : <PlainBlurb text={item.blurb} />
+                            </>
+                        )}
                     </li>
                 ))}
             </ul>
 
+            {/* leaving the logos for the caption keeps the hovered logo's caption, so its links
+                can be clicked */}
+            <div
+                onPointerLeave={(e) => {
+                    if (e.pointerType === 'mouse') setHoverSlot(null);
+                }}
+            >
             {/* the wrapper is what gets measured, so the marquee's own rise can't affect it */}
             <div>
                 <div
                     ref={marqueeRef}
                     className="ex-marquee"
                     aria-hidden="true"
-                    onPointerLeave={(e) => {
-                        if (e.pointerType === 'mouse') setHoverSlot(null);
-                    }}
                 >
                     <div ref={trackRef} className="ex-track">
                         {[0, 1].map((group) => (
@@ -365,6 +439,7 @@ export default function SideQuests() {
                         )}
                     </div>
                 )}
+            </div>
             </div>
         </section>
     );
@@ -494,6 +569,25 @@ const css = `
     font-size: clamp(16px, 1.3vw, 19px);
     line-height: 1.4;
     color: color-mix(in srgb, currentColor 65%, transparent);
+  }
+
+  .ex-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* the underline goes on the word, so it moves with it */
+  .ex-link .ex-w {
+    color: var(--foreground, #33333d);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  @media (hover: hover) {
+    .ex-link:hover .ex-w {
+      text-decoration-thickness: 2px;
+    }
   }
 
 

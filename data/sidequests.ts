@@ -18,7 +18,7 @@ export const experiences: Experience[] = [
   {
     name: "wave to earth",
     logo: "/experiences/w2e.png",
-    blurb: "Shot their pieces tour in Toronto. Check it out on my photos page!",
+    blurb: "I had the privilege to be a photographer at their pieces tour in Toronto. Check it out on my photos page, [here](/photos/wave2earth2026)!",
   },
   {
     name: "HOSA Canada",
@@ -28,11 +28,11 @@ export const experiences: Experience[] = [
   {
     name: "City of Markham",
     logo: "/experiences/com.png",
-    blurb: "I work as a lifeguard & swim instructor since 2024"
+    blurb: "Since 2024, I work as a lifeguard & swim instructor, ensuring patron safety and teaching swimmers of various swim levels."
   },
   {
     name: "Insta360",
     logo: "/experiences/insta360.png",
-    blurb: "I am an affiliate partner with insta360"
+    blurb: "I am an affiliate partner with insta360, creating visual content to promote their products",
   },
 ];
