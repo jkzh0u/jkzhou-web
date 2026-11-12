@@ -9,7 +9,7 @@ export default function Image() {
   return renderCard({
     section: "projects",
     title: "projects",
-    description: "my projects.",
-    image: getR2Url("homepage/bluecntower.jpg"),
+    description: "my projects, from programming to hardware. I love to tinker and learn new things!",
+    image: getR2Url("homepage/yearning.jpg"),
   });
 }

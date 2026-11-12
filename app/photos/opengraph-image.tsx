@@ -9,7 +9,7 @@ export default function Image() {
   return renderCard({
     section: "photos",
     title: "photos",
-    description: "photo albums by jackson zhou: concerts, school events, robotics and friends around toronto.",
-    image: getR2Url("homepage/bluecntower.jpg"),
+    description: "photo shot by me. concerts, school events, robotics and more!",
+    image: getR2Url("homepage/aboutme.jpg"),
   });
 }
