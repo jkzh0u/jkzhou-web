@@ -4,7 +4,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "contact",
-  description: "get in touch with jackson zhou for shoots, projects and collabs.",
+  description: "get in touch with me for shoots, projects and collabs.",
   path: "/contact",
 });
 

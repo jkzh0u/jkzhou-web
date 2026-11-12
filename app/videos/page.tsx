@@ -7,7 +7,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "videos",
-  description: "vlogs and short films by jackson zhou, shot in toronto and beyond.",
+  description: "vlogs and short films created by me.",
   path: "/videos",
 });
 

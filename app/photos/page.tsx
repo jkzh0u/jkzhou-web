@@ -8,7 +8,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "photos",
   description:
-    "photo albums by jackson zhou: concerts, school events, robotics and friends around toronto.",
+    "photo albums by jackson zhou: concerts, school events, robotics and more!",
   path: "/photos",
 });
 
