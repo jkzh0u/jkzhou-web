@@ -15,6 +15,7 @@ export const metadata: Metadata = pageMetadata({
   absoluteTitle: true,
   description,
   path: "/",
+  video: { url: "/og/home-intro.mp4", width: 1200, height: 630 },
 });
 
 const jsonLd = {

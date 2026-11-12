@@ -25,7 +25,6 @@ export async function generateMetadata({
     title: album.metaTitle,
     description: album.metaDescription,
     path: `/photos/${album.slug}`,
-    image: getPhotoUrl(album.slug, album.cover),
   });
 }
 

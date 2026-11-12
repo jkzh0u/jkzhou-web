@@ -15,6 +15,8 @@ export type Project = {
   video?: string;
   /** Still frame shown until the video plays, or on its own when there is no video */
   poster?: string;
+  /** Image for the link preview card, if different from the poster */
+  ogImage?: string;
   /** Sections of text on the project's page, shown beside the model */
   writeup?: WriteupSection[];
 };
@@ -50,6 +52,7 @@ export const projects: Project[] = [
     slug: "sdr",
     video: "/projects/sdr.mp4",
     poster: "/projects/sdr.jpg",
+    ogImage: "/projects/sdr-og.png",
     writeup: [
       {
         heading: "what is this?",
