@@ -117,7 +117,7 @@ const css = `
     padding: 12vh clamp(16px, 4vw, 64px) 14vh;
     background: var(--background, #fff);
     color: var(--pw-ink);
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
 
   .pw-label {

@@ -93,7 +93,11 @@ function NavItem({ name, path, external, icon }: NavLink) {
 const css = `
   /* fades in like the site-wide load-reveal (globals.css), as a transition */
   .site-nav { transition: opacity 1.2s ease, filter 1.2s ease; }
-  html.pa-intro .site-nav { opacity: 0; filter: blur(8px); pointer-events: none; }
+  /* hiding is instant (it happens under the white intro overlay); a transition here outlasted
+     the overlay, so a blurred navbar flashed and faded away. Only the reveal transitions. */
+  html.pa-intro .site-nav { opacity: 0; filter: blur(6px); pointer-events: none; transition: none; }
+  /* too slow for an animated blur (perfMode.ts): plain fade */
+  html.perf-lite .site-nav { filter: none !important; }
   @media (prefers-reduced-motion: reduce) {
     html.pa-intro .site-nav { filter: none; }
   }
@@ -103,7 +107,7 @@ const css = `
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 15.12px;
     font-weight: 600;
     letter-spacing: 0.02em;

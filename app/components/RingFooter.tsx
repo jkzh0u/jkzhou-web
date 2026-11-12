@@ -5,6 +5,7 @@ import Link from 'next/link';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { decodeToCanvas, textureUrl } from './imageTextures';
+import { createDprGovernor, getRenderQuality } from './renderQuality';
 
 interface RingFooterProps {
     images?: string[];
@@ -110,13 +111,15 @@ export default function RingFooter({
         // Each frame the same scene is drawn twice: once with only the photos on the far
         // half of the ring, once with only the near half.
 
-        const pixelRatio = Math.min(window.devicePixelRatio, 2);
+        const quality = getRenderQuality(window.matchMedia('(max-width: 1000px)').matches);
+        const pixelRatio = quality.pixelRatio;
 
         const makeRenderer = (canvas: HTMLCanvasElement) => {
             const r = new THREE.WebGLRenderer({
                 canvas,
                 alpha: true,
-                antialias: true,
+                antialias: quality.antialias,
+                powerPreference: quality.lowPower ? 'low-power' : 'default',
             });
             r.setPixelRatio(pixelRatio);
             r.setSize(w, h, false);
@@ -126,6 +129,9 @@ export default function RingFooter({
 
         const backRenderer = makeRenderer(backCanvas);
         const frontRenderer = makeRenderer(frontCanvas);
+
+        // the ring spins on every frame it's visible, so drop resolution if it can't keep up
+        const dprGovernor = createDprGovernor([backRenderer, frontRenderer], () => {});
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(50, w / h, 1, 8000);
@@ -570,7 +576,10 @@ export default function RingFooter({
             const scrollDelta = Math.min(Math.abs(scrollY - lastScrollY), 80);
             lastScrollY = scrollY;
 
-            if (!onScreen) return;
+            if (!onScreen) {
+                dprGovernor.pause();
+                return;
+            }
 
             const dt = Math.min(deltaMs / 1000, 0.05);
 
@@ -654,6 +663,7 @@ export default function RingFooter({
 
             for (const t of tiles) t.mesh.visible = drawable(t) && t.z >= 0;
             frontRenderer.render(scene, camera);
+            dprGovernor.tick();
         };
 
         gsap.ticker.add(update);
@@ -734,7 +744,7 @@ const css = `
   .rf-label {
     position: relative;
     z-index: 1;
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: clamp(28px, 4vw, 44px);
     font-weight: 600;
     letter-spacing: 0.02em;

@@ -6,6 +6,8 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 import { textureUrl } from './imageTextures';
 import { getScrollY } from './SmoothScroll';
+import { createDprGovernor, getRenderQuality } from './renderQuality';
+import { isLiteMode } from './perfMode';
 
 // A photo, optionally with text that shows on the back of its card when it flips.
 export interface HomeCard {
@@ -272,9 +274,11 @@ export default function PhotographerHome({
             seenThisSession = false;
         }
 
+        // lite mode (a machine too slow for the effects, see perfMode.ts) never plays the intro
         const skipIntro =
-            !isFreshReload &&
-            (introPlayed || seenThisSession || cameFromSite);
+            isLiteMode() ||
+            (!isFreshReload &&
+                (introPlayed || seenThisSession || cameFromSite));
 
         introPlayed = true;
 
@@ -357,13 +361,16 @@ export default function PhotographerHome({
 
         const D = CONFIG.cameraDistance;
 
+        const quality = getRenderQuality(isMobile);
+
         const renderer = new THREE.WebGLRenderer({
             canvas,
             alpha: true,
-            antialias: !isMobile,
+            antialias: quality.antialias,
+            powerPreference: quality.lowPower ? 'low-power' : 'default',
         });
 
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+        renderer.setPixelRatio(quality.pixelRatio);
         renderer.setSize(vw, vh, false);
         renderer.setClearColor(0xffffff, 0);
 
@@ -387,7 +394,13 @@ export default function PhotographerHome({
 
         fitCamera();
 
-        const geometry = new THREE.PlaneGeometry(1, 1, 32, 32);
+        // the bend in VERTEX only depends on y, so the plane needs rows, not columns
+        const geometry = new THREE.PlaneGeometry(1, 1, 1, 24);
+
+        // drops the resolution if this machine can't keep up (setPixelRatio resizes the canvas)
+        const dprGovernor = createDprGovernor([renderer], () => {
+            needsRender = true;
+        });
         const loader = new THREE.TextureLoader();
 
         loader.setCrossOrigin('anonymous');
@@ -512,7 +525,7 @@ export default function PhotographerHome({
                 }
 
                 tex.colorSpace = THREE.SRGBColorSpace;
-                tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                tex.anisotropy = Math.min(quality.anisotropy, renderer.capabilities.getMaxAnisotropy());
 
                 // uploaded by pumpUploads, at most one per frame (several arriving together
                 // would otherwise stall a single frame and make scrolling stutter)
@@ -689,7 +702,7 @@ export default function PhotographerHome({
 
             const maxW = W * 0.74;
             const maxH = H * CONFIG.backTextMaxHeight;
-            const font = (px: number) => `${CONFIG.backTextWeight} ${px}px "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif`;
+            const font = (px: number) => `${CONFIG.backTextWeight} ${px}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
 
             // wrap to the card's width, shrinking the type until it all fits
             const wrap = (px: number) => {
@@ -727,7 +740,7 @@ export default function PhotographerHome({
 
             const tex = new THREE.CanvasTexture(c);
             tex.colorSpace = THREE.SRGBColorSpace;
-            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            tex.anisotropy = Math.min(quality.anisotropy, renderer.capabilities.getMaxAnisotropy());
             return tex;
         };
 
@@ -1101,7 +1114,10 @@ export default function PhotographerHome({
                 Math.abs(mouse.y - drawnMouseY) < 0.0005 &&
                 !tiles.some((t) => gsap.isTweening(t.state));
 
-            if (idle) return;
+            if (idle) {
+                dprGovernor.pause();
+                return;
+            }
 
             needsRender = false;
             drawnScroll = scrollY;
@@ -1330,7 +1346,12 @@ export default function PhotographerHome({
                 canvasHidden = heroCleared;
                 canvas.style.visibility = heroCleared ? 'hidden' : '';
             }
-            if (!heroCleared) renderer.render(scene, camera);
+            if (heroCleared) {
+                dprGovernor.pause();
+            } else {
+                renderer.render(scene, camera);
+                dprGovernor.tick();
+            }
 
             const p = easeInOut(
                 clamp(scrollY / (vh * CONFIG.nameRange), 0, 1)
@@ -1369,6 +1390,7 @@ export default function PhotographerHome({
         if (skipIntro) {
             // Coming from another page of the site: no intro. Go straight to the final layout.
             overlay.style.display = 'none';
+            logo.classList.add('pa-logo--settled');
 
             tl.fromTo(
                 canvas,
@@ -1387,6 +1409,7 @@ export default function PhotographerHome({
                 ease: 'power2.out',
                 onComplete: () => {
                     overlay.style.display = 'none';
+                    logo.classList.add('pa-logo--settled');
                 },
             });
 
@@ -1589,9 +1612,15 @@ export default function PhotographerHome({
                         }
                     }}
                 >
-                    <span className="nm">
-                        <span className="nm-en">{name}</span>
-                        <span className="nm-zh" aria-hidden="true">周子冸</span>
+                    {/* CSS-only reveal from the first paint (no JS wait): a pre-blurred copy fades
+                        in and out while the sharp name fades in. Only opacity animates, so it
+                        stays smooth on a busy CPU (an animated blur is re-rendered every frame). */}
+                    <span className="pa-reveal">
+                        <span className="pa-reveal-blur" aria-hidden="true">{name}</span>
+                        <span className="nm">
+                            <span className="nm-en">{name}</span>
+                            <span className="nm-zh" aria-hidden="true">周子冸</span>
+                        </span>
                     </span>
                 </Link>
             </div>
@@ -1630,7 +1659,7 @@ const css = `
     position: relative;
     background: #fff;
     color: #33333d;
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     overflow-x: clip;
     overflow-anchor: none;
   }
@@ -1665,6 +1694,47 @@ const css = `
     white-space: nowrap;
     pointer-events: auto;
     will-change: transform;
+  }
+
+  /* Until the white overlay is gone the name sits above it, so it shows from the first paint
+     (it is the page's LCP element) instead of after the JS loads. Then it drops back under
+     the photos. */
+  .pa-logo:not(.pa-logo--settled) {
+    z-index: 101;
+  }
+
+  .pa-reveal {
+    display: inline-grid;
+    justify-items: center;
+  }
+  .pa-reveal > * {
+    grid-area: 1 / 1;
+  }
+  .pa-reveal-blur {
+    filter: blur(2.5px);
+    opacity: 0;
+    pointer-events: none;
+    will-change: opacity;
+    animation: pa-blur-pass 1.4s ease-in-out;
+  }
+  .pa-reveal > .nm {
+    will-change: opacity;
+    animation: pa-sharp-in 1.4s ease-in-out backwards;
+  }
+  /* the whole name fades up from nothing: the soft copy never reaches full strength,
+     and the sharp name rises steadily underneath it, so the focus resolves as it fades in */
+  @keyframes pa-blur-pass {
+    0% { opacity: 0; }
+    45% { opacity: 0.5; }
+    100% { opacity: 0; }
+  }
+  @keyframes pa-sharp-in {
+    0%, 15% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pa-reveal-blur { display: none; }
+    .pa-reveal > .nm { animation: none; }
   }
 
   /* the name is not clickable until it has reached the top (the navbar): see html.pa-docked */
@@ -1745,7 +1815,8 @@ const css = `
       translate: 0 0;
     }
 
-    .pa-m .pa-logo {
+    /* not scoped to .pa-m (set after hydration): the name is visible before that */
+    .pa-root .pa-logo {
       font-size: 26px;
     }
   }

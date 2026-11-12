@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import gsap from "gsap";
+import { isLiteMode, onLiteMode, startPerfMonitor } from "./perfMode";
 
 let activeLenis: Lenis | null = null;
 
@@ -24,6 +25,10 @@ export default function SmoothScroll() {
   const pathname = usePathname();
 
   useEffect(() => {
+    startPerfMonitor();
+    // too slow for smooth scroll: the browser's native scroll runs off the main thread
+    if (isLiteMode()) return;
+
     const lenis = new Lenis({
       duration: 1.8,
       smoothWheel: true,
@@ -46,13 +51,23 @@ export default function SmoothScroll() {
     const onLoad = () => lenis.resize();
     window.addEventListener("load", onLoad);
 
-    return () => {
+    let destroyed = false;
+    const teardown = () => {
+      if (destroyed) return;
+      destroyed = true;
       gsap.ticker.remove(tick);
       ro.disconnect();
       window.removeEventListener("load", onLoad);
       lenis.destroy();
       lenisRef.current = null;
       activeLenis = null;
+    };
+
+    const offLite = onLiteMode(teardown);
+
+    return () => {
+      offLite();
+      teardown();
     };
   }, []);
 

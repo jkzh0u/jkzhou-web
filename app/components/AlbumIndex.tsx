@@ -792,7 +792,7 @@ const css = `
     --pad: clamp(16px, 4vw, 64px);
     position: relative;
     width: 100%;
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     padding: 6vh var(--pad) 18vh;
     box-sizing: border-box;
   }

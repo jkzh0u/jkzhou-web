@@ -151,7 +151,7 @@ const css = `
     --bb-gap: clamp(8px, 1vw, 16px);
     width: 100%;
     overflow: hidden;
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     user-select: none;
     -webkit-user-select: none;
   }

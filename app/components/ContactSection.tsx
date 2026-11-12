@@ -362,7 +362,7 @@ const css = `
     max-width: calc(1400px + 2 * var(--pad));
     margin: 0 auto;
     padding: clamp(72px, 11vh, 120px) var(--pad) clamp(80px, 14vh, 160px);
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
 
   .ct-label,

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import gsap from 'gsap';
 import { getScrollY } from './SmoothScroll';
+import { isLiteMode } from './perfMode';
 
 const ABOUT_PARAGRAPHS = [
     "hi! I'm Jackson (周子冸), I am currently interested in medicine & systems design engineering",
@@ -69,6 +70,8 @@ export default function AboutMe({ portrait }: { portrait: string }) {
         };
 
         const tick = () => {
+            // lite mode: the words just sit in place (see the perf-lite CSS below)
+            if (isLiteMode()) return;
             const scrollY = getScrollY();
             const box = stage.getBoundingClientRect();
             const stageTop = box.top + window.scrollY - scrollY;
@@ -173,7 +176,7 @@ const css = `
     position: relative;
     z-index: 2;
     color: #33333d;
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     overflow-anchor: none;
   }
 
@@ -233,6 +236,12 @@ const css = `
   .ab-word {
     display: inline-block;
     will-change: transform, opacity;
+  }
+
+  html.perf-lite .ab-word {
+    opacity: 1 !important;
+    transform: none !important;
+    will-change: auto;
   }
 
   @media (max-width: 1000px) {

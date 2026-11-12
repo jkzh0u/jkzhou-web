@@ -345,7 +345,7 @@ const css = `
     --line: color-mix(in srgb, currentColor 14%, transparent);
     position: relative;
     padding: 0 var(--pad) 42vh;
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
 
   .vm-stage {

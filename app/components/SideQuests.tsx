@@ -6,6 +6,7 @@ import Link from 'next/link';
 import gsap from 'gsap';
 import { experiences, type Experience } from '@/data/sidequests';
 import { getScrollY } from './SmoothScroll';
+import { isLiteMode } from './perfMode';
 
 const REPEATS = 3;
 // how often (ms) to check which logo is in the middle of the marquee
@@ -196,9 +197,55 @@ export default function SideQuests() {
         const revealAt = (yFromCentre: number, vh: number, offset = 0) =>
             clamp((vh * 0.75 - yFromCentre - offset) / (vh * 0.45), 0, 1);
 
+        // Word positions relative to the section, measured only when the layout or the caption
+        // changes. Reading every word's box each frame forced a full layout per frame.
+        let words: { el: HTMLElement; y: number; line: number }[] = [];
+        let logoRowY = 0;
+        let needsMeasure = true;
+        let dirty = true;
+        let drawnScroll = NaN;
+        let drawnBend = NaN;
+        let drawnTop = NaN;
+
+        const measureWords = () => {
+            needsMeasure = false;
+            dirty = true;
+            if (!section || !logoRow) return;
+            const top = section.getBoundingClientRect().top;
+            const row = logoRow.getBoundingClientRect();
+            logoRowY = row.top + row.height / 2 - top;
+
+            words = [];
+            for (const block of wordBlocks) {
+                if (!block) continue;
+                let line = 0;
+                let prevY = NaN;
+                block.querySelectorAll<HTMLElement>('.ex-w').forEach((el) => {
+                    const r = (el.parentElement ?? el).getBoundingClientRect();
+                    const y = r.top + r.height / 2 - top;
+                    if (!Number.isNaN(prevY) && Math.abs(y - prevY) > 4) line++;
+                    prevY = y;
+                    words.push({ el, y, line });
+                });
+            }
+        };
+
+        const markMeasure = () => {
+            needsMeasure = true;
+        };
+        const layoutRo = new ResizeObserver(markMeasure);
+        if (section) layoutRo.observe(section);
+        // the caption's words are swapped whenever the active logo changes
+        const captionMo = new MutationObserver(markMeasure);
+        wordBlocks.forEach((b) => b && captionMo.observe(b, { childList: true, subtree: true }));
+        window.addEventListener('resize', markMeasure);
+        document.fonts?.ready.then(markMeasure);
+
         // The same scroll effect as the about text in HomeHero, word by word: each word's fade
         // and rise come from its own place on screen, on a curve that bends more with scroll speed.
         const updateReveal = () => {
+            // lite mode: the words and logos just sit in place (see the perf-lite CSS below)
+            if (isLiteMode()) return;
             const scrollY = getScrollY();
             const frameDelta = Math.min(Math.abs(scrollY - lastScrollY), 60);
             lastScrollY = scrollY;
@@ -215,13 +262,28 @@ export default function SideQuests() {
 
             if (!section || !logoRow) return;
             const vh = window.innerHeight;
+            // all layout reads happen here, before any style is written this frame
+            if (needsMeasure) measureWords();
             const box = section.getBoundingClientRect();
             if (box.bottom < -vh || box.top > vh * 2) return;
 
+            // nothing moved since the last frame: skip the style writes entirely
+            if (
+                !dirty &&
+                scrollY === drawnScroll &&
+                box.top === drawnTop &&
+                Math.abs(bend - drawnBend) < 0.0005
+            ) {
+                return;
+            }
+            dirty = false;
+            drawnScroll = scrollY;
+            drawnTop = box.top;
+            drawnBend = bend;
+
             // the page's real scroll is in whole pixels; this converts to the smooth position
             const toSmooth = window.scrollY - scrollY - vh / 2;
-            const row = logoRow.getBoundingClientRect();
-            const logoReveal = revealAt(row.top + row.height / 2 + toSmooth, vh);
+            const logoReveal = revealAt(box.top + logoRowY + toSmooth, vh);
             if (logoReveal !== lastLogoReveal) {
                 lastLogoReveal = logoReveal;
                 logoRow.style.setProperty('--reveal', String(logoReveal));
@@ -230,32 +292,21 @@ export default function SideQuests() {
             const radius = vh * 1.1;
             const k = clamp(bend * 1.1, 0, TEXT_MAX_BEND);
 
-            for (const block of wordBlocks) {
-                if (!block) continue;
-                const words = Array.from(block.querySelectorAll<HTMLElement>('.ex-w'));
-                const ys = words.map((el) => {
-                    const r = (el.parentElement ?? el).getBoundingClientRect();
-                    return r.top + r.height / 2 + toSmooth;
-                });
+            for (const { el, y, line } of words) {
+                const yv = box.top + y + toSmooth;
+                if (yv > vh * 1.2 || yv < -vh * 1.2) {
+                    el.style.opacity = yv > 0 ? '0' : '1';
+                    continue;
+                }
 
-                let line = 0;
-                words.forEach((el, idx) => {
-                    const yv = ys[idx];
-                    if (idx > 0 && Math.abs(yv - ys[idx - 1]) > 4) line++;
-                    if (yv > vh * 1.2 || yv < -vh * 1.2) {
-                        el.style.opacity = yv > 0 ? '0' : '1';
-                        return;
-                    }
+                const reveal = revealAt(yv, vh, line * LINE_OFFSET);
+                el.style.opacity = String(reveal);
 
-                    const reveal = revealAt(yv, vh, line * LINE_OFFSET);
-                    el.style.opacity = String(reveal);
-
-                    if (reduceMotion) return;
-                    const a = clamp(yv / radius, -1.3, 1.3);
-                    const shiftY = lerp(yv, radius * Math.sin(a), k) - yv;
-                    const shiftZ = radius * (Math.cos(a) - 1) * k;
-                    el.style.transform = `perspective(1000px) translate3d(0, ${shiftY + (1 - reveal) * 22}px, ${shiftZ}px) rotateX(${-a * k}rad)`;
-                });
+                if (reduceMotion) continue;
+                const a = clamp(yv / radius, -1.3, 1.3);
+                const shiftY = lerp(yv, radius * Math.sin(a), k) - yv;
+                const shiftZ = radius * (Math.cos(a) - 1) * k;
+                el.style.transform = `perspective(1000px) translate3d(0, ${shiftY + (1 - reveal) * 22}px, ${shiftZ}px) rotateX(${-a * k}rad)`;
             }
         };
 
@@ -359,6 +410,9 @@ export default function SideQuests() {
             io.disconnect();
             cancelAnimationFrame(raf);
             ro.disconnect();
+            layoutRo.disconnect();
+            captionMo.disconnect();
+            window.removeEventListener('resize', markMeasure);
             gsap.ticker.remove(tick);
             marquee.removeEventListener('pointerdown', onDown);
             marquee.removeEventListener('pointermove', onMove);
@@ -453,7 +507,7 @@ const css = `
     z-index: 2;
     padding: 10vh 0 12vh;
     background: var(--background, #fff);
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     text-align: center;
   }
 
@@ -483,6 +537,17 @@ const css = `
   .ex-w {
     display: inline-block;
     will-change: transform, opacity;
+  }
+
+  html.perf-lite .ex-marquee {
+    opacity: 1 !important;
+    translate: none !important;
+  }
+
+  html.perf-lite .ex-w {
+    opacity: 1 !important;
+    transform: none !important;
+    will-change: auto;
   }
 
   .ex-marquee.is-dragging {

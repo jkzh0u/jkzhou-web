@@ -534,7 +534,7 @@ const css = `
     overflow: hidden;
     background: var(--background, #fff);
     color: #0f0f15;
-    font-family: "Neue Montreal", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
 
   @media (min-width: 1000px) {
