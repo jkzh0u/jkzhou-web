@@ -85,3 +85,12 @@ jobs:
               "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$endpoint_id" > /dev/null
 
           echo "Stack $STACK_ID redeployed with a fresh pull of :latest"
+
+          # The previous :latest is now untagged (dangling) on the host. Prune dangling images only
+          # (Docker's default with no filters), so unused-but-tagged images of other stacks are kept.
+          # A failed cleanup only warns; the deploy itself already succeeded.
+          if pruned=$(api -X POST "$PORTAINER_URL/api/endpoints/$endpoint_id/docker/images/prune"); then
+            jq -r '"Pruned \((.ImagesDeleted // []) | length) image layers, reclaimed \(.SpaceReclaimed / 1048576 | floor) MB"' <<<"$pruned"
+          else
+            echo "::warning::Image prune failed; deploy is unaffected"
+          fi
