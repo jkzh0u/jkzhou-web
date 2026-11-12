@@ -1390,7 +1390,7 @@ export default function PhotographerHome({
         if (skipIntro) {
             // Coming from another page of the site: no intro. Go straight to the final layout.
             overlay.style.display = 'none';
-            logo.classList.add('pa-logo--settled');
+            logo.classList.add('pa-logo--settled', 'pa-logo--live');
 
             tl.fromTo(
                 canvas,
@@ -1420,6 +1420,7 @@ export default function PhotographerHome({
 
                 tl.add(() => {
                     introReleased = true;
+                    logo.classList.add('pa-logo--live');
 
                     tiles.forEach((t, i) => {
                         if (t.ready) fadeTile(t, i);
@@ -1460,6 +1461,9 @@ export default function PhotographerHome({
                     tiles.length * appearGap +
                     appearDur +
                     0.3;
+
+                // the name only reacts to hover once the photos start spreading off it
+                tl.add(() => logo.classList.add('pa-logo--live'), spreadStart);
 
                 const START = Math.PI / 4;
                 const TAU = Math.PI * 2;
@@ -1701,6 +1705,12 @@ const css = `
      the photos. */
   .pa-logo:not(.pa-logo--settled) {
     z-index: 101;
+  }
+
+  /* no hover (the swap to 周子冸) while the intro is still loading and stacking the photos;
+     HomeHero adds pa-logo--live when they start to spread */
+  .pa-logo:not(.pa-logo--live) {
+    pointer-events: none;
   }
 
   .pa-reveal {
