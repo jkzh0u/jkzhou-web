@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
+import sharp from "sharp";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const ogSize = { width: 1200, height: 630 };
@@ -17,23 +18,29 @@ type Card = {
 
 const PHOTO_WIDTH = 440;
 
-// Originals can be over 10MB, so fetch a resized JPEG through Next's image optimizer.
-// Asking for image/jpeg stops it from returning WebP/AVIF, which the renderer can't read.
+// Loads the photo and shrinks it here, since originals can be over 10MB. It never goes through
+// the site itself: some cards are rendered during the build, when the site may be down.
+// Files in /public are read from disk; anything else is downloaded directly (e.g. from R2).
 async function loadPhoto(src: string): Promise<string | null> {
   try {
-    // Files in /public are read from disk, so a new image works before it is deployed
+    let input: Buffer;
     if (src.startsWith("/")) {
-      const data = await readFile(path.join(process.cwd(), "public", src));
-      const type = src.endsWith(".png") ? "image/png" : "image/jpeg";
-      return `data:${type};base64,${data.toString("base64")}`;
+      input = await readFile(path.join(process.cwd(), "public", src));
+    } else {
+      const res = await fetch(src);
+      if (!res.ok) {
+        console.error(`og: ${res.status} loading ${src}`);
+        return null;
+      }
+      input = Buffer.from(await res.arrayBuffer());
     }
-    const url = `${SITE_URL}/_next/image?url=${encodeURIComponent(src)}&w=640&q=75`;
-    const res = await fetch(url, { headers: { Accept: "image/jpeg" } });
-    if (!res.ok) return null;
-    const type = res.headers.get("content-type") ?? "image/jpeg";
-    const data = Buffer.from(await res.arrayBuffer()).toString("base64");
-    return `data:${type};base64,${data}`;
-  } catch {
+    // PNG keeps transparency (the SDR render); photos become JPEG
+    const resized = sharp(input).rotate().resize({ width: PHOTO_WIDTH * 2, withoutEnlargement: true });
+    const png = src.endsWith(".png");
+    const data = await (png ? resized.png() : resized.jpeg({ quality: 80 })).toBuffer();
+    return `data:image/${png ? "png" : "jpeg"};base64,${data.toString("base64")}`;
+  } catch (error) {
+    console.error(`og: failed to load ${src}`, error);
     return null;
   }
 }
