@@ -47,13 +47,15 @@ jobs:
       # Same as "Update the stack" with "Re-pull image and redeploy" in Portainer, through its API
       # (works on Community Edition; stack webhooks need Business Edition).
       # Secrets: PORTAINER_URL (e.g. https://portainer.example.com, no trailing slash),
-      # PORTAINER_API_KEY (My account > Access tokens), PORTAINER_STACK_ID (the number in the
-      # stack's URL in Portainer).
+      # PORTAINER_API_KEY (My account > Access tokens).
+      # Variable: PORTAINER_STACK_ID (the number in the stack's URL in Portainer).
       - name: Redeploy Portainer stack
         env:
           PORTAINER_URL: ${{ secrets.PORTAINER_URL }}
           PORTAINER_API_KEY: ${{ secrets.PORTAINER_API_KEY }}
-          STACK_ID: ${{ secrets.PORTAINER_STACK_ID }}
+          # a repository *variable*, not a secret: secrets are masked everywhere in the logs, and
+          # a short one like "8" garbles every 8 that appears (even inside the build summary)
+          STACK_ID: ${{ vars.PORTAINER_STACK_ID }}
         run: |
           set -euo pipefail
           # On an HTTP error, print who answered (Portainer or a proxy such as Cloudflare) and why
