@@ -56,7 +56,20 @@ jobs:
           STACK_ID: ${{ secrets.PORTAINER_STACK_ID }}
         run: |
           set -euo pipefail
-          api() { curl -fsS --retry 3 -H "X-API-Key: $PORTAINER_API_KEY" "$@"; }
+          # On an HTTP error, print who answered (Portainer or a proxy such as Cloudflare) and why
+          api() {
+            local body headers status
+            body=$(mktemp); headers=$(mktemp)
+            status=$(curl -sS --retry 3 -o "$body" -D "$headers" -w '%{http_code}' \
+              -H "X-API-Key: $PORTAINER_API_KEY" "$@")
+            if [ "$status" -ge 400 ]; then
+              echo "::error::HTTP $status from ${*: -1}" >&2
+              grep -iE '^(server|cf-ray):' "$headers" >&2 || true
+              head -c 600 "$body" >&2; echo >&2
+              exit 1
+            fi
+            cat "$body"
+          }
 
           stack=$(api "$PORTAINER_URL/api/stacks/$STACK_ID")
           endpoint_id=$(jq -r '.EndpointId' <<<"$stack")
