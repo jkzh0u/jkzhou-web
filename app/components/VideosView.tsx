@@ -25,7 +25,7 @@ export default function VideosView({ videos }: { videos: ReelVideo[] }) {
                 <ul className="sr-only">
                     {videos.map((video) => (
                         <li key={video.src}>
-                            {video.title}: {video.desc}
+                            <a href={`/videos/${video.slug}`}>{video.title}</a>: {video.desc}
                         </li>
                     ))}
                 </ul>

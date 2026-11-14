@@ -2,7 +2,12 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { projects, type RadioSite } from "@/data/projects";
 import { pageMetadata } from "@/lib/seo";
+import Image from "next/image";
+import { ArrowUpRight } from "lucide-react";
 import SdrViewer from "../../components/SdrViewer";
+import ProjectVideo from "../../components/ProjectVideo";
+import HomelabDiagram from "../../components/HomelabDiagram";
+import OpentoWidget from "../../components/OpentoWidget";
 
 export const dynamicParams = false;
 
@@ -81,7 +86,45 @@ export default async function ProjectPage({
         <div className="grid grid-cols-1 gap-y-8 lg:grid-cols-2 lg:gap-x-10">
           {/* The viewer pins itself inside this column while the write up scrolls past */}
           <div className="media-reveal order-2 lg:order-none" style={{ animationDelay: "0.2s" }}>
-            {slug === "sdr" && <SdrViewer screen="/projects/sdr-screen.mp4" />}
+            {slug === "sdr" ? (
+              <SdrViewer screen="/projects/sdr-screen.mp4" />
+            ) : (
+              // On desktop this box is one screen tall and pinned, so the media sits in the middle of
+              // the screen while the write up scrolls. -mt-32 cancels the page's top padding (lg:pt-32)
+              // so "the middle" is the middle of the screen, not 128px below it.
+              <div className="lg:sticky lg:top-0 lg:-mt-32 lg:flex lg:h-svh lg:flex-col lg:justify-center-safe lg:pt-14">
+                {project.diagram === "homelab" ? (
+                  <HomelabDiagram />
+                ) : project.video ? (
+                  <div className="space-y-6">
+                    <div className="relative aspect-[3/2] overflow-hidden bg-neutral-100">
+                      <ProjectVideo
+                        src={project.video}
+                        poster={project.poster}
+                        label={`${project.name} demo`}
+                      />
+                    </div>
+                    {project.widget === "opento" && (
+                      <div className="relative aspect-[3/2] overflow-hidden bg-neutral-100 lg:aspect-[2/1]">
+                        <OpentoWidget />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  project.poster && (
+                    <div className="relative aspect-[3/2] overflow-hidden bg-neutral-100">
+                      <Image
+                        src={project.poster}
+                        alt={`${project.name} preview`}
+                        fill
+                        sizes="(min-width: 1024px) 50vw, 100vw"
+                        className="object-cover"
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            )}
           </div>
 
           {/* One pinned column on desktop. When stacked its children join the page grid, so the
@@ -97,6 +140,33 @@ export default async function ProjectPage({
                 >
                   {project.description}
                 </p>
+              )}
+
+              {(project.href || project.repo) && (
+                <div className="load-reveal mt-5 flex flex-wrap gap-2" style={{ animationDelay: "0.2s" }}>
+                  {project.href && (
+                    <a
+                      href={project.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-10 items-center gap-1.5 rounded-full border border-neutral-300 px-4 text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-950"
+                    >
+                      visit {new URL(project.href).host}
+                      <ArrowUpRight className="size-4" aria-hidden="true" />
+                    </a>
+                  )}
+                  {project.repo && (
+                    <a
+                      href={project.repo}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-10 items-center gap-1.5 rounded-full border border-neutral-300 px-4 text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-950"
+                    >
+                      source on github
+                      <ArrowUpRight className="size-4" aria-hidden="true" />
+                    </a>
+                  )}
+                </div>
               )}
             </div>
 

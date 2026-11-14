@@ -17,6 +17,10 @@ export type Project = {
   poster?: string;
   /** Image for the link preview card, if different from the poster */
   ogImage?: string;
+  /** A drawn figure shown in place of media, on the card and the project's page */
+  diagram?: "homelab";
+  /** Live data shown in place of media on the card. The project's page still shows the video */
+  widget?: "opento";
   /** Sections of text on the project's page, shown beside the model */
   writeup?: WriteupSection[];
 };
@@ -40,10 +44,90 @@ export const projects: Project[] = [
     description:
       "live toronto dashboard for police calls, fire incidents, ttc and go alerts. built with next.js.",
     date: "nov '26",
+    slug: "opento",
+    widget: "opento",
     href: "https://opento.jkzhou.ca",
     repo: "https://github.com/jkzh0u/openTO",
     video: "/projects/openTO.mp4",
     poster: "/projects/openTO.jpg",
+    writeup: [
+      {
+        heading: "what is this?",
+        paragraphs: [
+          "opento is one page that shows what's happening around toronto right now. police calls, fire incidents, ttc alerts and go transit updates are all public, but they're spread across four different sites. I wanted all of them on one newspaper style front page that fits on one screen.",
+        ],
+      },
+      {
+        heading: "where the data comes from",
+        paragraphs: [
+          "police calls come from toronto police's public calls for service map, which runs on arcgis. I ask it for the latest 2000 calls, newest first.",
+          "fire incidents come from toronto fire's live cad feed, an xml file that lists every active incident with its alarm level and the trucks sent to it.",
+          "ttc alerts come from the ttc's own alerts api, go train and bus updates from metrolinx, and the weather and air quality from open-meteo.",
+        ],
+      },
+      {
+        heading: "keeping it live",
+        paragraphs: [
+          "the server loads every feed when you open the page, so it never shows up empty, then your browser checks every feed again once a minute. a feed gets 8 seconds to answer before it's skipped, so one slow site can't take the whole page down.",
+          "anything that shows up in a check that wasn't there the last time goes into the breaking news banner at the top.",
+        ],
+      },
+      {
+        heading: "maps",
+        paragraphs: [
+          "police calls are dots on a map of toronto's 16 police divisions, with stats on what kinds of calls are coming in and which division is the busiest.",
+          "the fire feed doesn't give an address for every call, just the nearest fire station, so that's where each incident goes on the fire map. it also only lists the trucks on a call right now, so the timeline of trucks arriving and leaving is built by comparing one check to the next.",
+          "the mini subway map marks closed stations and slow zones from the ttc's live alerts. ",
+        ],
+      },
+      {
+        heading: "what's next",
+        paragraphs: [
+          "right now the fire and police history only lives in your browser. I want to store it in a database (probably sqlite) so it's there for everyone, and figure out what the HP police division actually is so I can label it properly.",
+        ],
+      },
+    ],
+  },
+  {
+    name: "homelab",
+    description:
+      "the home server that runs this site and opento, with automatic deploys from github.",
+    date: "april '26",
+      slug: "homelab",
+    diagram: "homelab",
+    writeup: [
+      {
+        heading: "what is this?",
+        paragraphs: [
+          "this site isn't on vercel or any other host. it runs in docker on a server in my house, and so does opento. I wanted to learn how the whole thing works, from the code to the domain name.",
+        ],
+      },
+      {
+        heading: "deploys",
+        paragraphs: [
+          "every push to main starts a github actions workflow. it builds the site into a docker image and pushes it to github's container registry, tagged :latest and with the commit, so I can roll back to any version.",
+          "then the workflow tells portainer, which manages docker on the server, to pull the new image and redeploy the stack. portainer's stack webhooks need the paid edition, so it goes through portainer's api instead. at the end it prunes the old image so they don't pile up on the disk.",
+        ],
+      },
+      {
+        heading: "getting to the site",
+        paragraphs: [
+          "cloudflare handles dns for jkzhou.ca. requests come in to nginx proxy manager, which holds the ssl certificates and sends each domain to the right container, so jkzhou.ca and opento.jkzhou.ca can live on the same machine.",
+        ],
+      },
+      {
+        heading: "photos and videos",
+        paragraphs: [
+          "my photos and videos are too big to put in the docker image, so they live in a cloudflare r2 bucket served from assets.jkzhou.ca. I drop files into a samba share on the home server and they sync up to r2, so putting photos online is just copying them into a folder.",
+        ],
+      },
+      {
+        heading: "what's next",
+        paragraphs: [
+          "I want to set up cloudflare warp so I can get to the server when I'm away from home, and maybe put it behind cloudflare zero trust.",
+        ],
+      },
+    ],
   },
   {
     name: "TETRA PiSDR",

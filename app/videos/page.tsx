@@ -1,9 +1,7 @@
-import { promises as fs } from "fs";
-import path from "path";
 import type { Metadata } from "next";
 import VideosView from "../components/VideosView";
-import type { ReelVideo } from "../components/VideoReel";
 import { pageMetadata } from "@/lib/seo";
+import { getVideos } from "@/lib/videos";
 
 export const metadata: Metadata = pageMetadata({
   title: "videos",
@@ -11,16 +9,10 @@ export const metadata: Metadata = pageMetadata({
   path: "/videos",
 });
 
-async function getVideos(): Promise<ReelVideo[]> {
-  const filePath = path.join(process.cwd(), "public", "videos.json");
-  const fileContents = await fs.readFile(filePath, "utf8");
-  return JSON.parse(fileContents) as ReelVideo[];
-}
-
 export const dynamic = "force-dynamic"; // always re-read the file, never cache
 
 export default async function VideosPage() {
-  const videos = (await getVideos()).reverse();
+  const videos = await getVideos();
 
   return (
     <main className="bg-background text-foreground">

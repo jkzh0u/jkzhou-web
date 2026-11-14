@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, Maximize, Play, Volume2, VolumeX } from 'lucide-react';
+import Link from 'next/link';
+import { Link2, Loader2, Maximize, Play, Volume2, VolumeX } from 'lucide-react';
 import type { ReelVideo } from './VideoReel';
 
 type FullscreenVideo = HTMLVideoElement & { webkitEnterFullscreen?: () => void };
@@ -306,6 +307,13 @@ export default function VideoListMobile({ videos }: { videos: ReelVideo[] }) {
                         >
                             <Maximize aria-hidden="true" />
                         </button>
+                        <Link
+                            href={`/videos/${current.slug}`}
+                            className="vm-btn vm-btn--icon"
+                            aria-label={`open ${current.title} on its own page`}
+                        >
+                            <Link2 aria-hidden="true" />
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -518,6 +526,7 @@ const css = `
     border-radius: 999px;
     background: none;
     color: inherit;
+    text-decoration: none;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }

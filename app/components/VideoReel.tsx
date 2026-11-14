@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import Link from 'next/link';
 import {
     ArrowUpRight,
     ChevronDown,
     ChevronUp,
+    Link2,
     Loader2,
     Maximize,
     Play,
@@ -19,6 +21,8 @@ export interface ReelVideo {
     src: string;
     poster: string;
     desc: string;
+    /** Path segment of the video's own page, /videos/[slug] (filled in by lib/videos.ts) */
+    slug: string;
 
     aspectRatio?: number;
 }
@@ -453,6 +457,14 @@ export default function VideoReel({ videos }: { videos: ReelVideo[] }) {
                                     >
                                         <Maximize aria-hidden="true" />
                                     </button>
+                                    <Link
+                                        href={`/videos/${video.slug}`}
+                                        className="vr-btn"
+                                        aria-label={`open ${video.title} on its own page`}
+                                        title="open on its own page"
+                                    >
+                                        <Link2 aria-hidden="true" />
+                                    </Link>
                                 </div>
                             </div>
                         </section>

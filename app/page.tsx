@@ -90,7 +90,6 @@ export default function Home() {
 
       <Interests
         interests={[
-          // placeholder descriptions: replace with your own
           {
             label: "content creation",
             src: getR2Url("homepage/filmmaker.jpg"),
@@ -109,7 +108,6 @@ export default function Home() {
             description:
               "sometimes I wish I lived in the Canadian rockies or Washington so that I can hike like every day",
           },
-          // placeholders: swap in real interests and photos
           {
             label: "swimming",
             src: getR2Url("homepage/pool.jpg"),

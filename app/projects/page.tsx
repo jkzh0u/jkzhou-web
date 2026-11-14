@@ -4,6 +4,7 @@ import Link from "next/link";
 import { pageMetadata } from "@/lib/seo";
 import { projects, type Project } from "@/data/projects";
 import ProjectVideo from "../components/ProjectVideo";
+import HomelabDiagram from "../components/HomelabDiagram";
 
 export const metadata: Metadata = pageMetadata({
   title: "projects",
@@ -66,7 +67,9 @@ function ProjectCard({ project }: { project: Project }) {
       <div
         className={`relative aspect-[3/2] overflow-hidden ${project.comingSoon ? "pj-skel" : "bg-neutral-100"}`}
       >
-        {project.video ? (
+        {project.diagram === "homelab" ? (
+          <HomelabDiagram compact />
+        ) : project.video ? (
           <ProjectVideo
             src={project.video}
             poster={project.poster}
