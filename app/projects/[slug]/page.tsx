@@ -8,6 +8,7 @@ import SdrViewer from "../../components/SdrViewer";
 import ProjectVideo from "../../components/ProjectVideo";
 import HomelabDiagram from "../../components/HomelabDiagram";
 import OpentoWidget from "../../components/OpentoWidget";
+import AbcantoWidget from "../../components/AbcantoWidget";
 
 export const dynamicParams = false;
 
@@ -107,6 +108,13 @@ export default async function ProjectPage({
                     {project.widget === "opento" && (
                       <div className="relative aspect-[3/2] overflow-hidden bg-neutral-100 lg:aspect-[2/1]">
                         <OpentoWidget />
+                      </div>
+                    )}
+                    {project.widget === "abcanto" && (
+                      // Taller when stacked so a few results fit; on desktop it shares the pinned
+                      // screen-tall column with the video, so it matches the video's shape
+                      <div className="relative h-[34rem] overflow-hidden border border-neutral-200 bg-[#f8f3e6] lg:aspect-[3/2] lg:h-auto">
+                        <AbcantoWidget />
                       </div>
                     )}
                   </div>

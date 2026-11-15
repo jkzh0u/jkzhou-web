@@ -19,8 +19,8 @@ export type Project = {
   ogImage?: string;
   /** A drawn figure shown in place of media, on the card and the project's page */
   diagram?: "homelab";
-  /** Live data shown in place of media on the card. The project's page still shows the video */
-  widget?: "opento";
+  /** Something live shown under the video on the project's page: opento's numbers, or ABCanto to try out */
+  widget?: "opento" | "abcanto";
   /** Sections of text on the project's page, shown beside the model */
   writeup?: WriteupSection[];
 };
@@ -39,6 +39,57 @@ export type RadioSite = {
 };
 
 export const projects: Project[] = [
+  {
+    name: "ABCanto",
+    description:
+      "find the cantonese word by how it sounds, what it means, or what it literally means. built for ABCs like me.",
+    date: "nov '26",
+    slug: "abcanto",
+    href: "https://abcanto.jkzhou.ca",
+    repo: "https://github.com/jkzh0u/ABCanto",
+    video: "/projects/ABCanto.mp4",
+    poster: "/projects/ABCanto.jpg",
+    widget: "abcanto",
+    writeup: [
+      {
+        heading: "what is this?",
+        paragraphs: [
+          "ABCanto is a play on words: ABC, for asian-born canadian, plus canto, for cantonese.",
+        ],
+      },
+      {
+        heading: "why I built this",
+        paragraphs: [
+          "I grew up as an ABC in a cantonese-speaking household. my parents are immigrants who don't speak a word of english, so I've been the family translator for as long as I can remember: letters, documents, forms, literally everything that has english.",
+          "like a lot of ABCs, I can speak and understand cantonese fluently, but reading and writing it is another story. I'll know exactly how a word sounds, then get completely stuck the moment I try to text it to my parents. other times I know what something literally means in english (飛機 is literally a \"flying machine\") but not how to say or write it.",
+          "google translate is great, but it's built for translating sentences, not for finding the word that's on the tip of your tongue. so I built the tool I wanted.",
+        ],
+      },
+      {
+        heading: "three ways to search",
+        paragraphs: [
+          "how it sounds: type it the way you'd spell it out, like m goi → 唔該.",
+          "what it means: search in plain english, like \"thank you\".",
+          "literal translation: describe it word by word, like \"flying machine\" → 飛機.",
+        ],
+      },
+      {
+        heading: "how it works",
+        paragraphs: [
+          "sound search splits what you type into syllables (spaces are optional) and matches each one to jyutping, the standard way to romanize cantonese. it knows the ways people actually spell things out, like mixing up n and l, dropping the \"ng\", or writing ch or ts instead of c. tones are optional too.",
+          "meaning search looks through the english definitions, with exact matches ranked above partial ones. literal search matches each word you type to each character's own meaning, so \"flying machine\" becomes 飛 fly + 機 machine → 飛機.",
+          "results are ranked by how good the match is, then by how common the word is in spoken cantonese, with a boost for words that are specific to cantonese. the dictionary comes from CC-Canto and CC-CEDICT, and the word frequencies from HKCanCor.",
+          "it's next.js with a hono api, and it runs on my homelab with the same github actions and portainer setup as this site.",
+        ],
+      },
+      {
+        heading: "who it's for",
+        paragraphs: [
+          "if you're an ABC (or anyone, really) in the same boat, I hope it helps you too.",
+        ],
+      },
+    ],
+  },
   {
     name: "opento",
     description:
@@ -91,7 +142,7 @@ export const projects: Project[] = [
   {
     name: "homelab",
     description:
-      "the home server that runs this site and opento, with automatic deploys from github.",
+      "the home server that runs this site, opento and ABCanto, with automatic deploys from github.",
     date: "april '26",
       slug: "homelab",
     diagram: "homelab",
@@ -99,7 +150,7 @@ export const projects: Project[] = [
       {
         heading: "what is this?",
         paragraphs: [
-          "this site isn't on vercel or any other host. it runs in docker on a server in my house, and so does opento. I wanted to learn how the whole thing works, from the code to the domain name.",
+          "this site isn't on vercel or any other host. it runs in docker on a server in my house, and so do opento and ABCanto. I wanted to learn how the whole thing works, from the code to the domain name.",
         ],
       },
       {
@@ -112,7 +163,7 @@ export const projects: Project[] = [
       {
         heading: "getting to the site",
         paragraphs: [
-          "cloudflare handles dns for jkzhou.ca. requests come in to nginx proxy manager, which holds the ssl certificates and sends each domain to the right container, so jkzhou.ca and opento.jkzhou.ca can live on the same machine.",
+          "cloudflare handles dns for jkzhou.ca. requests come in to nginx proxy manager, which holds the ssl certificates and sends each domain to the right container, so jkzhou.ca, opento.jkzhou.ca and abcanto.jkzhou.ca can all live on the same machine.",
         ],
       },
       {

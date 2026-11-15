@@ -20,7 +20,7 @@ const lanes: Lane[] = [
       { label: "browser", note: "jkzhou.ca" },
       { label: "cloudflare", note: "dns" },
       { label: "nginx proxy manager", note: "ssl, routes by domain" },
-      { label: "docker", note: "this site, opento" },
+      { label: "docker", note: "this site, opento, ABCanto" },
     ],
   },
   {
