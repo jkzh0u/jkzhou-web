@@ -113,7 +113,7 @@ export default async function ProjectPage({
                     {project.widget === "abcanto" && (
                       // Taller when stacked so a few results fit; on desktop it shares the pinned
                       // screen-tall column with the video, so it matches the video's shape
-                      <div className="relative h-[34rem] overflow-hidden border border-neutral-200 bg-[#f8f3e6] lg:aspect-[3/2] lg:h-auto">
+                      <div className="relative h-[34rem] overflow-hidden border border-neutral-200 bg-[#1f1a14] lg:aspect-[3/2] lg:h-auto">
                         <AbcantoWidget />
                       </div>
                     )}

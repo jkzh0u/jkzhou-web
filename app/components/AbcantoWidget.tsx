@@ -1,8 +1,8 @@
 // A working copy of ABCanto from abcanto.jkzhou.ca/embed, shown on its project page so
-// people can try a search without leaving. Light theme to match this site; results scroll
-// inside the frame.
+// people can try a search without leaving. Dark theme by default; results scroll inside
+// the frame.
 
-const EMBED_URL = "https://abcanto.jkzhou.ca/embed?theme=light";
+const EMBED_URL = "https://abcanto.jkzhou.ca/embed?theme=dark";
 
 export default function AbcantoWidget() {
   return (
