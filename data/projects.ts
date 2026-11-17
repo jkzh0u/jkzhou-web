@@ -30,6 +30,8 @@ export type WriteupSection = {
   paragraphs: string[];
   /** Shown as a table after the paragraphs */
   sites?: RadioSite[];
+  /** Shown as a block of commands after the paragraphs */
+  code?: string;
 };
 
 export type RadioSite = {
@@ -39,6 +41,85 @@ export type RadioSite = {
 };
 
 export const projects: Project[] = [
+  {
+    name: "C62 TETRA project",
+    description:
+      "firmware that turns the Retevis C62 handheld into a TETRA receiver that follows calls and roams between cells on its own.",
+    slug: "c62",
+    repo: "https://github.com/jkzh0u/OpenRTX",
+    video: "/projects/c62.mp4",
+    poster: "/projects/c62.jpg",
+    writeup: [
+      {
+        heading: "what is this?",
+        paragraphs: [
+          "the [piSDR](/projects/sdr) could listen in on TETRA, but it's a raspberry pi, an SDR and a battery board in a case, running a whole stack of software. I wanted the same thing in one handheld radio I could carry around.",
+          "I came across Wojciech Kaczmarski's [blog article](https://m17project.org/2026/10/27/an-unmodified-c62-can-not-decode-tetra-or-can-it/) about how a cheap C62 can be used to monitor TETRA. the software was a proof of concept, and it didn't support multiple carrier frequencies. this fork of the firmware adds that, specifically for the TTC in Toronto, which is the only TETRA network I have around me.",
+          "a receiver that decodes TETRA isn't the same as one you can use, though. you had to tune it by hand, it lost the call whenever the network moved it to another frequency, and it had no idea which of the network's talkgroups you cared about. my fork fixes that.",
+        ],
+      },
+      {
+        heading: "following calls and roaming",
+        paragraphs: [
+          "as I covered on the [piSDR page](/projects/sdr), a TETRA call starts on the control channel and then moves to a traffic carrier. the proof of concept had no multi carrier support: it could only stay on a single channel, so it lost the call as soon as the network moved it. I added a call follower that jumps to the carrier the network picks, and a fast retune in the BK4819 driver so the radio doesn't restart its receiver every time it does.",
+          "I also added automatic cell tracking, so the radio moves between sites by itself as you move. it remembers the cell it just left, and shows where it came from.",
+        ],
+      },
+      {
+        heading: "a built-in channel list",
+        paragraphs: [
+          "the C62 has nowhere to store settings, so the channel list has to live in the firmware itself. I added a read-only codeplug built into the firmware, with a build option for a built-in channel list, so a network's sites, talkgroups and radio names can be baked in when you build. the list I wrote is for Toronto's TTC: every above ground site, all 13 underground zones, and the identities of the talkgroups and train runs.",
+          "talkgroups can have names, so the screen says Transit Control or Run 253 instead of a number. filters, selected with # and *, pick which groups you hear. my TTC list has a Riding filter for being on a train: every line's line calls plus Transit Control. holding a talkgroup locks onto it, and the radio plays one call at a time. red alarms come through every filter.",
+        ],
+      },
+      {
+        heading: "before you build",
+        paragraphs: [
+          "I wrapped it all up on top of Wojciech's [OpenRTX fork](https://github.com/sp5wwp/OpenRTX/tree/c62/tetra), which is itself built on [turnrye's OpenRTX fork](https://github.com/turnrye/OpenRTX). turnrye's one is focused on M17, and it uses the DSP firmware part of the radio, setting the baseband sample rate to 48kHz.",
+          "the build pulls [ETSI](https://www.etsi.org)'s codebooks for their ACELP vocoder. they end up embedded in the firmware, so don't distribute the binaries. the source is in [my fork](https://github.com/jkzh0u/OpenRTX), and you build it yourself.",
+        ],
+      },
+      {
+        heading: "build it yourself",
+        paragraphs: [
+          "you only need [docker](https://www.docker.com) and git. the image holds the whole toolchain (the Zephyr SDK, west, cmake and ninja), and your source stays on your disk. on windows, use a WSL2 shell with the folder inside WSL.",
+          "the first command makes a folder for the workspace, since west puts the Zephyr fork and the radio's modules next to the OpenRTX checkout. building the image takes 5 to 10 minutes and about 2 GB, and the first firmware build downloads the Zephyr fork. after that, running the same docker command again only rebuilds what changed.",
+          "the -DC62_CHANNELS option builds the TTC channel list into the firmware. to use another network, copy scripts/c62/channels/ttc_tetra.h, fill in your own sites and talkgroups, and point the option at your copy. the option is remembered, so later builds keep the list.",
+        ],
+        code: `mkdir c62-ws && cd c62-ws
+git clone -b c62/channels https://github.com/jkzh0u/OpenRTX.git
+
+# build the toolchain image, once
+docker build -t openrtx-c62 OpenRTX/scripts/c62
+
+# build the firmware
+docker run --rm -it --user "$(id -u):$(id -g)" \\
+    -v "$PWD":/work openrtx-c62 \\
+    c62-build -DC62_CHANNELS=scripts/c62/channels/ttc_tetra.h`,
+      },
+      {
+        heading: "flashing it",
+        paragraphs: [
+          "the build gives you two files. zephyr.bin goes at 0x000000 and dsp_firmware.bin at 0x100000, both under OpenRTX/build_c62/zephyr. the DSP firmware is downloaded and hash-checked during the build.",
+          "flash them with [cskburn](https://github.com/LISTENAI/cskburn/releases) over the Kenwood programming cable. back up your radio's own flash first, because it's different for every unit.",
+          "to enter burn mode, turn the radio off, hold the lower side key, power on, then let go of the key. the screen stays dark. don't press the main PTT while flashing, since it shares a line with the boot ROM. cskburn resets the radio after each command, so enter burn mode again before each one. replace /dev/ttyUSB0 with your cable's port.",
+        ],
+        code: `# 1. back up the radio's flash (burn mode first)
+cskburn -s /dev/ttyUSB0 -C 6 -b 115200 -v --read 0x0:0x400000:backup.bin
+
+# 2. flash the firmware (burn mode again)
+cskburn -s /dev/ttyUSB0 -C 6 -b 115200 -v --verify-all \\
+    0x100000 OpenRTX/build_c62/zephyr/dsp_firmware.bin \\
+    0x000000 OpenRTX/build_c62/zephyr/zephyr.bin`,
+      },
+      {
+        heading: "using it",
+        paragraphs: [
+          "it starts in VFO mode on 430.000 MHz, in M17. TETRA is available through the quick menu key: hold the side key and press 5 to switch between M17, FM and TETRA. with the channel list built in, press ESC for memory mode, then up and down to step through the channels. each channel sets its own mode, so a TETRA channel goes straight to T mode.",
+        ],
+      },
+    ],
+  },
   {
     name: "ABCanto",
     description:

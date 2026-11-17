@@ -3,8 +3,10 @@ import type { Metadata } from "next";
 import { projects, type RadioSite } from "@/data/projects";
 import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import SdrViewer from "../../components/SdrViewer";
+import C62Viewer from "../../components/C62Viewer";
 import ProjectVideo from "../../components/ProjectVideo";
 import HomelabDiagram from "../../components/HomelabDiagram";
 import OpentoWidget from "../../components/OpentoWidget";
@@ -17,6 +19,32 @@ export function generateStaticParams() {
 }
 
 const findProject = (slug: string) => projects.find((project) => project.slug === slug);
+
+const LINK_CLASS =
+  "text-neutral-800 underline decoration-neutral-300 underline-offset-4 transition-colors hover:decoration-neutral-800";
+
+// Write-up text can hold links as [text](url): a path on this site, or a full address that opens in a new tab
+function RichText({ text }: { text: string }) {
+  const parts = text.split(/(\[[^\]]+\]\([^)\s]+\))/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        const match = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part);
+        if (!match) return part;
+        const [, label, href] = match;
+        return href.startsWith("/") ? (
+          <Link key={i} href={href} className={LINK_CLASS}>
+            {label}
+          </Link>
+        ) : (
+          <a key={i} href={href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+            {label}
+          </a>
+        );
+      })}
+    </>
+  );
+}
 
 function SitesTable({ sites }: { sites: RadioSite[] }) {
   return (
@@ -89,6 +117,8 @@ export default async function ProjectPage({
           <div className="media-reveal order-2 lg:order-none" style={{ animationDelay: "0.2s" }}>
             {slug === "sdr" ? (
               <SdrViewer screen="/projects/sdr-screen.mp4" />
+            ) : slug === "c62" ? (
+              <C62Viewer screen="/projects/c62-screen.png" alarm="/projects/c62-alarm.png" />
             ) : (
               // On desktop this box is one screen tall and pinned, so the media sits in the middle of
               // the screen while the write up scrolls. -mt-32 cancels the page's top padding (lg:pt-32)
@@ -139,7 +169,7 @@ export default async function ProjectPage({
               title stays above the model and the write up below it. */}
           <div className="contents lg:sticky lg:top-24 lg:block lg:self-start">
             <div className="order-1">
-              <h1 className="load-reveal text-3xl font-semibold">{project.name}</h1>
+              <h1 className="load-reveal text-4xl font-semibold sm:text-5xl">{project.name}</h1>
 
               {project.description && (
                 <p
@@ -188,9 +218,14 @@ export default async function ProjectPage({
                     <h2 className="text-xl font-semibold sm:text-2xl">{section.heading}</h2>
                     {section.paragraphs.map((paragraph) => (
                       <p key={paragraph} className="mt-3 text-lg leading-relaxed text-neutral-600">
-                        {paragraph}
+                        <RichText text={paragraph} />
                       </p>
                     ))}
+                    {section.code && (
+                      <pre className="mt-4 overflow-x-auto rounded-lg border border-neutral-200 bg-neutral-50 p-4 font-mono text-sm leading-relaxed text-neutral-800">
+                        <code>{section.code}</code>
+                      </pre>
+                    )}
                     {section.sites && <SitesTable sites={section.sites} />}
                   </section>
                 ))}
