@@ -42,7 +42,7 @@ export type RadioSite = {
 
 export const projects: Project[] = [
   {
-    name: "C62 TETRA project",
+    name: "C62 TETRA project - WIP",
     description:
       "firmware that turns the Retevis C62 handheld into a TETRA receiver that follows calls and roams between cells on its own.",
     slug: "c62",
