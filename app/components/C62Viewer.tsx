@@ -4,27 +4,63 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { ANTENNA_NAME, buildKit, KEY_TRAVEL, KEYS, KNOB_NAME, SCREEN_FACE, SCREEN_NAME, type KeyId } from "./c62Kit";
+import {
+  ANTENNA_NAME,
+  buildKit,
+  KEY_TRAVEL,
+  KEYS,
+  KNOB_NAME,
+  SCREEN_FACE,
+  SCREEN_NAME,
+  type KeyId,
+} from "./c62Kit";
 
 const SPIN_SECONDS_PER_TURN = 26;
 const START_ANGLE = -0.55; // radians, 0 faces the display toward the viewer
 const PAGE_COLOUR = 0xffffff;
 
 // The scroll sequence. Progress p runs 0 to 1 over SCROLL_RANGE viewport heights of scrolling
-// while the stage is pinned: the antenna screws on, the knob turns the radio on, the screen lights.
+// while the stage is pinned. The camera flies a set path round the radio: down close over the
+// top deck as the antenna screws on, across to the knob as it turns the radio on, round and
+// down to face the screen as it boots, then back out to the whole radio as the antenna starts
+// receiving.
 const SCROLL_RANGE = 1;
 // The antenna starts this far above its seat (mm) and turns this many times on the way down
 const ANTENNA_LIFT = 16;
 const ANTENNA_TURNS = 3;
-const ANTENNA_END = 0.4;
-const KNOB_START = 0.38;
-const KNOB_END = 0.6;
+const ANTENNA_SCREW = [0.06, 0.4] as const;
+const KNOB_START = 0.44;
+const KNOB_END = 0.56;
 const KNOB_ON_ANGLE = -1.1; // clockwise seen from above
-const SCREEN_START = 0.55;
-const SCREEN_END = 0.85;
-// When the sequence starts, the radio turns to face the camera, its PTT side a little toward it
-const PRESENT_YAW = 0.35; // relative to the camera
-const SETTLE_RATE = 4;
+const SCREEN_START = 0.6;
+const SCREEN_END = 0.78;
+// The keypad backlight comes on in a wave from the top row down, then settles
+const BACKLIGHT = { at: 0.62, spread: 0.1, rise: 0.04, fall: 0.14, peak: 1.4, rest: 0.35 } as const;
+// Once it is on, the antenna sends out rings: bursts of RING_COUNT every RING_PERIOD seconds
+const RINGS_START = 0.82;
+const RINGS_END = 0.92;
+const RING_COUNT = 3;
+const RING_GAP = 0.32;
+const RING_LIFE = 1.7;
+const RING_PERIOD = 2.8;
+const RING_RADIUS = [6, 46] as const;
+const RING_RISE = 9;
+const RING_OPACITY = 0.6;
+// How quickly the sequence catches up with the scroll, per second
+const FOLLOW_RATE = 7;
+// The camera's path, in the radio's own frame: azimuth round it (0 looks straight at the screen,
+// negative comes round the PTT side), elevation above level, distance as a share of the distance
+// that fits the whole radio, and the point it looks at. Where the sequence starts, the path
+// begins from wherever the camera already is. A spline runs through the shots, so the camera
+// never stops dead between them.
+type Look = "antenna" | "knob" | "screen" | "radio";
+const SHOTS: { p: number; az: number; elev: number; dist: number; look: Look }[] = [
+  { p: 0.12, az: -0.9, elev: 0.5, dist: 0.86, look: "antenna" }, // high over the top deck
+  { p: 0.36, az: -0.45, elev: 0.32, dist: 0.78, look: "antenna" }, // following it down
+  { p: 0.52, az: 0.5, elev: 0.42, dist: 0.72, look: "knob" }, // across to the knob
+  { p: 0.74, az: 0.1, elev: 0.06, dist: 0.74, look: "screen" }, // round and down to the screen
+  { p: 1, az: -0.35, elev: 0.12, dist: 1, look: "radio" }, // back out to the whole radio
+];
 // Room left round the radio
 const MARGIN = 1.08;
 
@@ -41,6 +77,10 @@ const smoothstep = (a: number, b: number, v: number) => {
   const t = clamp((v - a) / (b - a), 0, 1);
   return t * t * (3 - 2 * t);
 };
+const span = (range: readonly number[], v: number) => clamp((v - range[0]) / (range[1] - range[0]), 0, 1);
+// Catmull-Rom through four values, t from b to c
+const spline = (a: number, b: number, c: number, d: number, t: number) =>
+  0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
 
 const KEY_BY_NAME = new Map<string, KeyId>(KEYS.map((k) => [k.name, k.id]));
 
@@ -147,26 +187,106 @@ export default function C62Viewer({ screen, alarm }: { screen: string; alarm?: s
     turntable.add(kit);
     scene.add(turntable);
 
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const antenna = kit.getObjectByName(ANTENNA_NAME);
     const antennaSeat = antenna?.position.clone();
     const knob = kit.getObjectByName(KNOB_NAME);
-    const placeAntenna = (screwed: number) => {
-      if (!antenna || !antennaSeat) return;
-      antenna.position.y = antennaSeat.y + ANTENNA_LIFT * (1 - screwed);
-      antenna.rotation.y = -ANTENNA_TURNS * Math.PI * 2 * (1 - screwed);
+
+    // The keys sink KEY_TRAVEL along their own -Z while held
+    const keyGroups = new Map<KeyId, { group: THREE.Object3D; rest: THREE.Vector3; travel: THREE.Vector3 }>();
+    kit.updateMatrixWorld(true);
+    kit.traverse((object) => {
+      const id = KEY_BY_NAME.get(object.name);
+      if (!id) return;
+      const travel = new THREE.Vector3(0, 0, -KEY_TRAVEL).applyQuaternion(object.quaternion);
+      keyGroups.set(id, { group: object, rest: object.position.clone(), travel });
+    });
+
+    // The keypad legends glow when the backlight comes on, top row first
+    const legends: { material: THREE.MeshStandardMaterial; order: number }[] = [];
+    {
+      const tops = [...keyGroups.values()].map(({ group }) => group.getWorldPosition(new THREE.Vector3()).y);
+      const highest = Math.max(...tops);
+      const lowest = Math.min(...tops);
+      for (const { group } of keyGroups.values()) {
+        const y = group.getWorldPosition(new THREE.Vector3()).y;
+        group.traverse((o) => {
+          if (!(o instanceof THREE.Mesh) || !o.name.startsWith("Legend")) return;
+          const material = o.material as THREE.MeshStandardMaterial;
+          material.emissive = new THREE.Color(0xffffff);
+          material.emissiveMap = material.map;
+          material.emissiveIntensity = 0;
+          material.needsUpdate = true;
+          legends.push({ material, order: (highest - y) / (highest - lowest || 1) });
+        });
+      }
+    }
+
+    let heldKey: KeyId | null = null;
+    // Puts the moving parts where they belong at progress p
+    const pose = (p: number) => {
+      if (antenna && antennaSeat) {
+        const screwed = smoothstep(ANTENNA_SCREW[0], ANTENNA_SCREW[1], p);
+        antenna.position.y = antennaSeat.y + ANTENNA_LIFT * (1 - screwed);
+        antenna.rotation.y = -ANTENNA_TURNS * Math.PI * 2 * (1 - screwed);
+      }
+      if (knob) knob.rotation.y = KNOB_ON_ANGLE * smoothstep(KNOB_START, KNOB_END, p);
+      for (const { material, order } of legends) {
+        const start = BACKLIGHT.at + BACKLIGHT.spread * order;
+        const rise = smoothstep(start, start + BACKLIGHT.rise, p);
+        const fall = smoothstep(start + BACKLIGHT.rise, start + BACKLIGHT.rise + BACKLIGHT.fall, p);
+        material.emissiveIntensity = rise * (BACKLIGHT.peak - (BACKLIGHT.peak - BACKLIGHT.rest) * fall);
+      }
+      for (const [id, k] of keyGroups) {
+        k.group.position.copy(k.rest);
+        if (id === heldKey) k.group.position.add(k.travel);
+      }
     };
-    placeAntenna(0);
+    pose(0);
 
     // Measure the radio at its tallest, with the antenna off its seat, and centre it on the spin
     // axis. The frame fits the radius it sweeps, so nothing leaves the frame as it turns.
     kit.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(kit);
     const centre = bounds.getCenter(new THREE.Vector3());
+    // What the camera looks at in each shot, in the kit's own millimetres
+    const screenAt = kit.getObjectByName(SCREEN_NAME)?.getWorldPosition(new THREE.Vector3()) ?? centre.clone();
+    const looks: Record<Look, THREE.Vector3> = {
+      antenna: antennaSeat ? antennaSeat.clone().add(new THREE.Vector3(0, 14, 0)) : centre.clone().divideScalar(0.001),
+      knob: knob ? knob.position.clone().add(new THREE.Vector3(0, 5, 0)) : centre.clone().divideScalar(0.001),
+      screen: screenAt.divideScalar(0.001),
+      radio: centre.clone().divideScalar(0.001),
+    };
     kit.position.set(-centre.x, -centre.y, -centre.z);
     // extra room under the foot, so the fade at the bottom of the stage only covers the shadow
     const halfHeight = ((bounds.max.y - bounds.min.y) / 2) * MARGIN * 1.08;
     const halfWidth = Math.hypot((bounds.max.x - bounds.min.x) / 2, (bounds.max.z - bounds.min.z) / 2) * MARGIN;
     turntable.rotation.y = START_ANGLE;
+
+    // Rings off the antenna once the radio is receiving, lying flat round it
+    const ringGeometry = new THREE.TorusGeometry(1, 0.02, 6, 96).rotateX(Math.PI / 2);
+    const rings = Array.from({ length: RING_COUNT }, () => {
+      const ring = new THREE.Mesh(
+        ringGeometry,
+        new THREE.MeshBasicMaterial({ color: 0x262626, transparent: true, opacity: 0, depthWrite: false }),
+      );
+      ring.visible = false;
+      kit.add(ring);
+      return ring;
+    });
+    const ringOrigin = antennaSeat ? antennaSeat.clone().add(new THREE.Vector3(0, 62, 0)) : new THREE.Vector3();
+    const placeRings = (strength: number, time: number) => {
+      rings.forEach((ring, i) => {
+        const age = ((((time - i * RING_GAP) % RING_PERIOD) + RING_PERIOD) % RING_PERIOD) / RING_LIFE;
+        const material = ring.material as THREE.MeshBasicMaterial;
+        ring.visible = strength > 0 && age < 1;
+        if (!ring.visible) return;
+        const grown = 1 - (1 - age) ** 2;
+        ring.scale.setScalar(RING_RADIUS[0] + (RING_RADIUS[1] - RING_RADIUS[0]) * grown);
+        ring.position.copy(ringOrigin).setY(ringOrigin.y + RING_RISE * age);
+        material.opacity = RING_OPACITY * strength * (1 - age) ** 1.5 * Math.min(1, age * 8);
+      });
+    };
 
     let needsRender = true;
     const screenMesh = kit.getObjectByName(SCREEN_NAME);
@@ -240,6 +360,9 @@ export default function C62Viewer({ screen, alarm }: { screen: string; alarm?: s
 
     let fitDistance = 1;
     let stickyTop = 0;
+    let progress = -1;
+    // Seconds, for the rings
+    let clock = 0;
     // Moves the camera to fit, keeping any zoom and rotation the viewer has made
     const reframe = () => {
       const t = Math.tan((camera.fov * Math.PI) / 360);
@@ -268,16 +391,63 @@ export default function C62Viewer({ screen, alarm }: { screen: string; alarm?: s
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(mount);
 
-    let spinning = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let spinning = !reduceMotion;
     let dragging = false;
     let ease = 1;
     let resumeAt = 0;
-    // The scroll sequence turns the radio to face the camera once, then leaves it alone
+    // While the sequence runs the radio holds still and the camera flies the path, until the
+    // viewer takes over by dragging or zooming
     let presenting = false;
     let presentArmed = true;
-    let presentSettled = true;
-    let presentTarget = 0;
-    let progress = -1;
+    let directing = false;
+    type Shot = { p: number; az: number; elev: number; dist: number; look: THREE.Vector3 };
+    let path: Shot[] = [];
+    // The path starts from wherever the camera is when the sequence begins
+    const startPath = () => {
+      const offset = camera.position.clone().sub(controls.target);
+      const length = offset.length() || 1;
+      let az = Math.atan2(offset.x, offset.z) - turntable.rotation.y;
+      // the short way round to the first shot
+      az += Math.round((SHOTS[0].az - az) / (Math.PI * 2)) * Math.PI * 2;
+      kit.updateMatrixWorld(true);
+      path = [
+        {
+          p: 0,
+          az,
+          elev: Math.asin(clamp(offset.y / length, -1, 1)),
+          dist: length / fitDistance,
+          look: kit.worldToLocal(controls.target.clone()),
+        },
+        ...SHOTS.map((shot) => ({ ...shot, look: looks[shot.look] })),
+      ];
+    };
+    const look = new THREE.Vector3();
+    const fly = (p: number) => {
+      let i = 0;
+      while (i < path.length - 2 && p > path[i + 1].p) i++;
+      const a = path[Math.max(0, i - 1)];
+      const b = path[i];
+      const c = path[i + 1];
+      const d = path[Math.min(path.length - 1, i + 2)];
+      const t = span([b.p, c.p], p);
+      const az = spline(a.az, b.az, c.az, d.az, t) + turntable.rotation.y;
+      const elev = spline(a.elev, b.elev, c.elev, d.elev, t);
+      const dist = spline(a.dist, b.dist, c.dist, d.dist, t) * fitDistance;
+      look.set(
+        spline(a.look.x, b.look.x, c.look.x, d.look.x, t),
+        spline(a.look.y, b.look.y, c.look.y, d.look.y, t),
+        spline(a.look.z, b.look.z, c.look.z, d.look.z, t),
+      );
+      kit.localToWorld(look);
+      controls.target.copy(look);
+      camera.position.set(
+        look.x + dist * Math.cos(elev) * Math.sin(az),
+        look.y + dist * Math.sin(elev),
+        look.z + dist * Math.cos(elev) * Math.cos(az),
+      );
+    };
+    // The sequence follows the scroll with a little lag, so the camera glides
+    let shown = 0;
     const showSpinState = () => {
       const on = spinning && !presenting;
       toggle.textContent = on ? "pause" : "spin";
@@ -291,6 +461,7 @@ export default function C62Viewer({ screen, alarm }: { screen: string; alarm?: s
         spinning = true;
         presenting = false;
         presentArmed = false;
+        directing = false;
       }
       ease = 0;
       showSpinState();
@@ -299,7 +470,7 @@ export default function C62Viewer({ screen, alarm }: { screen: string; alarm?: s
 
     controls.addEventListener("start", () => {
       dragging = true;
-      presentSettled = true;
+      directing = false;
       hint.style.opacity = "0";
     });
     controls.addEventListener("end", () => {
@@ -308,14 +479,7 @@ export default function C62Viewer({ screen, alarm }: { screen: string; alarm?: s
       resumeAt = performance.now() + 900;
     });
 
-    // The keys sink KEY_TRAVEL along their own -Z while held. They do nothing else, except 9 1 1.
-    const keyGroups = new Map<KeyId, { group: THREE.Object3D; rest: THREE.Vector3; travel: THREE.Vector3 }>();
-    kit.traverse((object) => {
-      const id = KEY_BY_NAME.get(object.name);
-      if (!id) return;
-      const travel = new THREE.Vector3(0, 0, -KEY_TRAVEL).applyQuaternion(object.quaternion);
-      keyGroups.set(id, { group: object, rest: object.position.clone(), travel });
-    });
+    // The keys sink while held (see pose). They do nothing else, except 9 1 1.
     let typed: string[] = [];
     let alarmTimer = 0;
     let washTimer = 0;
@@ -369,18 +533,17 @@ export default function C62Viewer({ screen, alarm }: { screen: string; alarm?: s
       if (event.button !== 0 || pressed) return;
       const id = keyAt(event);
       if (!id) return;
-      const k = keyGroups.get(id);
-      if (!k) return;
       controls.enabled = false;
       pressed = { pointerId: event.pointerId, id };
-      k.group.position.copy(k.rest).add(k.travel);
+      heldKey = id;
+      pose(shown);
       needsRender = true;
       listenForCode(id);
     };
     const onPointerUp = (event: PointerEvent) => {
       if (!pressed || pressed.pointerId !== event.pointerId) return;
-      const k = keyGroups.get(pressed.id);
-      if (k) k.group.position.copy(k.rest);
+      heldKey = null;
+      pose(shown);
       pressed = null;
       controls.enabled = true;
       needsRender = true;
@@ -418,7 +581,7 @@ export default function C62Viewer({ screen, alarm }: { screen: string; alarm?: s
       turntable.rotation.y += event.key === "ArrowLeft" ? -0.2 : 0.2;
       resumeAt = performance.now() + 1500;
       ease = 0;
-      presentSettled = true;
+      directing = false;
       needsRender = true;
       event.preventDefault();
     };
@@ -438,14 +601,11 @@ export default function C62Viewer({ screen, alarm }: { screen: string; alarm?: s
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
 
+      clock += dt;
       const p = scrollProgress();
       if (p !== progress) {
         progress = p;
         stage.dataset.progress = p.toFixed(3);
-        placeAntenna(smoothstep(0, ANTENNA_END, p));
-        if (knob) knob.rotation.y = KNOB_ON_ANGLE * smoothstep(KNOB_START, KNOB_END, p);
-        if (screenMaterial) screenMaterial.emissiveIntensity = smoothstep(SCREEN_START, SCREEN_END, p);
-        needsRender = true;
       }
       if (p === 0) {
         if (presenting) {
@@ -456,25 +616,35 @@ export default function C62Viewer({ screen, alarm }: { screen: string; alarm?: s
       } else if (presentArmed) {
         presentArmed = false;
         presenting = true;
-        presentSettled = false;
-        presentTarget = controls.getAzimuthalAngle() + PRESENT_YAW;
+        directing = !reduceMotion;
+        if (directing) startPath();
         showSpinState();
       }
 
-      const idle = !dragging && !pressed && now > resumeAt;
-      if (presenting && !presentSettled && idle) {
-        const diff = Math.atan2(
-          Math.sin(presentTarget - turntable.rotation.y),
-          Math.cos(presentTarget - turntable.rotation.y),
-        );
-        if (Math.abs(diff) < 0.001) {
-          turntable.rotation.y = presentTarget;
-          presentSettled = true;
-        } else {
-          turntable.rotation.y += diff * (1 - Math.exp(-dt * SETTLE_RATE));
+      const before = shown;
+      shown = reduceMotion ? p : shown + (p - shown) * (1 - Math.exp(-dt * FOLLOW_RATE));
+      if (Math.abs(p - shown) < 0.0005) shown = p;
+      if (shown !== before) {
+        pose(shown);
+        if (screenMaterial) {
+          // The backlight catches a couple of times before it holds
+          const on = smoothstep(SCREEN_START, SCREEN_END, shown);
+          const boot = span([SCREEN_START, SCREEN_START + (SCREEN_END - SCREEN_START) * 0.45], shown);
+          const flicker = boot < 1 && Math.sin(boot * 38) < -0.2 ? 0.25 : 1;
+          screenMaterial.emissiveIntensity = on * flicker;
         }
+        // keeps flying back down the path after the scroll returns above the sequence
+        if (directing) fly(shown);
         needsRender = true;
-      } else if (spinning && !presenting && idle) {
+      }
+      const ringStrength = reduceMotion ? 0 : smoothstep(RINGS_START, RINGS_END, shown);
+      if (ringStrength > 0 || rings.some((ring) => ring.visible)) {
+        placeRings(ringStrength, clock);
+        needsRender = true;
+      }
+
+      const idle = !dragging && !pressed && now > resumeAt;
+      if (spinning && !presenting && shown === 0 && idle) {
         ease = Math.min(1, ease + dt * 1.5);
         turntable.rotation.y += ((Math.PI * 2) / SPIN_SECONDS_PER_TURN) * dt * ease * ease;
         needsRender = true;
