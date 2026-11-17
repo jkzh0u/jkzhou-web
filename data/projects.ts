@@ -83,7 +83,7 @@ export const projects: Project[] = [
       {
         heading: "settings, logs and a field test screen",
         paragraphs: [
-          "the C62 had nowhere to save settings, so they reset every time you turned it off. the stock firmware keeps calibration that's unique to each radio in the same flash chip, so writing anywhere is risky. the area I use was found empty in every factory dump that was compared. settings and the channel you were on are saved when you turn the knob off, and only what changed gets written.",
+          "settings and the channel you were on are saved when you turn the knob off, and come back at power on. only what changed gets written. the OpenRTX port for the C62 didn't save anything before, so everything reset at every power off. the tricky part is where to write: the flash chip also holds calibration that's unique to each radio, so I only use an area that was found empty in every factory dump that was compared.",
           "to see what the radio is doing, it sends a log over the programming cable: cells it locks to, calls and who's talking, short messages, when it retunes and why it moves between cells. it also keeps the last 256 KB of that log in memory, so after a ride with nothing plugged in, side key + 0 sends the whole thing.",
           "the menu has a field test screen like the service screen on a real TETRA radio: lock and phase error, signal in dBm, the cell and its location area, its neighbours, the network's clock, and the last signal measurement of each carrier.",
         ],
