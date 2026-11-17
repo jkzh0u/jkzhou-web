@@ -11,6 +11,8 @@ import ProjectVideo from "../../components/ProjectVideo";
 import HomelabDiagram from "../../components/HomelabDiagram";
 import OpentoWidget from "../../components/OpentoWidget";
 import AbcantoWidget from "../../components/AbcantoWidget";
+import TagList from "../../components/TagList";
+import GithubIcon from "../../components/GithubIcon";
 
 export const dynamicParams = false;
 
@@ -169,6 +171,7 @@ export default async function ProjectPage({
               title stays above the model and the write up below it. */}
           <div className="contents lg:sticky lg:top-24 lg:block lg:self-start">
             <div className="order-1">
+              {project.topics && <TagList tags={project.topics} href={(tag) => `/projects?tag=${tag}`} className="load-reveal mb-4" />}
               <h1 className="load-reveal text-4xl font-semibold sm:text-5xl">{project.name}</h1>
 
               {project.description && (
@@ -187,7 +190,7 @@ export default async function ProjectPage({
                       href={project.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex h-10 items-center gap-1.5 rounded-full border border-neutral-300 px-4 text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-950"
+                      className="inline-flex h-10 items-center gap-1.5 border border-neutral-300 px-4 text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-950"
                     >
                       visit {new URL(project.href).host}
                       <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -198,10 +201,14 @@ export default async function ProjectPage({
                       href={project.repo}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex h-10 items-center gap-1.5 rounded-full border border-neutral-300 px-4 text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-950"
+                      className="group inline-flex h-10 items-center gap-2 bg-neutral-900 pr-4 pl-3.5 text-white transition-colors hover:bg-neutral-700"
                     >
-                      source on github
-                      <ArrowUpRight className="size-4" aria-hidden="true" />
+                      <GithubIcon size={18} />
+                      view source
+                      <ArrowUpRight
+                        className="size-4 text-white/60 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-white"
+                        aria-hidden="true"
+                      />
                     </a>
                   )}
                 </div>

@@ -1,3 +1,5 @@
+export type Topic = "radio" | "web" | "infra";
+
 export type Project = {
   name: string;
   description?: string;
@@ -21,6 +23,8 @@ export type Project = {
   diagram?: "homelab";
   /** Something live shown under the video on the project's page: opento's numbers, or ABCanto to try out */
   widget?: "opento" | "abcanto";
+  /** What it is about, shown on the project's own page */
+  topics?: Topic[];
   /** Sections of text on the project's page, shown beside the model */
   writeup?: WriteupSection[];
 };
@@ -46,6 +50,8 @@ export const projects: Project[] = [
     description:
       "firmware that turns the Retevis C62 handheld into a TETRA receiver that follows calls and roams between cells on its own.",
     slug: "c62",
+    date: "nov '26",
+    topics: ["radio"],
     repo: "https://github.com/jkzh0u/OpenRTX",
     video: "/projects/c62.mp4",
     poster: "/projects/c62.jpg",
@@ -126,6 +132,7 @@ cskburn -s /dev/ttyUSB0 -C 6 -b 115200 -v --verify-all \\
       "find the cantonese word by how it sounds, what it means, or what it literally means. built for ABCs like me.",
     date: "nov '26",
     slug: "abcanto",
+    topics: ["web"],
     href: "https://abcanto.jkzhou.ca",
     repo: "https://github.com/jkzh0u/ABCanto",
     video: "/projects/ABCanto.mp4",
@@ -177,6 +184,7 @@ cskburn -s /dev/ttyUSB0 -C 6 -b 115200 -v --verify-all \\
       "live toronto dashboard for police calls, fire incidents, ttc and go alerts. built with next.js.",
     date: "nov '26",
     slug: "opento",
+    topics: ["web"],
     widget: "opento",
     href: "https://opento.jkzhou.ca",
     repo: "https://github.com/jkzh0u/openTO",
@@ -226,6 +234,7 @@ cskburn -s /dev/ttyUSB0 -C 6 -b 115200 -v --verify-all \\
       "the home server that runs this site, opento and ABCanto, with automatic deploys from github.",
     date: "april '26",
       slug: "homelab",
+      topics: ["infra"],
     diagram: "homelab",
     writeup: [
       {
@@ -266,6 +275,7 @@ cskburn -s /dev/ttyUSB0 -C 6 -b 115200 -v --verify-all \\
     description: "portable pi-sdr, built into a portable case. made to monitor TETRA.",
     date: "feb '26",
     slug: "sdr",
+    topics: ["radio"],
     video: "/projects/sdr.mp4",
     poster: "/projects/sdr.jpg",
     ogImage: "/projects/sdr-og.png",
