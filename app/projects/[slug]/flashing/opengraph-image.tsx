@@ -15,6 +15,7 @@ export default function Image() {
     title: "flashing the C62",
     description:
       "step by step, for macOS, Linux and Windows: install the flashing tool, back up the radio, flash my TETRA firmware and check that it runs.",
-    image: "/projects/c62.jpg",
+    image: "/projects/c62-manual/menu-11-about.png",
+    fit: "contain",
   });
 }
