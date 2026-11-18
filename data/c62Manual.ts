@@ -156,12 +156,6 @@ export const manual: ManualSection[] = [
           ],
         },
       },
-      {
-        id: "about",
-        title: "about",
-        screens: [shot("menu-11-about", "about page crediting the C62 fork and the OpenRTX authors", "about")],
-        paragraphs: ["who made it: my fork first, then the OpenRTX authors."],
-      },
     ],
   },
   {

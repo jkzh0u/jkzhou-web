@@ -205,6 +205,15 @@ export default async function ProjectPage({
                       <ArrowRight className="size-4" aria-hidden="true" />
                     </Link>
                   )}
+                  {slug === "c62" && (
+                    <Link
+                      href="/projects/c62/flashing"
+                      className="inline-flex h-10 items-center gap-1.5 border border-neutral-300 px-4 text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-950"
+                    >
+                      flashing instructions
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </Link>
+                  )}
                   {project.repo && (
                     <a
                       href={project.repo}
@@ -238,7 +247,7 @@ export default async function ProjectPage({
                       </p>
                     ))}
                     {section.code && (
-                      <pre className="mt-4 overflow-x-auto rounded-lg border border-neutral-200 bg-neutral-50 p-4 font-mono text-sm leading-relaxed text-neutral-800">
+                      <pre className="mt-4 overflow-x-auto border border-neutral-200 bg-neutral-50 p-4 font-mono text-sm leading-relaxed text-neutral-800">
                         <code>{section.code}</code>
                       </pre>
                     )}

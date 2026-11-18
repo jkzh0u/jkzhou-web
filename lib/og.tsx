@@ -14,6 +14,9 @@ type Card = {
   description?: string;
   /** Absolute URL, or a path from /public like "/projects/sdr.jpg" */
   image?: string;
+  /** "contain" shows the whole image on a black panel instead of cropping it to the panel, for
+   *  a screen grab with text near its edges */
+  fit?: "cover" | "contain";
 };
 
 const PHOTO_WIDTH = 440;
@@ -21,7 +24,7 @@ const PHOTO_WIDTH = 440;
 // Loads the photo and shrinks it here, since originals can be over 10MB. It never goes through
 // the site itself: some cards are rendered during the build, when the site may be down.
 // Files in /public are read from disk; anything else is downloaded directly (e.g. from R2).
-async function loadPhoto(src: string): Promise<string | null> {
+async function loadPhoto(src: string): Promise<{ uri: string; ratio: number } | null> {
   try {
     let input: Buffer;
     if (src.startsWith("/")) {
@@ -38,7 +41,11 @@ async function loadPhoto(src: string): Promise<string | null> {
     const resized = sharp(input).rotate().resize({ width: PHOTO_WIDTH * 2, withoutEnlargement: true });
     const png = src.endsWith(".png");
     const data = await (png ? resized.png() : resized.jpeg({ quality: 80 })).toBuffer();
-    return `data:image/${png ? "png" : "jpeg"};base64,${data.toString("base64")}`;
+    const { width, height } = await sharp(data).metadata();
+    return {
+      uri: `data:image/${png ? "png" : "jpeg"};base64,${data.toString("base64")}`,
+      ratio: width && height ? height / width : 1,
+    };
   } catch (error) {
     console.error(`og: failed to load ${src}`, error);
     return null;
@@ -60,13 +67,15 @@ function clip(text: string, max: number) {
   return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
 }
 
-export async function renderCard({ section, title, description, image }: Card) {
-  const [photo, regular, semibold] = await Promise.all([
+export async function renderCard({ section, title, description, image, fit = "cover" }: Card) {
+  const [loaded, regular, semibold] = await Promise.all([
     image ? loadPhoto(image) : null,
     loadFont(400),
     loadFont(600),
   ]);
 
+  const photo = loaded?.uri ?? null;
+  const photoRatio = loaded?.ratio ?? 1;
   const fonts = [
     regular && { name: "Inter", data: regular, weight: 400 as const, style: "normal" as const },
     semibold && { name: "Inter", data: semibold, weight: 600 as const, style: "normal" as const },
@@ -123,14 +132,24 @@ export async function renderCard({ section, title, description, image }: Card) {
         </div>
 
         {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={photo}
-            width={PHOTO_WIDTH}
-            height={ogSize.height}
-            style={{ width: PHOTO_WIDTH, height: ogSize.height, objectFit: "cover" }}
-            alt=""
-          />
+          <div
+            style={{
+              width: PHOTO_WIDTH,
+              height: ogSize.height,
+              display: "flex",
+              alignItems: "center",
+              background: fit === "contain" ? "#000000" : "#ffffff",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo}
+              width={PHOTO_WIDTH}
+              height={fit === "contain" ? Math.round(PHOTO_WIDTH * (photoRatio || 1)) : ogSize.height}
+              style={{ objectFit: fit }}
+              alt=""
+            />
+          </div>
         ) : null}
       </div>
     ),

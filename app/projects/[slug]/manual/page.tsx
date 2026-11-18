@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
+import ManualNav from "../../../components/ManualNav";
 import {
   manual,
   badgeLabels,
@@ -53,7 +54,7 @@ function KeyText({ text }: { text: string }) {
         return (
           <kbd
             key={i}
-            className={`mx-0.5 inline-block min-w-[1.6em] rounded-md border border-b-2 bg-white px-1.5 text-center font-mono text-[0.8em] leading-normal ${tone}`}
+            className={`mx-0.5 inline-block min-w-[1.7em] border border-b-2 bg-neutral-50 px-1.5 text-center font-mono text-[0.8em] leading-normal ${tone}`}
           >
             {name === "up" ? "▲" : name === "down" ? "▼" : name}
           </kbd>
@@ -64,16 +65,17 @@ function KeyText({ text }: { text: string }) {
 }
 
 function Badge({ badge }: { badge: ManualBadge }) {
-  const tone =
+  const dot =
     badge === "c62"
-      ? "border-sky-300 text-sky-700"
+      ? "bg-sky-500"
       : badge === "saved"
-        ? "border-emerald-300 text-emerald-700"
+        ? "bg-emerald-500"
         : badge === "channel"
-          ? "border-amber-300 text-amber-700"
-          : "border-neutral-300 text-neutral-500";
+          ? "bg-amber-500"
+          : "bg-neutral-300";
   return (
-    <span className={`rounded-md border px-2 py-0.5 font-mono text-xs whitespace-nowrap ${tone}`}>
+    <span className="inline-flex items-center gap-1.5 border border-neutral-200 px-2 py-0.5 font-mono text-xs whitespace-nowrap text-neutral-600">
+      <span className={`size-1.5 ${dot}`} aria-hidden="true" />
       {badgeLabels[badge]}
     </span>
   );
@@ -85,9 +87,9 @@ function ManualTableView({ page }: { page: ManualPage }) {
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-neutral-200 text-xs tracking-wide text-neutral-400 uppercase">
+          <tr className="border-b border-neutral-900 text-xs tracking-wide text-neutral-400 uppercase">
             {page.table.columns.map((column) => (
-              <th key={column} scope="col" className="py-2 pr-4 font-medium">
+              <th key={column} scope="col" className="py-2 pr-4 pl-1 font-mono font-normal">
                 {column}
               </th>
             ))}
@@ -95,13 +97,13 @@ function ManualTableView({ page }: { page: ManualPage }) {
         </thead>
         <tbody>
           {page.table.rows.map((row) => (
-            <tr key={row.join("|")} className="border-b border-neutral-200 align-top">
+            <tr key={row.join("|")} className="border-b border-neutral-200 align-top transition-colors hover:bg-neutral-50">
               {row.map((cell, i) => (
                 <td
                   key={i}
                   className={
                     i === 0
-                      ? "py-3 pr-4 whitespace-nowrap text-neutral-800"
+                      ? "py-3 pr-4 pl-1 font-medium whitespace-nowrap text-neutral-900"
                       : "py-3 pr-4 leading-relaxed text-neutral-600"
                   }
                 >
@@ -133,7 +135,7 @@ function Screens({ page }: { page: ManualPage }) {
               className="h-auto w-full [image-rendering:pixelated]"
             />
           </div>
-          <figcaption className="mt-2 text-sm text-neutral-400">{screen.caption}</figcaption>
+          <figcaption className="mt-2 font-mono text-xs text-neutral-400">{screen.caption}</figcaption>
         </figure>
       ))}
     </div>
@@ -159,9 +161,9 @@ function PageEntry({ page }: { page: ManualPage }) {
   );
 
   return (
-    <article id={page.id} className="scroll-mt-28 border-t border-neutral-200 pt-6">
+    <article id={page.id} className="scroll-mt-28 border-t border-neutral-200 pt-8">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="mr-1 text-lg font-semibold sm:text-xl">{page.title}</h3>
+        <h3 className="mr-2 text-xl font-semibold sm:text-2xl">{page.title}</h3>
         {page.badges?.map((badge) => <Badge key={badge} badge={badge} />)}
       </div>
       {sideBySide ? (
@@ -198,13 +200,21 @@ export default async function ManualRoute({ params }: { params: Promise<{ slug: 
           className="load-reveal mt-3 max-w-3xl text-lg leading-relaxed text-neutral-500"
           style={{ animationDelay: "0.12s" }}
         >
-          {DESCRIPTION}{" "}
-          it&apos;s written from the firmware&apos;s code and none of it has been tried on a radio yet,
-          so the key names especially might change.
+          {DESCRIPTION}
         </p>
-        <ul className="load-reveal mt-5 flex flex-col gap-2 text-sm text-neutral-500" style={{ animationDelay: "0.2s" }}>
+        <p
+          className="load-reveal mt-5 max-w-3xl border-l-2 border-neutral-300 pl-4 leading-relaxed text-neutral-500"
+          style={{ animationDelay: "0.16s" }}
+        >
+          it&apos;s written from the firmware&apos;s code and none of it has been tried on a radio yet, so the
+          key names especially might change.
+        </p>
+        <ul
+          className="load-reveal mt-8 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-4 border-y border-neutral-200 py-5 text-sm text-neutral-500 sm:gap-x-8"
+          style={{ animationDelay: "0.2s" }}
+        >
           {(Object.keys(badgeLabels) as ManualBadge[]).map((badge) => (
-            <li key={badge} className="flex flex-wrap items-center gap-2">
+            <li key={badge} className="flex flex-col items-start gap-1.5">
               <Badge badge={badge} />
               {badgeMeanings[badge]}
             </li>
@@ -215,33 +225,16 @@ export default async function ManualRoute({ params }: { params: Promise<{ slug: 
           className="load-reveal mt-12 grid grid-cols-1 gap-10 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-16"
           style={{ animationDelay: "0.28s" }}
         >
-          <nav aria-label="contents" className="lg:sticky lg:top-28 lg:self-start">
-            <p className="text-xs tracking-wide text-neutral-400 uppercase">contents</p>
-            <ol className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3 lg:grid-cols-1">
-              {manual.map((section) => (
-                <li key={section.id}>
-                  <a href={`#${section.id}`} className="text-neutral-800 transition-colors hover:text-neutral-500">
-                    {section.heading}
-                  </a>
-                  <ol className="mt-1 mb-2 hidden space-y-0.5 border-l border-neutral-200 pl-3 text-sm lg:block">
-                    {section.pages.map((page) => (
-                      <li key={page.id}>
-                        <a href={`#${page.id}`} className="text-neutral-500 transition-colors hover:text-neutral-900">
-                          {page.title}
-                        </a>
-                      </li>
-                    ))}
-                  </ol>
-                </li>
-              ))}
-            </ol>
-          </nav>
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <ManualNav sections={manual.map(({ id, heading, pages }) => ({ id, heading, pages: pages.map((p) => ({ id: p.id, title: p.title })) }))} />
+          </div>
 
-          <div className="min-w-0 space-y-16">
-            {manual.map((section) => (
+          <div className="min-w-0 space-y-24">
+            {manual.map((section, index) => (
               <section key={section.id} id={section.id} className="scroll-mt-28 space-y-8">
                 <div className="space-y-3">
-                  <h2 className="text-xl font-semibold sm:text-2xl">{section.heading}</h2>
+                  <p className="font-mono text-sm text-neutral-400">{String(index + 1).padStart(2, "0")}</p>
+                  <h2 className="text-2xl font-semibold sm:text-3xl">{section.heading}</h2>
                   {section.paragraphs?.map((paragraph) => (
                     <p key={paragraph} className="max-w-3xl text-lg leading-relaxed text-neutral-600">
                       <KeyText text={paragraph} />
