@@ -25,6 +25,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       : [],
   );
 
+  // Pages under a project's page
+  projectPages.push({ url: `${SITE_URL}/projects/c62/manual`, changeFrequency: "monthly", priority: 0.6 });
+
   const videoPages: MetadataRoute.Sitemap = (await getVideos()).map((video) => ({
     url: `${SITE_URL}/videos/${video.slug}`,
     changeFrequency: "yearly",

@@ -4,7 +4,7 @@ import { projects, type RadioSite } from "@/data/projects";
 import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import SdrViewer from "../../components/SdrViewer";
 import C62Viewer from "../../components/C62Viewer";
 import ProjectVideo from "../../components/ProjectVideo";
@@ -195,6 +195,15 @@ export default async function ProjectPage({
                       visit {new URL(project.href).host}
                       <ArrowUpRight className="size-4" aria-hidden="true" />
                     </a>
+                  )}
+                  {slug === "c62" && (
+                    <Link
+                      href="/projects/c62/manual"
+                      className="inline-flex h-10 items-center gap-1.5 border border-neutral-300 px-4 text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-950"
+                    >
+                      read the manual
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </Link>
                   )}
                   {project.repo && (
                     <a
