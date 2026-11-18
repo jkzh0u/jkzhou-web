@@ -68,8 +68,10 @@ export const projects: Project[] = [
       {
         heading: "following calls and roaming",
         paragraphs: [
-          "as I covered on the [piSDR page](/projects/sdr), a TETRA call starts on the control channel and then moves to a traffic carrier. the proof of concept had no multi carrier support: it could only stay on a single channel, so it lost the call as soon as the network moved it. I added a call follower that jumps to the carrier the network picks, and a fast retune in the BK4819 driver so the radio doesn't restart its receiver every time it does.",
+          "as I covered on the [piSDR page](/projects/sdr), a TETRA call starts on the control channel and then moves to a traffic carrier. the proof of concept had no multi carrier support: it could only stay on a single channel, so it lost the call as soon as the network moved it. I added a call follower that jumps to the carrier the network picks, and a fast retune in the BK4819 driver so the radio doesn't restart its receiver every time it does. all the carriers of a cell share the same timing, so the radio keeps its slot timing across the retune, and only decodes the timeslots of the call it's following.",
+          "it follows one call at a time, the first clear speech call it sees, and comes back to the main carrier when the call is released, goes silent for 10 seconds, or turns out to be encrypted. the catch is transmission trunking, where every transmission gets a new channel through the control channel: after 10 seconds of silence it returns to the main carrier and can miss the start of the next transmission.",
           "I also added automatic cell tracking, so the radio moves between sites by itself as you move. when the cell gets weak it measures the neighbours the network broadcasts and moves to a stronger one, and when the signal is lost it scans every TETRA channel in your list. it remembers the cell it just left, and shows where it came from. holding 0 searches for the best signal right away.",
+          "when the cell drops below -95 dBm it measures each neighbour every 3 seconds, retuning for about 5 ms, and moves to one that's at least 6 dB stronger twice in a row. it doesn't measure during a call. after losing the signal for 2.5 seconds, it tries the strongest carriers in turn. these thresholds are first guesses, and they'll need tuning on a real network.",
         ],
       },
       {
@@ -85,6 +87,7 @@ export const projects: Project[] = [
         paragraphs: [
           "settings and the channel you were on are saved when you turn the knob off, and come back at power on. only what changed gets written. the OpenRTX port for the C62 didn't save anything before, so everything reset at every power off. the tricky part is where to write: the flash chip also holds calibration that's unique to each radio, so I only use an area that was found empty in every factory dump that was compared.",
           "to see what the radio is doing, it sends a log over the programming cable: cells it locks to, calls and who's talking, short messages, when it retunes and why it moves between cells. it also keeps the last 256 KB of that log in memory, so after a ride with nothing plugged in, side key + 0 sends the whole thing.",
+          "for development there's also a baseband dump, which streams the raw 48 kHz audio from the receiver over the same cable as WAV files, so I can replay what the radio heard through the decoder on a computer. it shares the cable with the log, so it's a separate build option.",
           "the menu has a field test screen like the service screen on a real TETRA radio: lock and phase error, signal in dBm, the cell and its location area, its neighbours, the network's clock, and the last signal measurement of each carrier.",
         ],
       },
@@ -100,7 +103,8 @@ export const projects: Project[] = [
         paragraphs: [
           "you only need [docker](https://www.docker.com), git and python 3. the image holds the whole toolchain (the Zephyr SDK, west, cmake and ninja), and your source stays on your disk. on windows, use a WSL2 shell with the folder inside WSL.",
           "the first command makes a folder for the workspace, since west puts the Zephyr fork and the radio's modules next to the OpenRTX checkout. building the image takes 5 to 10 minutes and about 2 GB, and the first firmware build downloads the Zephyr fork. after that, running the same docker command again only rebuilds what changed.",
-          "for your channel list, copy scripts/c62/channels/example.h, fill in your own channels and talkgroups, and build it with chlist.py. --show prints what an image holds. the -DC62_CHANNELS build option does the same thing during the firmware build, which is how I build the TTC one.",
+          "for your channel list, copy scripts/c62/channels/example.h, fill in your own channels and talkgroups, and build it with chlist.py. --show prints what an image holds. the -DC62_CHANNELS build option does the same thing during the firmware build, and writes channels.bin next to the firmware, which is how I build the TTC one.",
+          "build options go after the image name. the ones I'd know about: -DC62_TETRA_FOLLOW=OFF and -DC62_TETRA_ROAM=OFF build without call following and cell tracking, -DC62_TETRA_SPEECH=OFF builds without speech, and -DC62_TETRA_LOG=OFF builds without the log. cmake remembers them in build_c62, so pass an option again with its default value, or delete the folder, to drop it.",
         ],
         code: `mkdir c62-ws && cd c62-ws
 git clone -b c62/channels https://github.com/jkzh0u/OpenRTX.git
@@ -115,15 +119,22 @@ docker run --rm -it --user "$(id -u):$(id -g)" \\
 # build your channel list
 cp OpenRTX/scripts/c62/channels/example.h my_channels.h
 python3 OpenRTX/scripts/chlist.py my_channels.h -o channels.bin
-python3 OpenRTX/scripts/chlist.py --show channels.bin`,
+python3 OpenRTX/scripts/chlist.py --show channels.bin
+
+# or build the firmware with your list, which also writes
+# OpenRTX/build_c62/zephyr/channels.bin
+docker run --rm -it --user "$(id -u):$(id -g)" \
+    -v "$PWD":/work openrtx-c62 \
+    c62-build -DC62_CHANNELS=scripts/c62/channels/ttc_tetra.h`,
       },
       {
         heading: "flashing it",
         paragraphs: [
           "zephyr.bin goes at 0x000000 and dsp_firmware.bin at 0x100000, both under OpenRTX/build_c62/zephyr, and your channels.bin at 0x2c0000. the DSP firmware is downloaded and hash-checked during the build. the channel list only needs flashing again when you change it.",
           "flash them with [cskburn](https://github.com/LISTENAI/cskburn/releases) over a Kenwood programming cable. the cable matters: it has to be an FTDI FT232R one (USB ID 0403:6001). an FT231X cable is reported to connect and then fail every flash with E5003, which looks like a software problem but isn't. back up your radio's own flash first, because it's different for every unit and it's your only way back to the stock firmware.",
-          "to enter burn mode, turn the radio off, hold the lower side key, power on, then let go of the key. the screen stays dark. don't press the main PTT while flashing, since it shares a line with the boot ROM. cskburn resets the radio after each command, so enter burn mode again before each one. replace /dev/ttyUSB0 with your cable's port.",
-          "since it's untested, I wrote a [first flash checklist](https://github.com/jkzh0u/OpenRTX/blob/c62/channels/scripts/c62/FIRST_FLASH.md) that turns the features on in stages, so if something breaks you know which part did it.",
+          "to enter burn mode, turn the radio off, hold the lower side key, power on, then let go of the key. the screen stays dark. don't press the main PTT while flashing, since it shares a line with the boot ROM. cskburn resets the radio after each command, so enter burn mode again before each one. replace /dev/ttyUSB0 with your cable's port. on a mac it shows up as /dev/tty.usbserial-something, and ls /dev/tty.* lists them.",
+          "since it's untested, I wrote a [first flash checklist](https://github.com/jkzh0u/OpenRTX/blob/c62/channels/scripts/c62/FIRST_FLASH.md) that turns the features on in stages, so if something breaks you know which part did it. stage 1 is receive only, built with -DC62_TETRA_FOLLOW=OFF -DC62_TETRA_ROAM=OFF, and it checks that the radio boots, locks to a strong cell, reads your channel list and keeps its settings across power offs. then it turns on call following, then cell tracking, then checks the keys and the kept log. each stage has its own log file to save if something fails.",
+          "to go back to the stock firmware at any point, flash your backup at 0x000000 with --verify-all. it covers the whole flash, so it also removes your channel list and saved settings.",
         ],
         code: `# 1. back up the radio's flash (burn mode first)
 cskburn -s /dev/ttyUSB0 -C 6 -b 115200 -v --read 0x0:0x400000:backup.bin
@@ -133,14 +144,6 @@ cskburn -s /dev/ttyUSB0 -C 6 -b 115200 -v --verify-all \\
     0x100000 OpenRTX/build_c62/zephyr/dsp_firmware.bin \\
     0x2c0000 channels.bin \\
     0x000000 OpenRTX/build_c62/zephyr/zephyr.bin`,
-      },
-      {
-        heading: "using it",
-        paragraphs: [
-          "the first time, it starts in VFO mode on 430.000 MHz, in M17. after that it comes back on whatever you were on when you turned it off. hold 5, or the side key + 5, to switch between M17, FM and TETRA.",
-          "the C62 has no ESC or enter keys. going by the keypad driver, the red key is ESC and the green one is enter, which I'll confirm once the radio arrives. red switches to memory mode, where up and down step through your channels, or you can type a channel number. each channel sets its own mode, so a TETRA channel goes straight to T mode. in memory mode, holding a number does that number's side key shortcut.",
-          "in T mode, # and * change the talkgroup filter, holding # locks onto a talkgroup, 0 shows the recent calls and holding 0 searches for the best signal. the [full README](https://github.com/jkzh0u/OpenRTX/blob/c62/channels/scripts/c62/README.md) has every key.",
-        ],
       },
     ],
   },
