@@ -224,11 +224,12 @@ export const manual: ManualSection[] = [
         id: "tetra",
         title: "TETRA",
         badges: ["c62", "saved"],
-        screens: [shot("menu-08b-tetra", "TETRA settings, all five on", "settings > TETRA")],
+        screens: [shot("menu-08b-tetra", "TETRA settings, all six on", "settings > TETRA")],
         table: {
           columns: ["setting", "on (default)", "off"],
           rows: [
             ["follow calls", "retunes to whichever carrier the network moves a call to, then comes back", "stays on the main carrier: calls elsewhere show but aren't heard"],
+            ["late join", "when a call ends, joins a call still going on on another carrier that started while the first one played. once per call, and only talkgroups the filter lets through", "only calls whose start the radio sees while free are followed"],
             ["cell tracking", "moves to a stronger cell when the signal gets weak, searches when it's lost", "stays on the channel you picked. holding {0} still searches once"],
             ["alarm beep", "an alarm talkgroup call turns the screen red and beeps three times", "red screen only"],
             ["keep filter", "starts with the talkgroup filter you last picked", "starts at TG All"],
