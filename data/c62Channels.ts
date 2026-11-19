@@ -62,7 +62,7 @@ CPS_CHANNEL("TETRA Site 1", 390012500, OPMODE_TETRA)`,
           },
           {
             type: "code",
-            code: `TETRA_ID(1001, "Dispatch", 0)               // SSI, name (16 chars), filters
+            code: `TETRA_ID(1001, "Dispatch", TF_PRIORITY(5))  // SSI, name (16 chars), filters
 TETRA_ID(9999, "Emergency", TF_EVERY | TF_ALARM)
 TETRA_ID_RANGE(500001, 500999, "Unit %u", 500000, 0)  // 500123 -> "Unit 123"
 TETRA_LA(1, "Downtown")                     // location area name`,
@@ -73,6 +73,7 @@ TETRA_LA(1, "Downtown")                     // location area name`,
               "names: up to 16 characters. a range names a whole block of radios at once: the name has one `%u`, which gets the SSI minus the base, so 500123 shows as `Unit 123`.",
               "location areas: `TETRA_LA` names one. until you do, the cell screen shows `LA <n>`.",
               "alarms: `TF_ALARM` makes a talkgroup's calls turn the screen red and beep.",
+              "priorities: `TF_PRIORITY(n)`, n from 1 (lowest) to 15, puts a talkgroup ahead of others. the radio plays one call at a time, so a call of higher priority takes over from a lower one, and after one the radio stays on the main carrier for 10 s so it catches the rest of the conversation. alarm talkgroups get 15 unless you give them another number.",
             ],
           },
         ],

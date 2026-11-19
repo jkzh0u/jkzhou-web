@@ -236,7 +236,7 @@ export const manual: ManualSection[] = [
             ["freq. correct", "tunes itself so the signal decodes best: the C62 decodes best about 1.6 kHz off the channel frequency, plus its crystal error. found within about 20 s and kept across channel changes. remembered at power off, so the radio starts corrected even on a weak signal. if a strong signal stops decoding for 8 s, it goes back to the remembered correction, then to none", "tunes exactly to the channel frequency"],
           ],
         },
-        note: "here {up} turns a setting on and {down} turns it off. keep filter remembers the filter, not a held talkgroup. alarm talkgroups are the ones marked TF_ALARM in the channel list.",
+        note: "here {up} turns a setting on and {down} turns it off. keep filter remembers the filter, not a held talkgroup. alarm talkgroups are the ones marked TF_ALARM in the channel list. talkgroups with TF_PRIORITY(n), 1 to 15, come first when following calls: a higher number takes over, and the radio waits 10 s after one before following a lower one elsewhere.",
       },
       {
         id: "accessibility",
