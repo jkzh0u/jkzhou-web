@@ -48,7 +48,7 @@ export const badgeLabels: Record<ManualBadge, string> = {
 
 export const badgeMeanings: Record<ManualBadge, string> = {
   c62: "added by my fork, not in other OpenRTX radios",
-  saved: "kept when you turn the radio off with the knob",
+  saved: "written to flash 5 s after you change it",
   channel: "belongs to the frequency you're on, not the radio",
   empty: "there, but nothing in it on the C62",
 };
@@ -69,7 +69,7 @@ export const manual: ManualSection[] = [
             ["{up} {down} round key", "up / down", "move the selection, or change the value being edited"],
             ["{P1} {P2}", "F1 / F2", "not used by the menus"],
             ["{side} below the PTT", "side key", "held with a number: a shortcut"],
-            ["{knob}", "power / volume", "turning it off saves the settings"],
+            ["{knob}", "power / volume", "wait 5 s after changing a setting before turning off"],
           ],
         },
       },
@@ -159,7 +159,7 @@ export const manual: ManualSection[] = [
     id: "settings",
     heading: "settings",
     paragraphs: [
-      "seven pages. settings marked saved are written to flash when you turn the knob off. per channel ones belong to the frequency you're on: they're kept with it, and a memory channel brings its own.",
+      "seven pages. settings marked saved are written to flash 5 s after you last change one. per channel ones belong to the frequency you're on: they're saved with it, and a memory channel brings its own.",
     ],
     pages: [
       {
@@ -224,14 +224,15 @@ export const manual: ManualSection[] = [
         id: "tetra",
         title: "TETRA",
         badges: ["c62", "saved"],
-        screens: [shot("menu-08b-tetra", "TETRA settings, all on", "settings > TETRA")],
+        screens: [shot("menu-08b-tetra", "TETRA settings, all five on", "settings > TETRA")],
         table: {
           columns: ["setting", "on (default)", "off"],
           rows: [
             ["follow calls", "retunes to whichever carrier the network moves a call to, then comes back", "stays on the main carrier: calls elsewhere show but aren't heard"],
             ["cell tracking", "moves to a stronger cell when the signal gets weak, searches when it's lost", "stays on the channel you picked. holding {0} still searches once"],
             ["alarm beep", "an alarm talkgroup call turns the screen red and beeps three times", "red screen only"],
-            ["keep filter", "starts with the talkgroup filter you had at power off", "starts at TG All"],
+            ["keep filter", "starts with the talkgroup filter you last picked", "starts at TG All"],
+            ["freq. correct", "tunes itself so the signal decodes best: the C62 decodes best about 1.6 kHz off the channel frequency, plus its crystal error. found within about 20 s, kept across channel changes, reset if nothing decodes for 8 s", "tunes exactly to the channel frequency"],
           ],
         },
         note: "here {up} turns a setting on and {down} turns it off. keep filter remembers the filter, not a held talkgroup. alarm talkgroups are the ones marked TF_ALARM in the channel list.",
@@ -303,12 +304,12 @@ export const manual: ManualSection[] = [
     id: "saving",
     heading: "what's saved",
     paragraphs: [
-      "settings are written only when you turn the knob off, and only what changed. pulling the battery keeps the last saved ones.",
+      "settings are written to flash 5 s after your last change, and only what changed. the C62 notices power off too late to write safely, so it doesn't wait for it: turning off within 5 s of a change loses that change.",
     ],
     pages: [
       {
         id: "kept",
-        title: "at power off",
+        title: "after power off",
         table: {
           columns: ["what", "kept?"],
           rows: [
