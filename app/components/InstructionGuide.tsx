@@ -1,39 +1,12 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
-import Link from "next/link";
+import { useState, useSyncExternalStore } from "react";
 import { Check, Copy } from "lucide-react";
 import { osLabels, type FlashBlock, type FlashSection, type OS } from "@/data/c62Flashing";
 import ManualNav from "./ManualNav";
+import InlineText from "./InlineText";
 
 const OSES = Object.keys(osLabels) as OS[];
-const LINK_CLASS =
-  "text-neutral-800 underline decoration-neutral-300 underline-offset-4 transition-colors hover:decoration-neutral-800";
-
-// `code` and [label](url) in the text
-function Inline({ text }: { text: string }): ReactNode {
-  return text.split(/(`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g).map((part, i) => {
-    if (part.startsWith("`")) {
-      return (
-        <code key={i} className="border border-neutral-200 bg-neutral-50 px-1 font-mono text-[0.85em] text-neutral-800">
-          {part.slice(1, -1)}
-        </code>
-      );
-    }
-    const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part);
-    if (!link) return part;
-    return link[2].startsWith("/") ? (
-      <Link key={i} href={link[2]} className={LINK_CLASS}>
-        {link[1]}
-      </Link>
-    ) : (
-      <a key={i} href={link[2]} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
-        {link[1]}
-      </a>
-    );
-  });
-}
-
 function CodeBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -67,7 +40,7 @@ function Block({ block }: { block: FlashBlock }) {
     case "p":
       return (
         <p className="text-lg leading-relaxed text-neutral-600">
-          <Inline text={block.text} />
+          <InlineText text={block.text} />
         </p>
       );
     case "heading":
@@ -75,7 +48,7 @@ function Block({ block }: { block: FlashBlock }) {
     case "note":
       return (
         <p className="border-l-2 border-neutral-900 pl-4 leading-relaxed text-neutral-700">
-          <Inline text={block.text} />
+          <InlineText text={block.text} />
         </p>
       );
     case "list": {
@@ -86,7 +59,7 @@ function Block({ block }: { block: FlashBlock }) {
         >
           {block.items.map((item) => (
             <li key={item} className="pl-1">
-              <Inline text={item} />
+              <InlineText text={item} />
             </li>
           ))}
         </List>
@@ -119,7 +92,7 @@ function Block({ block }: { block: FlashBlock }) {
                           : "py-3 pr-4 leading-relaxed text-neutral-600"
                       }
                     >
-                      <Inline text={cell} />
+                      <InlineText text={cell} />
                     </td>
                   ))}
                 </tr>
@@ -188,15 +161,22 @@ const chooseOs = (next: OS) => {
   listeners.forEach((listener) => listener());
 };
 
-/** The steps, and the picker that shows only the commands for your computer. */
-export default function FlashingGuide({ sections }: { sections: FlashSection[] }) {
+/** The steps of an instruction page, and the picker that shows only the commands for your computer. */
+export default function InstructionGuide({
+  sections,
+  perSystem = true,
+}: {
+  sections: FlashSection[];
+  /** Whether the commands differ by system. If not, there is no picker */
+  perSystem?: boolean;
+}) {
   const os = useSyncExternalStore(subscribe, currentOs, () => "macos" as OS);
   const pick = chooseOs;
 
   return (
     <div className="load-reveal mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-16" style={{ animationDelay: "0.24s" }}>
       <div className="lg:sticky lg:top-28 lg:self-start">
-        <OsPicker os={os} onPick={pick} className="mb-8 hidden lg:block" />
+        {perSystem && <OsPicker os={os} onPick={pick} className="mb-8 hidden lg:block" />}
         <ManualNav
           sections={sections.map(({ id, heading, steps }) => ({
             id,
@@ -207,7 +187,7 @@ export default function FlashingGuide({ sections }: { sections: FlashSection[] }
       </div>
 
       <div className="min-w-0">
-        <OsPicker os={os} onPick={pick} className="mb-10 lg:hidden" />
+        {perSystem && <OsPicker os={os} onPick={pick} className="mb-10 lg:hidden" />}
         <div className="space-y-24">
           {sections.map((section, index) => (
             <section key={section.id} id={section.id} className="scroll-mt-28 space-y-8">

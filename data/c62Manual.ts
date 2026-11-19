@@ -57,9 +57,6 @@ export const manual: ManualSection[] = [
   {
     id: "keys",
     heading: "getting around",
-    paragraphs: [
-      "the C62's keys have no enter or esc labels, so OpenRTX gives them names. the key names come from the order the keypad driver reads them in, and aren't confirmed on a radio yet.",
-    ],
     pages: [
       {
         id: "key-names",
@@ -105,14 +102,14 @@ export const manual: ManualSection[] = [
         screens: [shot("menu-02-top-field-test", "the top menu with field test selected", "the menu")],
         paragraphs: [
           "every channel in your channel list, in order. {green} tunes to one, and each channel brings its own mode.",
-          "the list isn't part of the firmware: you write it as a text file, build it with chlist.py and flash it next to the firmware. with no list, this page is empty and VFO mode still works.",
+          "the list isn't part of the firmware: you [write it as a text file](/projects/c62/channels), build it with chlist.py and [flash it](/projects/c62/flashing) next to the firmware. with no list, this page is empty and VFO mode still works.",
         ],
       },
       {
         id: "contacts",
         title: "contacts",
         badges: ["empty"],
-        paragraphs: ["an address book for digital calls. TETRA talkgroups and radios get their names from the channel list instead."],
+        paragraphs: ["an address book for digital calls. TETRA talkgroups and radios get their names from the [channel list](/projects/c62/channels) instead."],
       },
       {
         id: "info",

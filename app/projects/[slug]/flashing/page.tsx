@@ -4,7 +4,9 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import { flashingSections, flashingIntro, flashingNote } from "@/data/c62Flashing";
-import FlashingGuide from "../../../components/FlashingGuide";
+import InstructionGuide from "../../../components/InstructionGuide";
+import InlineText from "../../../components/InlineText";
+import C62PageLinks from "../../../components/C62PageLinks";
 
 // Only the C62 has flashing instructions
 const FLASHING_SLUG = "c62";
@@ -54,24 +56,11 @@ export default async function FlashingRoute({ params }: { params: Promise<{ slug
           className="load-reveal mt-5 max-w-3xl border-l-2 border-neutral-300 pl-4 leading-relaxed text-neutral-500"
           style={{ animationDelay: "0.16s" }}
         >
-          {flashingNote.split(/\[([^\]]+)\]\(([^)\s]+)\)/).map((part, i, parts) =>
-            i % 3 === 1 ? (
-              <a
-                key={i}
-                href={parts[i + 1]}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-neutral-800 underline decoration-neutral-300 underline-offset-4 transition-colors hover:decoration-neutral-800"
-              >
-                {part}
-              </a>
-            ) : i % 3 === 2 ? null : (
-              part
-            ),
-          )}
+          <InlineText text={flashingNote} />
         </p>
 
-        <FlashingGuide sections={flashingSections} />
+        <InstructionGuide sections={flashingSections} />
+        <C62PageLinks current="flashing" />
       </div>
     </main>
   );

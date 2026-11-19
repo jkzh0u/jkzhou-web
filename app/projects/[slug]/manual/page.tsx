@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import ManualNav from "../../../components/ManualNav";
+import C62PageLinks from "../../../components/C62PageLinks";
 import {
   manual,
   badgeLabels,
@@ -36,12 +37,24 @@ export async function generateMetadata({
   return pageMetadata({ title: TITLE, description: DESCRIPTION, path: `/projects/${slug}/manual` });
 }
 
-// In manual text, {name} is a key on the radio
+// In manual text, {name} is a key on the radio and [label](/path) is a link
 function KeyText({ text }: { text: string }) {
-  const parts = text.split(/(\{[^}]+\})/g);
+  const parts = text.split(/(\{[^}]+\}|\[[^\]]+\]\([^)\s]+\))/g);
   return (
     <>
       {parts.map((part, i) => {
+        const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part);
+        if (link) {
+          return (
+            <Link
+              key={i}
+              href={link[2]}
+              className="text-neutral-800 underline decoration-neutral-300 underline-offset-4 transition-colors hover:decoration-neutral-800"
+            >
+              {link[1]}
+            </Link>
+          );
+        }
         const match = /^\{([^}]+)\}$/.exec(part);
         if (!match) return part;
         const name = match[1];
@@ -248,6 +261,7 @@ export default async function ManualRoute({ params }: { params: Promise<{ slug: 
             ))}
           </div>
         </div>
+        <C62PageLinks current="manual" />
       </div>
     </main>
   );

@@ -78,7 +78,7 @@ export const projects: Project[] = [
         heading: "your own channel list",
         paragraphs: [
           "the firmware has no channels in it. memory mode channels, talkgroup names and filters come from a channel list you flash on its own, next to the firmware. so everyone flashes the same firmware with their own list, and changing your list doesn't need a new build.",
-          "a list is a text file with one entry per line. a python script turns it into a small image, checks it and tells you the line of anything it can't read, and the radio checks the image again at power on before using it. my TTC list has every above ground site, all 13 underground zones, and the identities of the talkgroups and train runs, and it comes out at about 4.5 KB. there's also an example list to start your own from.",
+          "a list is a text file with one entry per line. a python script turns it into a small image, checks it and tells you the line of anything it can't read, and the radio checks the image again at power on before using it. my TTC list has every above ground site, all 13 underground zones, and the identities of the talkgroups and train runs, and it comes out at about 4.5 KB. there's also an example list to start your own from, and a [page on writing and flashing your own](/projects/c62/channels).",
           "talkgroups can have names, so the screen says Transit Control or Run 253 instead of a number. filters, selected with # and *, pick which groups you hear. my TTC list has a Riding filter for being on a train: every line's line calls plus Transit Control. holding a talkgroup locks onto it, and the radio plays one call at a time. alarm talkgroups come through every filter and turn the screen red.",
         ],
       },

@@ -214,6 +214,15 @@ export default async function ProjectPage({
                       <ArrowRight className="size-4" aria-hidden="true" />
                     </Link>
                   )}
+                  {slug === "c62" && (
+                    <Link
+                      href="/projects/c62/channels"
+                      className="inline-flex h-10 items-center gap-1.5 border border-neutral-300 px-4 text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-950"
+                    >
+                      channel lists
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </Link>
+                  )}
                   {project.repo && (
                     <a
                       href={project.repo}

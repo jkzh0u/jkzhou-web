@@ -37,7 +37,7 @@ const FIRST_FLASH = "https://github.com/jkzh0u/OpenRTX/blob/c62/channels/scripts
 export const flashingIntro =
   "step by step, for macOS, Linux and Windows. it takes about 15 minutes the first time.";
 
-export const flashingNote = `this firmware hasn't been run on a C62 yet. for a first flash, follow this page to set up and make the backup, then the [first flash checklist](${FIRST_FLASH}), which turns the features on in stages.`;
+export const flashingNote = `this firmware hasn't been run on a C62 yet. for a first flash, follow this page to set up and make the backup, then the [first flash checklist](${FIRST_FLASH}), which turns the features on in stages. you flash a channel list with the firmware, so make one first: see [channel lists](/projects/c62/channels).`;
 
 export const flashing: FlashStep[] = [
   {
@@ -49,6 +49,7 @@ export const flashing: FlashStep[] = [
         items: [
           "a USB programming cable with a 2-pin Kenwood plug, the kind sold for Baofeng and Retevis radios. which cables work with the C62 isn't known yet: if yours does or doesn't, note its make and chip.",
           "the firmware files. build them with docker (see the [project page](/projects/c62)). they end up in `OpenRTX/build_c62/zephyr/`.",
+          "your channel list, `channels.bin`. the firmware has no channels in it, so this is part of the install, not an extra: see [channel lists](/projects/c62/channels) for how to make one.",
           "cskburn, the flashing tool for the radio's chip. step 1 installs it.",
           "about 5 MB of space for the backup, and somewhere to keep a copy of it other than your computer.",
         ],
@@ -59,8 +60,22 @@ export const flashing: FlashStep[] = [
         rows: [
           ["`zephyr.bin`", "the firmware", "`0x000000`"],
           ["`dsp_firmware.bin`", "the DSP core's firmware, downloaded by the build", "`0x100000`"],
-          ["`channels.bin`", "your channel list, built with `-DC62_CHANNELS=`", "`0x2c0000`"],
+          ["`channels.bin`", "your [channel list](/projects/c62/channels): memory channels, and names for TETRA talkgroups", "`0x2c0000`"],
         ],
+      },
+    ],
+  },
+  {
+    id: "channel-list",
+    title: "your channel list",
+    blocks: [
+      {
+        type: "p",
+        text: "the firmware holds no channels, so the radio gets them from a list that's flashed on its own at `0x2c0000`. without one it has no memory channels and shows TETRA numbers instead of names. everything else still works, but you'd be flashing a radio you can't really use yet.",
+      },
+      {
+        type: "p",
+        text: "so make your list before you flash. you write it as a text file, one line per channel, and a python script turns it into `channels.bin`. [channel lists](/projects/c62/channels) has the steps, and a full list for Toronto to start from. it takes a few minutes.",
       },
     ],
   },
@@ -205,7 +220,7 @@ sudo usermod -aG uucp "$USER"      # Arch`,
         os: ["windows"],
         code: "cp OpenRTX/build_c62/zephyr/{zephyr,dsp_firmware,channels}.bin /mnt/c/c62/",
       },
-      { type: "p", text: "burn mode again (step 3), then:" },
+      { type: "p", text: "burn mode again (step 3), then flash all three files together, the channel list included:" },
       {
         type: "code",
         os: ["macos", "linux"],
@@ -224,7 +239,7 @@ sudo usermod -aG uucp "$USER"      # Arch`,
       },
       {
         type: "p",
-        text: "leave out the `0x2c0000` line if you have no channel list. `--verify-all` reads everything back and stops with an error if any of it differs. at the end the radio restarts into the new firmware.",
+        text: "the `0x2c0000` line is your [channel list](/projects/c62/channels). `--verify-all` reads everything back and stops with an error if any of it differs. at the end the radio restarts into the new firmware.",
       },
       {
         type: "p",
@@ -249,7 +264,7 @@ sudo usermod -aG uucp "$USER"      # Arch`,
       },
       {
         type: "p",
-        text: `turn the radio off and on without holding the side key. you should see the startup lines, \`Channel list: N channels, N TETRA names\` if you flashed one, and \`TETRA log, 256 kB kept\`. the screen shows the main screen. then carry on with the [first flash checklist](${FIRST_FLASH}).`,
+        text: `turn the radio off and on without holding the side key. you should see the startup lines, \`Channel list: N channels, N TETRA names\` with the numbers your list should have, and \`TETRA log, 256 kB kept\`. the screen shows the main screen. then carry on with the [first flash checklist](${FIRST_FLASH}). the [manual](/projects/c62/manual) has every menu and setting on the radio.`,
       },
     ],
   },
@@ -291,6 +306,18 @@ sudo usermod -aG uucp "$USER"      # Arch`,
           [
             "`--verify-all` reports a mismatch",
             "flash again. if it repeats at the same address, stop and keep the output.",
+          ],
+          [
+            "`Channel list: none flashed` in the log",
+            "nothing valid was found at `0x2c0000`. flash `channels.bin` there, in burn mode: see [channel lists](/projects/c62/channels).",
+          ],
+          [
+            "`Channel list: not used, damaged or other version`",
+            "the image was cut short or made by another version of `chlist.py`. build it again with the `chlist.py` of this firmware and flash it again.",
+          ],
+          [
+            "no memory channels, and TETRA numbers instead of names",
+            "the radio has no channel list. make and flash one: [channel lists](/projects/c62/channels).",
           ],
           [
             "the radio doesn't start after flashing",
