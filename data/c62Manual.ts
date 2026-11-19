@@ -232,7 +232,7 @@ export const manual: ManualSection[] = [
             ["cell tracking", "moves to a stronger cell when the signal gets weak, searches when it's lost", "stays on the channel you picked. holding {0} still searches once"],
             ["alarm beep", "an alarm talkgroup call turns the screen red and beeps three times", "red screen only"],
             ["keep filter", "starts with the talkgroup filter you last picked", "starts at TG All"],
-            ["freq. correct", "tunes itself so the signal decodes best: the C62 decodes best about 1.6 kHz off the channel frequency, plus its crystal error. found within about 20 s, kept across channel changes, reset if nothing decodes for 8 s", "tunes exactly to the channel frequency"],
+            ["freq. correct", "tunes itself so the signal decodes best: the C62 decodes best about 1.6 kHz off the channel frequency, plus its crystal error. found within about 20 s and kept across channel changes. remembered at power off, so the radio starts corrected even on a weak signal. if a strong signal stops decoding for 8 s, it goes back to the remembered correction, then to none", "tunes exactly to the channel frequency"],
           ],
         },
         note: "here {up} turns a setting on and {down} turns it off. keep filter remembers the filter, not a held talkgroup. alarm talkgroups are the ones marked TF_ALARM in the channel list.",
