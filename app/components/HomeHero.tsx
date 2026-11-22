@@ -1390,7 +1390,18 @@ export default function PhotographerHome({
         if (skipIntro) {
             // Coming from another page of the site: no intro. Go straight to the final layout.
             overlay.style.display = 'none';
-            logo.classList.add('pa-logo--settled', 'pa-logo--live');
+            logo.classList.add('pa-logo--settled');
+
+            // The name still runs its CSS fade-in (.pa-reveal). Only allow the hover swap to
+            // 周子冸 once that has finished, or hovering mid-fade flips it to the Chinese name.
+            // With reduced motion there is no animation, so this resolves straight away.
+            const revealing = logo.querySelector<HTMLElement>('.pa-reveal > .nm');
+            const animations = revealing ? revealing.getAnimations() : [];
+            Promise.all(animations.map((a) => a.finished))
+                .catch(() => {})
+                .then(() => {
+                    if (!cancelled) logo.classList.add('pa-logo--live');
+                });
 
             tl.fromTo(
                 canvas,
