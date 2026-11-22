@@ -94,6 +94,12 @@ export default function AlbumGallery({
   const [loadedPhoto, setLoadedPhoto] = useState<string | null>(null);
   const bigLoaded = selectedPhoto !== null && loadedPhoto === selectedPhoto;
   const closeTimer = useRef<number | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // the thumbnail that opened the viewer, so focus can go back to it on close
+  const openerRef = useRef<HTMLElement | null>(null);
+  // where a touch started, and whether it turned into a swipe (so its click doesn't close)
+  const swipeStart = useRef<{ x: number; y: number; id: number } | null>(null);
+  const swiped = useRef(false);
 
   const columnCount = useSyncExternalStore(
     subscribe,
@@ -137,6 +143,9 @@ export default function AlbumGallery({
       closeTimer.current = null;
     }
 
+    if (document.activeElement instanceof HTMLElement) {
+      openerRef.current = document.activeElement;
+    }
     setVisible(false);
     setSelectedPhoto(src);
   }, []);
@@ -151,6 +160,8 @@ export default function AlbumGallery({
     closeTimer.current = window.setTimeout(() => {
       setSelectedPhoto(null);
       closeTimer.current = null;
+      openerRef.current?.focus({ preventScroll: true });
+      openerRef.current = null;
     }, 300);
   }, []);
 
@@ -166,6 +177,35 @@ export default function AlbumGallery({
     [sorted]
   );
 
+  // Phones: swipe left/right to step, swipe down to close. Taps still close as before.
+  const SWIPE_MIN = 50;
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType !== "touch" || !e.isPrimary) return;
+    swipeStart.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    swiped.current = false;
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start || start.id !== e.pointerId) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) >= SWIPE_MIN && Math.abs(dx) > Math.abs(dy)) {
+      swiped.current = true;
+      step(dx < 0 ? 1 : -1);
+    } else if (dy >= SWIPE_MIN * 1.6 && dy > Math.abs(dx)) {
+      swiped.current = true;
+      close();
+    }
+  };
+  const onOverlayClick = () => {
+    if (swiped.current) {
+      swiped.current = false;
+      return;
+    }
+    close();
+  };
+
   const isOpen = selectedPhoto !== null;
 
   // Fade in after opening; Escape closes, left/right arrows step through the album
@@ -178,8 +218,14 @@ export default function AlbumGallery({
       raf2 = requestAnimationFrame(() => setVisible(true));
     });
 
+    // move focus into the viewer so screen readers announce it and Tab stays inside
+    dialogRef.current?.focus({ preventScroll: true });
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Tab") {
+        // nothing to tab to inside the viewer, so keep focus on it
+        e.preventDefault();
+      } else if (e.key === "Escape") {
         close();
       } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
         e.preventDefault();
@@ -230,11 +276,16 @@ export default function AlbumGallery({
           role="dialog"
           aria-modal="true"
           aria-label={`${album.title} photo`}
+          ref={dialogRef}
+          tabIndex={-1}
           data-lenis-prevent
-          onClick={close}
+          onClick={onOverlayClick}
+          onPointerDown={onPointerDown}
+          onPointerUp={onPointerUp}
+          onPointerCancel={() => (swipeStart.current = null)}
           className={`
-            fixed inset-0 z-50 flex items-center justify-center
-            bg-black/40 p-4
+            ag-viewer fixed inset-0 z-50 flex items-center justify-center
+            bg-black/40 p-4 outline-none
             transition-[opacity,backdrop-filter] duration-300 ease-out
             motion-reduce:transition-none
             ${
@@ -289,6 +340,16 @@ export default function AlbumGallery({
 }
 
 const css = `
+  /* the browser hands horizontal and vertical drags to the swipe handler; pinch-zoom still works */
+  .ag-viewer {
+    touch-action: pinch-zoom;
+  }
+
+  .ag-viewer img {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
   .ag-thumb {
     position: relative;
     background: color-mix(in srgb, currentColor 6%, transparent);
