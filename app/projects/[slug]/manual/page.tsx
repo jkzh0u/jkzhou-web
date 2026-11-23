@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
 import ManualNav from "../../../components/ManualNav";
 import C62PageLinks from "../../../components/C62PageLinks";
+import C62SettingsSim from "../../../components/C62SettingsSim";
 import {
   manual,
   badgeLabels,
@@ -25,7 +26,7 @@ export function generateStaticParams() {
 
 const TITLE = "C62 manual";
 const DESCRIPTION =
-  "every menu and setting in my C62 TETRA firmware: what each one does, what it starts at, and the screen it's on.";
+  "every menu and setting in my C62 TETRA firmware: try them on a simulated screen, then what each one does, what it starts at, and the screen it's on.";
 
 export async function generateMetadata({
   params,
@@ -234,8 +235,27 @@ export default async function ManualRoute({ params }: { params: Promise<{ slug: 
           ))}
         </ul>
 
+        <section
+          id="try"
+          aria-labelledby="try-heading"
+          className="load-reveal mt-12 scroll-mt-28 space-y-8"
+          style={{ animationDelay: "0.24s" }}
+        >
+          <div className="space-y-3">
+            <p className="font-mono text-sm text-neutral-400">try it</p>
+            <h2 id="try-heading" className="text-2xl font-semibold sm:text-3xl">
+              the menus, on the radio&apos;s screen
+            </h2>
+            <p className="max-w-3xl text-lg leading-relaxed text-neutral-600">
+              click through every menu and setting like on the radio, with what each one does as you go, and hear the roger beeps.
+              it doesn&apos;t talk to a real radio, and changes aren&apos;t kept.
+            </p>
+          </div>
+          <C62SettingsSim />
+        </section>
+
         <div
-          className="load-reveal mt-12 grid grid-cols-1 gap-10 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-16"
+          className="load-reveal mt-24 grid grid-cols-1 gap-10 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-16"
           style={{ animationDelay: "0.28s" }}
         >
           <div className="lg:sticky lg:top-28 lg:self-start">

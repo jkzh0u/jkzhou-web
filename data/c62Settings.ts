@@ -453,3 +453,70 @@ export function allSettings(menu: SimMenu = topMenu, path = ""): { key: string; 
     return [];
   });
 }
+
+/*
+ * Roger beeps, as the firmware plays them (core/roger_beep.c): tones in Hz
+ * (0 is silence) and how long each lasts, in ms. The transmitter changes
+ * frequency without a gap, so a player should too.
+ */
+export type RogerStep = { hz: number; ms: number };
+
+export const rogerStyles: { name: string; note: string }[] = [
+  { name: "Classic", note: "two rising tones" },
+  { name: "Single", note: "one short beep" },
+  { name: "Double", note: "two short beeps" },
+  { name: "Chirp", note: "three quick rising tones" },
+  { name: "Bloop", note: "falling, then low" },
+  { name: "Morse K", note: "dah dit dah: K is morse for \"over\"" },
+  { name: "Sweep", note: "a rising whistle" },
+  { name: "Moto MDC", note: "the \"brrrp\" of a motorola MDC-1200 data burst" },
+];
+
+export function rogerSteps(name: string): RogerStep[] {
+  switch (name) {
+    case "Classic":
+      return [{ hz: 1000, ms: 90 }, { hz: 1500, ms: 90 }];
+    case "Single":
+      return [{ hz: 1200, ms: 120 }];
+    case "Double":
+      return [{ hz: 1600, ms: 60 }, { hz: 0, ms: 40 }, { hz: 1600, ms: 60 }];
+    case "Chirp":
+      return [{ hz: 1200, ms: 45 }, { hz: 1600, ms: 45 }, { hz: 2000, ms: 60 }];
+    case "Bloop":
+      return [{ hz: 1400, ms: 50 }, { hz: 900, ms: 50 }, { hz: 600, ms: 70 }];
+    case "Morse K":
+      return [
+        { hz: 800, ms: 180 }, { hz: 0, ms: 60 }, { hz: 800, ms: 60 }, { hz: 0, ms: 60 }, { hz: 800, ms: 180 },
+      ];
+    case "Sweep": {
+      const steps: RogerStep[] = [];
+      for (let hz = 700; hz <= 2300; hz += 80) steps.push({ hz, ms: 10 });
+      return steps;
+    }
+    case "Moto MDC": {
+      // 1200 baud FSK, 1200 Hz for a 1 and 1800 Hz for a 0: bit sync, a sync
+      // word, then a scrambled payload, the same bits as the firmware
+      const steps: RogerStep[] = [];
+      // The 40-bit sync word 0x07092a446f, in two parts
+      const syncHi = 0x07;
+      const syncLo = 0x092a446f;
+      let lfsr = 0x1d872b41;
+      for (let bit = 0; bit < 180; bit++) {
+        let one: number;
+        if (bit < 24) one = bit & 1;
+        else if (bit < 64) {
+          const shift = 63 - bit;
+          one = shift >= 32 ? (syncHi >> (shift - 32)) & 1 : (syncLo >>> shift) & 1;
+        }
+        else {
+          one = lfsr & 1;
+          lfsr = ((lfsr >>> 1) ^ (one ? 0xa3000000 : 0)) >>> 0;
+        }
+        steps.push({ hz: one ? 1200 : 1800, ms: 1000 / 1200 });
+      }
+      return steps;
+    }
+    default:
+      return [];
+  }
+}

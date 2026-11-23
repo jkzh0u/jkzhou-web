@@ -4,6 +4,8 @@ import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "reac
 import { Ubuntu } from "next/font/google";
 import {
   allSettings,
+  rogerStyles,
+  rogerSteps,
   simBadgeLabels,
   topMenu,
   type SimBadge,
@@ -25,6 +27,56 @@ const AMBER = "#fab413";
 type Level = { menu: SimMenu; sel: number; path: string };
 type Mode = "main" | "menu" | "page" | "reset";
 type Key = "green" | "red" | "up" | "down";
+
+// Roger beeps through the browser: one oscillator that changes frequency
+// without a gap, as the radio's tone generator does
+let audio: AudioContext | null = null;
+let playing: { osc: OscillatorNode; gain: GainNode } | null = null;
+
+function playRoger(name: string) {
+  const steps = rogerSteps(name);
+  if (steps.length === 0 || typeof window === "undefined") return 0;
+  if (!audio) {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    audio = new Ctx();
+  }
+  void audio.resume();
+  if (playing) {
+    playing.osc.stop();
+    playing = null;
+  }
+
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+  osc.type = "sine";
+  osc.connect(gain).connect(audio.destination);
+
+  const level = 0.18;
+  const ramp = 0.004; // seconds: no clicks where it starts and stops
+  let t = audio.currentTime + 0.03;
+  const start = t;
+  gain.gain.setValueAtTime(0, t);
+  let on = false;
+  for (const step of steps) {
+    if (step.hz > 0) {
+      osc.frequency.setValueAtTime(step.hz, t);
+      if (!on) gain.gain.setTargetAtTime(level, t, ramp);
+      on = true;
+    } else if (on) {
+      gain.gain.setTargetAtTime(0, t, ramp);
+      on = false;
+    }
+    t += step.ms / 1000;
+  }
+  gain.gain.setTargetAtTime(0, t, ramp);
+  osc.start(start);
+  osc.stop(t + 0.05);
+  playing = { osc, gain };
+  osc.onended = () => {
+    if (playing?.osc === osc) playing = null;
+  };
+  return (t - start) * 1000;
+}
 
 const startValues = () => Object.fromEntries(allSettings().map(({ key, start }) => [key, start]));
 
@@ -130,6 +182,7 @@ export default function C62SettingsSim() {
           if (entry.values[0]?.label === "ON" && count === 2) next = key === "up" ? 0 : 1;
           else next = (cur + (key === "up" ? 1 : -1) + count) % count;
           setValues((v) => ({ ...v, [entryKey]: next }));
+          if (entry.id === "roger") playRoger(entry.values[next].label);
         } else {
           setEditing(false);
         }
@@ -255,6 +308,8 @@ export default function C62SettingsSim() {
           />
         </div>
       </div>
+
+      <RogerBeeps />
 
       <MenuMap onJump={jump} stack={stack} mode={mode} />
     </div>
@@ -468,6 +523,16 @@ function Explain({
                   >
                     {v.label}
                   </span>
+                  {entry.id === "roger" && i > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => playRoger(v.label)}
+                      aria-label={`play ${v.label}`}
+                      className="-my-0.5 shrink-0 border border-neutral-300 px-1.5 font-mono text-xs text-neutral-600 transition-colors hover:border-neutral-900 hover:text-neutral-900"
+                    >
+                      ▶
+                    </button>
+                  )}
                   <span className={i === current ? "text-neutral-800" : "text-neutral-500"}>
                     {v.note ? <KeyText text={v.note} /> : null}
                     {i === (entry.start ?? 0) ? (
@@ -509,6 +574,77 @@ function Explain({
         <KeyText text={hint} />
       </p>
     </div>
+  );
+}
+
+/** A little chart of a roger beep: pitch against time */
+function RogerChart({ name, active }: { name: string; active: boolean }) {
+  const steps = rogerSteps(name);
+  const total = steps.reduce((a, s) => a + s.ms, 0);
+  const lo = 500;
+  const hi = 2400;
+  const w = 120;
+  const h = 32;
+  // Where each step starts, ms
+  const starts = steps.map((_, i) => steps.slice(0, i).reduce((a, s) => a + s.ms, 0));
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-8 w-full" aria-hidden="true">
+      <line x1={0} y1={h - 0.5} x2={w} y2={h - 0.5} className="stroke-neutral-200" />
+      {steps.map((s, i) => {
+        const x = (starts[i] / total) * w;
+        if (s.hz === 0) return null;
+        const y = h - 2 - ((s.hz - lo) / (hi - lo)) * (h - 6);
+        return (
+          <rect
+            key={i}
+            x={x}
+            y={y}
+            width={Math.max((s.ms / total) * w, 0.6)}
+            height={2.5}
+            className={active ? "fill-amber-500" : "fill-neutral-800"}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+/** Every roger beep style, to hear */
+function RogerBeeps() {
+  const [active, setActive] = useState<string | null>(null);
+  const play = (name: string) => {
+    const ms = playRoger(name);
+    setActive(name);
+    window.setTimeout(() => setActive((a) => (a === name ? null : a)), ms + 60);
+  };
+  return (
+    <section aria-label="roger beeps" className="border-t border-neutral-900 pt-6">
+      <p className="font-mono text-xs tracking-wide text-neutral-400 uppercase">roger beeps: click one to hear it</p>
+      <p className="mt-3 max-w-3xl leading-relaxed text-neutral-600">
+        the sound the radio sends when you let go of PTT, picked in settings &gt; FM &gt; roger beep. these are the same tones and timings as
+        the firmware, as pure tones: on air they go through the radio&apos;s audio filters and the other radio&apos;s speaker.
+      </p>
+      <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {rogerStyles.map((r) => (
+          <li key={r.name}>
+            <button
+              type="button"
+              onClick={() => play(r.name)}
+              className={`group flex h-full w-full flex-col gap-2 border p-3 text-left transition-colors ${
+                active === r.name ? "border-amber-500 bg-amber-50" : "border-neutral-200 hover:border-neutral-900"
+              }`}
+            >
+              <span className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-neutral-900">{r.name}</span>
+                <span className="font-mono text-xs text-neutral-400 group-hover:text-neutral-900">▶</span>
+              </span>
+              <RogerChart name={r.name} active={active === r.name} />
+              <span className="text-sm leading-snug text-neutral-500">{r.note}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
