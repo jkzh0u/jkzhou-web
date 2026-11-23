@@ -245,6 +245,21 @@ const fm: SimMenu = {
       start: 0,
     },
     {
+      id: "talk-permit",
+      name: "Talk permit",
+      explain:
+        "a tone in the radio's own speaker when you press PTT, telling you to start talking, like on motorola radios. it isn't transmitted: the radio keys up just after it.",
+      badges: ["c62", "saved"],
+      values: [
+        { label: "Off", note: "keys up as soon as you press PTT." },
+        { label: "Beep", note: "one beep." },
+        { label: "Double", note: "two quick beeps." },
+        { label: "Moto", note: "three quick high beeps." },
+        { label: "Chime", note: "high, then low." },
+      ],
+      start: 0,
+    },
+    {
       id: "roger",
       name: "Roger beep",
       explain: "a sound sent when you let go of PTT, so the others know you've finished.",
@@ -516,6 +531,31 @@ export function rogerSteps(name: string): RogerStep[] {
       }
       return steps;
     }
+    default:
+      return [];
+  }
+}
+
+/* Talk permit tones, as the firmware plays them (core/roger_beep.c) */
+export const talkPermitStyles: { name: string; note: string }[] = [
+  { name: "Beep", note: "one beep" },
+  { name: "Double", note: "two quick beeps" },
+  { name: "Moto", note: "three quick high beeps" },
+  { name: "Chime", note: "high, then low" },
+];
+
+export function talkPermitSteps(name: string): RogerStep[] {
+  switch (name) {
+    case "Beep":
+      return [{ hz: 1000, ms: 100 }];
+    case "Double":
+      return [{ hz: 1400, ms: 50 }, { hz: 0, ms: 30 }, { hz: 1400, ms: 50 }];
+    case "Moto":
+      return [
+        { hz: 1800, ms: 40 }, { hz: 0, ms: 25 }, { hz: 1800, ms: 40 }, { hz: 0, ms: 25 }, { hz: 1800, ms: 60 },
+      ];
+    case "Chime":
+      return [{ hz: 1500, ms: 60 }, { hz: 1000, ms: 90 }];
     default:
       return [];
   }

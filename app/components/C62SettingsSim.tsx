@@ -6,6 +6,9 @@ import {
   allSettings,
   rogerStyles,
   rogerSteps,
+  talkPermitStyles,
+  talkPermitSteps,
+  type RogerStep,
   simBadgeLabels,
   topMenu,
   type SimBadge,
@@ -34,7 +37,14 @@ let audio: AudioContext | null = null;
 let playing: { osc: OscillatorNode; gain: GainNode } | null = null;
 
 function playRoger(name: string) {
-  const steps = rogerSteps(name);
+  return playTones(rogerSteps(name));
+}
+
+function playTalkPermit(name: string) {
+  return playTones(talkPermitSteps(name));
+}
+
+function playTones(steps: RogerStep[]) {
   if (steps.length === 0 || typeof window === "undefined") return 0;
   if (!audio) {
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -183,6 +193,7 @@ export default function C62SettingsSim() {
           else next = (cur + (key === "up" ? 1 : -1) + count) % count;
           setValues((v) => ({ ...v, [entryKey]: next }));
           if (entry.id === "roger") playRoger(entry.values[next].label);
+          if (entry.id === "talk-permit") playTalkPermit(entry.values[next].label);
         } else {
           setEditing(false);
         }
@@ -523,10 +534,10 @@ function Explain({
                   >
                     {v.label}
                   </span>
-                  {entry.id === "roger" && i > 0 && (
+                  {(entry.id === "roger" || entry.id === "talk-permit") && i > 0 && (
                     <button
                       type="button"
-                      onClick={() => playRoger(v.label)}
+                      onClick={() => (entry.id === "roger" ? playRoger(v.label) : playTalkPermit(v.label))}
                       aria-label={`play ${v.label}`}
                       className="-my-0.5 shrink-0 border border-neutral-300 px-1.5 font-mono text-xs text-neutral-600 transition-colors hover:border-neutral-900 hover:text-neutral-900"
                     >
@@ -578,8 +589,7 @@ function Explain({
 }
 
 /** A little chart of a roger beep: pitch against time */
-function RogerChart({ name, active }: { name: string; active: boolean }) {
-  const steps = rogerSteps(name);
+function RogerChart({ steps, active }: { steps: RogerStep[]; active: boolean }) {
   const total = steps.reduce((a, s) => a + s.ms, 0);
   const lo = 500;
   const hi = 2400;
@@ -609,27 +619,33 @@ function RogerChart({ name, active }: { name: string; active: boolean }) {
   );
 }
 
-/** Every roger beep style, to hear */
-function RogerBeeps() {
+/** One group of sounds to hear: tiles with a chart each */
+function SoundGroup({
+  title,
+  styles,
+  steps,
+  play,
+}: {
+  title: string;
+  styles: { name: string; note: string }[];
+  steps: (name: string) => RogerStep[];
+  play: (name: string) => number;
+}) {
   const [active, setActive] = useState<string | null>(null);
-  const play = (name: string) => {
-    const ms = playRoger(name);
+  const onPlay = (name: string) => {
+    const ms = play(name);
     setActive(name);
     window.setTimeout(() => setActive((a) => (a === name ? null : a)), ms + 60);
   };
   return (
-    <section aria-label="roger beeps" className="border-t border-neutral-900 pt-6">
-      <p className="font-mono text-xs tracking-wide text-neutral-400 uppercase">roger beeps: click one to hear it</p>
-      <p className="mt-3 max-w-3xl leading-relaxed text-neutral-600">
-        the sound the radio sends when you let go of PTT, picked in settings &gt; FM &gt; roger beep. these are the same tones and timings as
-        the firmware, as pure tones: on air they go through the radio&apos;s audio filters and the other radio&apos;s speaker.
-      </p>
-      <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {rogerStyles.map((r) => (
+    <div>
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {styles.map((r) => (
           <li key={r.name}>
             <button
               type="button"
-              onClick={() => play(r.name)}
+              onClick={() => onPlay(r.name)}
               className={`group flex h-full w-full flex-col gap-2 border p-3 text-left transition-colors ${
                 active === r.name ? "border-amber-500 bg-amber-50" : "border-neutral-200 hover:border-neutral-900"
               }`}
@@ -638,12 +654,30 @@ function RogerBeeps() {
                 <span className="font-semibold text-neutral-900">{r.name}</span>
                 <span className="font-mono text-xs text-neutral-400 group-hover:text-neutral-900">▶</span>
               </span>
-              <RogerChart name={r.name} active={active === r.name} />
+              <RogerChart steps={steps(r.name)} active={active === r.name} />
               <span className="text-sm leading-snug text-neutral-500">{r.note}</span>
             </button>
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** Every talk permit and roger beep style, to hear */
+function RogerBeeps() {
+  return (
+    <section aria-label="roger beeps" className="space-y-8 border-t border-neutral-900 pt-6">
+      <div>
+        <p className="font-mono text-xs tracking-wide text-neutral-400 uppercase">FM sounds: click one to hear it</p>
+        <p className="mt-3 max-w-3xl leading-relaxed text-neutral-600">
+          picked in settings &gt; FM. the talk permit plays in your own speaker when you press PTT, telling you to talk. the roger beep
+          is sent over the air when you let go, so the others know you&apos;ve finished. these are the same tones and timings as the
+          firmware, as pure tones: on the radio they go through its audio filters and speaker.
+        </p>
+      </div>
+      <SoundGroup title="talk permit" styles={talkPermitStyles} steps={talkPermitSteps} play={playTalkPermit} />
+      <SoundGroup title="roger beep" styles={rogerStyles} steps={rogerSteps} play={playRoger} />
     </section>
   );
 }

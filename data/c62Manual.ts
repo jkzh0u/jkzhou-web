@@ -244,6 +244,7 @@ export const manual: ManualSection[] = [
             ["tone mode", "none, encode, decode, both", "none", "encode sends the TX tone, decode only opens the speaker for the RX tone. also side key + {1}"],
             ["TX tone", "67.0 to 254.1 Hz", "67.0", "the tone sent. side key + {2} / {3} change both tones"],
             ["RX tone", "67.0 to 254.1 Hz", "67.0", "the tone the squelch waits for"],
+            ["talk permit", "off, beep, double, moto, chime", "off", "a tone in your own speaker when you press PTT, telling you to talk, like on motorola radios. not transmitted. saved"],
             ["roger beep", "off, classic, single, double, chirp, bloop, morse K, sweep, moto MDC", "off", "tones when you let go of PTT, so others know you're done. morse K is dah dit dah (\"over\"), moto MDC sounds like a motorola data burst. saved"],
           ],
         },
