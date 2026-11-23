@@ -248,7 +248,8 @@ const fm: SimMenu = {
         { label: "Off", note: "keys up as soon as you press PTT." },
         { label: "Beep", note: "one beep." },
         { label: "Double", note: "two quick beeps." },
-        { label: "Moto", note: "three quick high beeps." },
+        { label: "Motorola", note: "three fast high beeps, \"dit-dit-dit\", like a motorola radio." },
+        { label: "Moto clear", note: "the same, then one more beep: on motorola trunked systems that means the call isn't encrypted." },
         { label: "Chime", note: "high, then low." },
       ],
       start: 0,
@@ -523,7 +524,8 @@ export function rogerSteps(name: string): RogerStep[] {
 export const talkPermitStyles: { name: string; note: string }[] = [
   { name: "Beep", note: "one beep" },
   { name: "Double", note: "two quick beeps" },
-  { name: "Moto", note: "three quick high beeps" },
+  { name: "Motorola", note: "three fast high beeps, \"dit-dit-dit\"" },
+  { name: "Moto clear", note: "the same, then one more: not encrypted" },
   { name: "Chime", note: "high, then low" },
 ];
 
@@ -533,9 +535,14 @@ export function talkPermitSteps(name: string): RogerStep[] {
       return [{ hz: 1000, ms: 100 }];
     case "Double":
       return [{ hz: 1400, ms: 50 }, { hz: 0, ms: 30 }, { hz: 1400, ms: 50 }];
-    case "Moto":
+    case "Motorola":
       return [
-        { hz: 1800, ms: 40 }, { hz: 0, ms: 25 }, { hz: 1800, ms: 40 }, { hz: 0, ms: 25 }, { hz: 1800, ms: 60 },
+        { hz: 1800, ms: 30 }, { hz: 0, ms: 25 }, { hz: 1800, ms: 30 }, { hz: 0, ms: 25 }, { hz: 1800, ms: 30 },
+      ];
+    case "Moto clear":
+      return [
+        { hz: 1800, ms: 30 }, { hz: 0, ms: 25 }, { hz: 1800, ms: 30 }, { hz: 0, ms: 25 },
+        { hz: 1800, ms: 30 }, { hz: 0, ms: 90 }, { hz: 1800, ms: 30 },
       ];
     case "Chime":
       return [{ hz: 1500, ms: 60 }, { hz: 1000, ms: 90 }];
