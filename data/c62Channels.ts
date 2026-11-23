@@ -39,17 +39,28 @@ export const channelsSections: FlashSection[] = [
             type: "code",
             code: `CPS_CHANNEL("NOAA WX 1", 162550000, OPMODE_FM)
 CPS_CHANNEL("M17 Simplex", 433475000, OPMODE_M17)
-CPS_CHANNEL("TETRA Site 1", 390012500, OPMODE_TETRA)`,
+CPS_CHANNEL("TETRA Site 1", 390012500, OPMODE_TETRA)
+CPS_CHANNEL("DMR Rptr", 443850000, OPMODE_DMR)`,
           },
           {
             type: "list",
             items: [
               "name: plain ASCII. the main screen shows 12 characters.",
               "frequency: in Hz, so 390.0125 MHz is `390012500`.",
-              "mode: `OPMODE_FM`, `OPMODE_M17` or `OPMODE_TETRA`. a TETRA channel starts T mode by itself.",
+              "mode: `OPMODE_FM`, `OPMODE_M17`, `OPMODE_TETRA` or `OPMODE_DMR`. each channel starts its own mode. for a DMR repeater, use its output frequency.",
             ],
           },
-          { type: "p", text: "channels are receive only. delete the example lines you don't want." },
+          { type: "p", text: "these channels are receive only. delete the example lines you don't want." },
+          {
+            type: "p",
+            text: "for FM channels with tones and a repeater shift, use `FM_CHANNEL` instead: name, receive and transmit frequency in Hz (transmit `0` for receive only), width (`12500` or `25000`), then the receive and transmit CTCSS tones in tenths of Hz (`1035` is 103.5 Hz, `0` is none):",
+          },
+          {
+            type: "code",
+            code: `FM_CHANNEL("2m Calling", 146520000, 146520000, 25000, 0, 0)
+FM_CHANNEL("70cm Rptr", 443150000, 448150000, 12500, 1035, 1035)`,
+          },
+          { type: "p", text: "chlist.py checks the tones are real CTCSS tones and tells you the nearest one if not. you need a licence to transmit on them." },
         ],
       },
       {
