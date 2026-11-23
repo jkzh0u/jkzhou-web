@@ -2,6 +2,9 @@
 
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
+import gsap from 'gsap';
+import { getScrollY } from './SmoothScroll';
+import { isLiteMode } from './perfMode';
 
 export type Interest = { label: string; src: string; description: string };
 
@@ -20,35 +23,134 @@ const SPOTS = [
 const STEP = 0.9;
 // Height of a polaroid in polaroid widths, used to size the wall.
 const CARD_HEIGHT = 1.5;
-// A polaroid drops in once its top passes this far down the screen (fraction of screen height).
-const REVEAL_LINE = 0.62;
+// A polaroid reveals once its top is this far down the screen (fraction of screen height).
+// The reveal is the site's own photo reveal (media-reveal in globals.css): it fades in,
+// comes into focus and settles from slightly smaller. It plays once.
+const REVEAL_LINE = 0.8;
+
+// The scroll cylinder from HomeHero and AboutMe: the polaroids sit on a cylinder that curves
+// away above and below the middle of the screen, and curves harder the faster you scroll.
+// Same numbers as HomeHero's CONFIG. MAX_BEND caps it, because a polaroid bends as one flat
+// piece (the hero bends each photo's surface in WebGL), so a full bend tips it too far.
+const BASE_BEND = 0.18;
+const VELOCITY_BEND = 0.8;
+const MAX_BEND = 0.6;
+
+const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 const pad = (i: number) => String(i + 1).padStart(2, '0');
 
 export default function Interests({ interests }: { interests: Interest[] }) {
     const wallRef = useRef<HTMLDivElement>(null);
 
+    // One frame loop for the reveal and the scroll cylinder. Positions come from offsetTop,
+    // which ignores transforms, so the bend never feeds back into its own measurements.
     useEffect(() => {
         const wall = wallRef.current;
         if (!wall) return;
-        const items = Array.from(wall.querySelectorAll<HTMLElement>('.pw-item'));
+
+        const items = Array.from(wall.querySelectorAll<HTMLElement>('.pw-item')).map((el) => ({
+            el,
+            top: 0,
+            centre: 0,
+        }));
+
+        // everything shown and flat, no motion
+        const settle = () => {
+            for (const item of items) {
+                item.el.classList.add('is-in');
+                item.el.style.transform = '';
+            }
+        };
 
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            items.forEach((item) => item.classList.add('is-in'));
+            settle();
             return;
         }
 
-        const io = new IntersectionObserver(
-            (entries) => {
-                for (const entry of entries) {
-                    const passed = entry.isIntersecting || entry.boundingClientRect.top < 0;
-                    entry.target.classList.toggle('is-in', passed);
+        let lastScrollY = getScrollY();
+        let smoothedVelocity = 0;
+        let bend = BASE_BEND;
+        let drawnScroll = NaN;
+        let drawnBend = NaN;
+        let dirty = true;
+        let settled = false;
+
+        const measure = () => {
+            for (const item of items) {
+                item.top = item.el.offsetTop;
+                item.centre = item.top + item.el.offsetHeight / 2;
+            }
+            dirty = true;
+        };
+
+        const tick = () => {
+            if (isLiteMode()) {
+                // too slow for this: drop everything into place once, then stop
+                if (!settled) {
+                    settle();
+                    settled = true;
                 }
-            },
-            { rootMargin: `0px 0px -${Math.round((1 - REVEAL_LINE) * 100)}% 0px` }
-        );
-        items.forEach((item) => io.observe(item));
-        return () => io.disconnect();
+                return;
+            }
+            if (settled) {
+                settled = false;
+                dirty = true;
+            }
+
+            const scrollY = getScrollY();
+            const frameDelta = Math.min(Math.abs(scrollY - lastScrollY), 60);
+            lastScrollY = scrollY;
+
+            smoothedVelocity +=
+                (frameDelta - smoothedVelocity) * (frameDelta > smoothedVelocity ? 0.22 : 0.1);
+            const targetBend = clamp(
+                BASE_BEND + clamp(smoothedVelocity / 40, 0, 1) * VELOCITY_BEND,
+                0,
+                1
+            );
+            bend += (targetBend - bend) * (targetBend < bend ? 0.12 : 0.1);
+
+            const vh = window.innerHeight;
+            const box = wall.getBoundingClientRect();
+            if (box.bottom < -vh * 0.5 || box.top > vh * 1.5) return;
+            if (!dirty && scrollY === drawnScroll && Math.abs(bend - drawnBend) < 0.0005) return;
+            dirty = false;
+            drawnScroll = scrollY;
+            drawnBend = bend;
+
+            // the wall's top in the smooth-scrolled frame, as AboutMe does it
+            const wallTop = box.top + window.scrollY - scrollY;
+            const radius = vh * 1.1;
+            const k = Math.min(bend, MAX_BEND);
+
+            for (const item of items) {
+                if (!item.el.classList.contains('is-in') && wallTop + item.top < vh * REVEAL_LINE) {
+                    item.el.classList.add('is-in');
+                }
+
+                const yv = wallTop + item.centre - vh / 2;
+                if (Math.abs(yv) > vh * 1.3) continue;
+                const a = clamp(yv / radius, -1.3, 1.3);
+                const shiftY = lerp(yv, radius * Math.sin(a), k) - yv;
+                const shiftZ = radius * (Math.cos(a) - 1) * k;
+                item.el.style.transform = `perspective(1000px) translate3d(0, ${shiftY}px, ${shiftZ}px) rotateX(${-a * k}rad)`;
+            }
+        };
+
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(wall);
+        window.addEventListener('resize', measure);
+        gsap.ticker.add(tick);
+
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', measure);
+            gsap.ticker.remove(tick);
+            settle();
+        };
     }, [interests.length]);
 
     if (interests.length === 0) return null;
@@ -145,24 +247,26 @@ const css = `
     width: var(--pw-w);
   }
 
+  /* hidden until revealed, then the site's photo reveal (globals.css media-reveal) */
   .pw-card {
     position: relative;
     z-index: 1;
     rotate: var(--tilt);
-    transform-origin: 50% 0;
     opacity: 0;
-    translate: 0 -26px;
-    scale: 1.06;
-    transition:
-      opacity 0.5s ease,
-      translate 0.7s cubic-bezier(0.34, 1.5, 0.64, 1),
-      scale 0.7s cubic-bezier(0.34, 1.5, 0.64, 1);
   }
 
   .pw-item.is-in .pw-card {
     opacity: 1;
-    translate: 0 0;
-    scale: 1;
+    animation: media-reveal 1.2s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+
+  /* too slow for an animated blur (perfMode.ts): plain fade */
+  html.perf-lite .pw-item.is-in .pw-card {
+    animation: pw-fade 0.8s ease backwards;
+  }
+
+  @keyframes pw-fade {
+    from { opacity: 0; }
   }
 
   .pw-polaroid {
@@ -227,7 +331,8 @@ const css = `
   .pw-item.is-in .pw-note {
     opacity: 1;
     translate: 0 0;
-    transition-delay: 0.3s;
+    /* as the polaroid comes into focus */
+    transition-delay: 0.35s;
   }
 
   .pw-note-no {
@@ -272,6 +377,7 @@ const css = `
       margin-right: 2%;
     }
 
+
     .pw-item .pw-note {
       position: relative;
       z-index: 1;
@@ -290,7 +396,9 @@ const css = `
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pw-card,
+    .pw-item.is-in .pw-card {
+      animation: none;
+    }
     .pw-note {
       transition: none;
     }
