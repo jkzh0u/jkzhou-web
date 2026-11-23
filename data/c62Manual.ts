@@ -240,7 +240,7 @@ export const manual: ManualSection[] = [
           rows: [
             ["squelch", "off, -123 to -61 dBm", "-110 dBm", "the signal level that opens the speaker. a radio setting, saved. also side key + {up} / {down}"],
             ["width", "12.5 / 25 kHz", "the channel's", "narrow for most repeaters today. also side key + {4}"],
-            ["power", "1, 2.5, 5 W", "1 W", "transmit power. also side key + {6}"],
+            ["power", "1, 2.5, 5 W", "5 W", "transmit power. also side key + {6}"],
             ["tone mode", "none, encode, decode, both", "none", "encode sends the TX tone, decode only opens the speaker for the RX tone. also side key + {1}"],
             ["TX tone", "67.0 to 254.1 Hz", "67.0", "the tone sent. side key + {2} / {3} change both tones"],
             ["RX tone", "67.0 to 254.1 Hz", "67.0", "the tone the squelch waits for"],
