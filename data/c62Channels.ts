@@ -49,14 +49,15 @@ CPS_CHANNEL("TETRA Site 1", 390012500, OPMODE_TETRA)`,
           { type: "p", text: "these channels are receive only. delete the example lines you don't want." },
           {
             type: "p",
-            text: "for FM channels with tones and a repeater shift, use `FM_CHANNEL` instead: name, receive and transmit frequency in Hz (transmit `0` for receive only), width (`12500` or `25000`), then the receive and transmit CTCSS tones in tenths of Hz (`1035` is 103.5 Hz, `0` is none):",
+            text: "for FM channels with tones and a repeater shift, use `FM_CHANNEL` instead: name, receive and transmit frequency in Hz (transmit `0` for receive only), width (`12500` or `25000`), then the receive and transmit tones: CTCSS in tenths of Hz (`1035` is 103.5 Hz), a DCS code as `D023N` or `D023I` (inverted), or `0` for none:",
           },
           {
             type: "code",
             code: `FM_CHANNEL("2m Calling", 146520000, 146520000, 25000, 0, 0)
-FM_CHANNEL("70cm Rptr", 443150000, 448150000, 12500, 1035, 1035)`,
+FM_CHANNEL("70cm Rptr", 443150000, 448150000, 12500, 1035, 1035)
+FM_CHANNEL("GMRS DCS", 462562500, 462562500, 12500, D023N, D023N)`,
           },
-          { type: "p", text: "chlist.py checks the tones are real CTCSS tones and tells you the nearest one if not. you need a licence to transmit on them." },
+          { type: "p", text: "chlist.py checks the tones are real CTCSS tones or DCS codes, and tells you the nearest CTCSS tone if not. you need a licence to transmit on them." },
         ],
       },
       {

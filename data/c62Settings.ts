@@ -46,6 +46,23 @@ const CTCSS = [
   "229.1", "233.6", "241.8", "250.3", "254.1",
 ];
 
+// DCS codes, then the same inverted: the tone lists after the CTCSS tones
+const DCS = [
+  "023", "025", "026", "031", "032", "036", "043", "047", "051", "053", "054", "065", "071", "072", "073", "074",
+  "114", "115", "116", "122", "125", "131", "132", "134", "143", "145", "152", "155", "156", "162", "165", "172",
+  "174", "205", "212", "223", "225", "226", "243", "244", "245", "246", "251", "252", "255", "261", "263", "265",
+  "266", "271", "274", "306", "311", "315", "325", "331", "332", "343", "346", "351", "356", "364", "365", "371",
+  "411", "412", "413", "423", "431", "432", "445", "446", "452", "454", "455", "462", "464", "465", "466", "503",
+  "506", "516", "523", "526", "532", "546", "565", "606", "612", "624", "627", "631", "632", "654", "662", "664",
+  "703", "712", "723", "731", "732", "734", "743", "754",
+];
+
+const TONES: SimValue[] = [
+  ...CTCSS.map((label) => ({ label, note: "a CTCSS tone, in Hz." })),
+  ...DCS.map((code) => ({ label: `D${code}N`, note: "a DCS code: a slow digital pattern instead of a tone." })),
+  ...DCS.map((code) => ({ label: `D${code}I`, note: "a DCS code, inverted: every bit flipped." })),
+];
+
 // Squelch: off, then -127 + level * 66 / 15 dBm for levels 1 to 15 (the FM mode's formula)
 const SQUELCH: SimValue[] = [
   { label: "OFF", note: "the speaker is always open: you hear the noise between signals too." },
@@ -228,15 +245,16 @@ const fm: SimMenu = {
     {
       id: "tx-tone",
       name: "TX tone",
-      explain: "the tone you send with Encode. the repeater's listing says which one. side key + {2} / {3} change both tones.",
-      values: CTCSS.map((label) => ({ label })),
+      explain:
+        "the tone you send with Encode: a CTCSS tone, or a DCS code after them. the repeater's listing says which one. side key + {2} / {3} change both tones.",
+      values: TONES,
       start: 0,
     },
     {
       id: "rx-tone",
       name: "RX tone",
-      explain: "the tone the speaker waits for with Decode.",
-      values: CTCSS.map((label) => ({ label })),
+      explain: "the tone the speaker waits for with Decode, from the same list. a DCS code opens it normal or inverted.",
+      values: TONES,
       start: 0,
     },
     {
