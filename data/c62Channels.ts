@@ -7,9 +7,6 @@ import type { FlashSection } from "./c62Flashing";
 export const channelsIntro =
   "the firmware has no channels in it. memory mode channels, TETRA talkgroup names and filters all come from a list you write and flash on its own.";
 
-export const channelsNote =
-  "none of this has been tried on a radio yet, since mine hasn't arrived.";
-
 export const channelsSections: FlashSection[] = [
   {
     id: "writing",

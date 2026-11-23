@@ -9,9 +9,7 @@ import {
   talkPermitStyles,
   talkPermitSteps,
   type RogerStep,
-  simBadgeLabels,
   topMenu,
-  type SimBadge,
   type SimEntry,
   type SimMenu,
 } from "@/data/c62Settings";
@@ -114,17 +112,6 @@ function KeyText({ text }: { text: string }) {
         );
       })}
     </>
-  );
-}
-
-function Badge({ badge }: { badge: SimBadge }) {
-  const dot =
-    badge === "c62" ? "bg-sky-500" : badge === "saved" ? "bg-emerald-500" : badge === "channel" ? "bg-amber-500" : "bg-neutral-300";
-  return (
-    <span className="inline-flex items-center gap-1.5 border border-neutral-200 px-2 py-0.5 font-mono text-xs whitespace-nowrap text-neutral-600">
-      <span className={`size-1.5 ${dot}`} aria-hidden="true" />
-      {simBadgeLabels[badge]}
-    </span>
   );
 }
 
@@ -514,7 +501,6 @@ function Explain({
       <p className="font-mono text-sm text-neutral-400">{breadcrumb.join(" › ")}</p>
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="mr-2 text-2xl font-semibold sm:text-3xl">{entry.name}</h2>
-        {entry.badges?.map((b) => <Badge key={b} badge={b} />)}
       </div>
       <p className="text-lg leading-relaxed text-neutral-600">
         <KeyText text={entry.explain} />

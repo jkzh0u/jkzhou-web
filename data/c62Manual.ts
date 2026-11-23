@@ -2,8 +2,6 @@
 // Taken from the firmware's UI code (OpenRTX, c62/channels branch).
 // In text, {name} is drawn as a key, e.g. {green} or {0}.
 
-export type ManualBadge = "c62" | "saved" | "channel" | "empty";
-
 export type ManualTable = {
   columns: string[];
   rows: string[][];
@@ -18,7 +16,6 @@ export type ManualScreen = {
 export type ManualPage = {
   id: string;
   title: string;
-  badges?: ManualBadge[];
   screens?: ManualScreen[];
   paragraphs?: string[];
   table?: ManualTable;
@@ -39,20 +36,6 @@ const shot = (file: string, alt: string, caption: string): ManualScreen => ({
   caption,
 });
 
-export const badgeLabels: Record<ManualBadge, string> = {
-  c62: "c62 only",
-  saved: "saved",
-  channel: "per channel",
-  empty: "empty",
-};
-
-export const badgeMeanings: Record<ManualBadge, string> = {
-  c62: "added by my fork, not in other OpenRTX radios",
-  saved: "written to flash 5 s after you change it",
-  channel: "belongs to the frequency you're on, not the radio",
-  empty: "there, but nothing in it on the C62",
-};
-
 export const manual: ManualSection[] = [
   {
     id: "keys",
@@ -67,7 +50,6 @@ export const manual: ManualSection[] = [
             ["{green} top left", "enter", "open the menu, open a page, start or finish changing a value"],
             ["{red} top right", "esc", "back one page, or cancel a change"],
             ["{up} {down} round key", "up / down", "move the selection, or change the value being edited"],
-            ["{P1} {P2}", "F1 / F2", "not used by the menus"],
             ["{side} below the PTT", "side key", "held with a number: a shortcut"],
             ["{knob}", "power / volume", "wait 5 s after changing a setting before turning off"],
           ],
@@ -86,14 +68,10 @@ export const manual: ManualSection[] = [
   {
     id: "screens",
     heading: "main screens",
-    paragraphs: [
-      "T mode has its own screen, shown on the [project page](/projects/c62). FM got the same treatment: the station large, what's going on above it, and a meter of labelled bars at the bottom.",
-    ],
     pages: [
       {
         id: "fm-screen",
         title: "FM",
-        badges: ["c62"],
         screens: [
           shot("fm-1-idle", "FM in VFO mode, 146.52000 large, 25k and 5W on line 1", "VFO, idle"),
           shot("fm-2-receiving", "FM receiving, the frequency in green with Receiving S9 below", "receiving"),
@@ -111,15 +89,9 @@ export const manual: ManualSection[] = [
     id: "menu",
     heading: "the menu",
     paragraphs: [
-      "{green} on the main screen opens it. the C62 has no GPS or clock, so the GPS and time pages other OpenRTX radios have are left out.",
+      "{green} on the main screen opens it.",
     ],
     pages: [
-      {
-        id: "banks",
-        title: "banks",
-        badges: ["empty"],
-        paragraphs: ["groups of channels. the channel list has no banks, so use memory mode or channels instead."],
-      },
       {
         id: "channels",
         title: "channels",
@@ -128,12 +100,6 @@ export const manual: ManualSection[] = [
           "every channel in your channel list, in order. {green} tunes to one, and each channel brings its own mode.",
           "the list isn't part of the firmware: you [write it as a text file](/projects/c62/channels), build it with chlist.py and [flash it](/projects/c62/flashing) next to the firmware. with no list, this page is empty and VFO mode still works.",
         ],
-      },
-      {
-        id: "contacts",
-        title: "contacts",
-        badges: ["empty"],
-        paragraphs: ["an address book for digital calls. TETRA talkgroups and radios get their names from the [channel list](/projects/c62/channels) instead."],
       },
       {
         id: "info",
@@ -155,7 +121,6 @@ export const manual: ManualSection[] = [
       {
         id: "field-test",
         title: "field test",
-        badges: ["c62"],
         screens: [
           shot("15-field-test", "field test top: lock, signal and cell", "signal and cell"),
           shot("15a-field-test-middle", "field test middle: tracking, clock and neighbours", "tracking and neighbours"),
@@ -183,13 +148,12 @@ export const manual: ManualSection[] = [
     id: "settings",
     heading: "settings",
     paragraphs: [
-      "seven pages. settings marked saved are written to flash 5 s after you last change one. per channel ones belong to the frequency you're on: they're saved with it, and a memory channel brings its own.",
+      "radio settings, and FM width, power and tones, belong to the frequency you're on. everything else is saved for the whole radio.",
     ],
     pages: [
       {
         id: "display",
         title: "display",
-        badges: ["saved"],
         screens: [shot("menu-04-display", "display settings", "settings > display")],
         table: {
           columns: ["setting", "values", "starts at", "does"],
@@ -203,7 +167,6 @@ export const manual: ManualSection[] = [
       {
         id: "radio",
         title: "radio",
-        badges: ["channel"],
         screens: [shot("menu-05-radio", "radio settings", "settings > radio")],
         table: {
           columns: ["setting", "values", "starts at", "does"],
@@ -218,7 +181,6 @@ export const manual: ManualSection[] = [
       {
         id: "m17",
         title: "M17",
-        badges: ["saved"],
         screens: [shot("menu-06-m17", "M17 settings", "settings > M17")],
         table: {
           columns: ["setting", "values", "starts at", "does"],
@@ -233,7 +195,6 @@ export const manual: ManualSection[] = [
       {
         id: "fm",
         title: "FM",
-        badges: ["channel"],
         screens: [shot("menu-07-fm", "FM settings", "settings > FM")],
         table: {
           columns: ["setting", "values", "starts at", "does"],
@@ -253,7 +214,6 @@ export const manual: ManualSection[] = [
       {
         id: "tetra",
         title: "TETRA",
-        badges: ["c62", "saved"],
         screens: [shot("menu-08b-tetra", "TETRA settings, all six on", "settings > TETRA")],
         table: {
           columns: ["setting", "on (default)", "off"],
@@ -271,13 +231,12 @@ export const manual: ManualSection[] = [
       {
         id: "accessibility",
         title: "accessibility",
-        badges: ["saved"],
         screens: [shot("menu-08-accessibility", "accessibility settings", "settings > accessibility")],
         table: {
           columns: ["setting", "values", "starts at", "does"],
           rows: [
             ["macro latch", "on / off", "on", "holding the side key on its own latches shortcut mode until you press it again"],
-            ["voice", "off, beep, 1 to 3", "off", "spoken prompts for menus and values. not tried on the C62 yet"],
+            ["voice", "off, beep, 1 to 3", "off", "spoken prompts for menus and values"],
             ["phonetic", "on / off", "off", "spell letters as alpha, bravo in voice prompts"],
           ],
         },
@@ -335,7 +294,7 @@ export const manual: ManualSection[] = [
     id: "saving",
     heading: "what's saved",
     paragraphs: [
-      "settings are written to flash 5 s after your last change, and only what changed. the C62 notices power off too late to write safely, so it doesn't wait for it: turning off within 5 s of a change loses that change.",
+      "settings are written to flash 5 s after your last change: turning off sooner loses that change.",
     ],
     pages: [
       {
@@ -348,7 +307,7 @@ export const manual: ManualSection[] = [
             ["frequency and mode", "yes, in VFO mode, so a TETRA cell starts receiving again by itself"],
             ["talkgroup filter", "yes, with keep filter on"],
             ["held talkgroup", "no"],
-            ["memory mode and channel number", "not yet"],
+            ["memory mode and channel number", "no"],
             ["recent calls and the log", "no. send the log with side key + {0} first"],
             ["channel list", "always: it's flashed separately and the radio never writes to it"],
           ],

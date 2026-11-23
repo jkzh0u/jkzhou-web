@@ -37,7 +37,7 @@ const FIRST_FLASH = "https://github.com/jkzh0u/OpenRTX/blob/c62/channels/scripts
 export const flashingIntro =
   "step by step, for macOS, Linux and Windows. it takes about 15 minutes the first time.";
 
-export const flashingNote = `this firmware hasn't been run on a C62 yet. for a first flash, follow this page to set up and make the backup, then the [first flash checklist](${FIRST_FLASH}), which turns the features on in stages. you flash a channel list with the firmware, so make one first: see [channel lists](/projects/c62/channels).`;
+export const flashingNote = `for a first flash, follow this page to set up and make the backup, then the [first flash checklist](${FIRST_FLASH}), which turns the features on in stages. you flash a channel list with the firmware, so make one first: see [channel lists](/projects/c62/channels).`;
 
 export const flashing: FlashStep[] = [
   {
@@ -47,7 +47,7 @@ export const flashing: FlashStep[] = [
       {
         type: "list",
         items: [
-          "a USB programming cable with a 2-pin Kenwood plug, the kind sold for Baofeng and Retevis radios. which cables work with the C62 isn't known yet: if yours does or doesn't, note its make and chip.",
+          "a USB programming cable with a 2-pin Kenwood plug, the kind sold for Baofeng and Retevis radios.",
           "the firmware files. build them with docker (see the [project page](/projects/c62)). they end up in `OpenRTX/build_c62/zephyr/`.",
           "your channel list, `channels.bin`. the firmware has no channels in it, so this is part of the install, not an extra: see [channel lists](/projects/c62/channels) for how to make one.",
           "cskburn, the flashing tool for the radio's chip. step 1 installs it.",
@@ -71,7 +71,7 @@ export const flashing: FlashStep[] = [
     blocks: [
       {
         type: "p",
-        text: "the firmware holds no channels, so the radio gets them from a list that's flashed on its own at `0x2c0000`. without one it has no memory channels and shows TETRA numbers instead of names. everything else still works, but you'd be flashing a radio you can't really use yet.",
+        text: "the firmware holds no channels, so the radio gets them from a list that's flashed on its own at `0x2c0000`. without one it has no memory channels and shows TETRA numbers instead of names. everything else still works.",
       },
       {
         type: "p",

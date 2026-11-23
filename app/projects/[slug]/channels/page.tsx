@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { pageMetadata } from "@/lib/seo";
-import { channelsSections, channelsIntro, channelsNote } from "@/data/c62Channels";
+import { channelsSections, channelsIntro } from "@/data/c62Channels";
 import InstructionGuide from "../../../components/InstructionGuide";
 import C62PageLinks from "../../../components/C62PageLinks";
 
@@ -50,12 +50,6 @@ export default async function ChannelsRoute({ params }: { params: Promise<{ slug
           style={{ animationDelay: "0.12s" }}
         >
           {channelsIntro}
-        </p>
-        <p
-          className="load-reveal mt-5 max-w-3xl border-l-2 border-neutral-300 pl-4 leading-relaxed text-neutral-500"
-          style={{ animationDelay: "0.16s" }}
-        >
-          {channelsNote}
         </p>
 
         <InstructionGuide sections={channelsSections} perSystem={false} />

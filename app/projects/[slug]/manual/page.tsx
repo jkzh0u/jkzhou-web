@@ -7,13 +7,7 @@ import { pageMetadata } from "@/lib/seo";
 import ManualNav from "../../../components/ManualNav";
 import C62PageLinks from "../../../components/C62PageLinks";
 import C62SettingsSim from "../../../components/C62SettingsSim";
-import {
-  manual,
-  badgeLabels,
-  badgeMeanings,
-  type ManualBadge,
-  type ManualPage,
-} from "@/data/c62Manual";
+import { manual, type ManualPage } from "@/data/c62Manual";
 
 // Only the C62 has a manual
 const MANUAL_SLUG = "c62";
@@ -75,23 +69,6 @@ function KeyText({ text }: { text: string }) {
         );
       })}
     </>
-  );
-}
-
-function Badge({ badge }: { badge: ManualBadge }) {
-  const dot =
-    badge === "c62"
-      ? "bg-sky-500"
-      : badge === "saved"
-        ? "bg-emerald-500"
-        : badge === "channel"
-          ? "bg-amber-500"
-          : "bg-neutral-300";
-  return (
-    <span className="inline-flex items-center gap-1.5 border border-neutral-200 px-2 py-0.5 font-mono text-xs whitespace-nowrap text-neutral-600">
-      <span className={`size-1.5 ${dot}`} aria-hidden="true" />
-      {badgeLabels[badge]}
-    </span>
   );
 }
 
@@ -178,7 +155,6 @@ function PageEntry({ page }: { page: ManualPage }) {
     <article id={page.id} className="scroll-mt-28 border-t border-neutral-200 pt-8">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="mr-2 text-xl font-semibold sm:text-2xl">{page.title}</h3>
-        {page.badges?.map((badge) => <Badge key={badge} badge={badge} />)}
       </div>
       {sideBySide ? (
         <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
@@ -216,25 +192,6 @@ export default async function ManualRoute({ params }: { params: Promise<{ slug: 
         >
           {DESCRIPTION}
         </p>
-        <p
-          className="load-reveal mt-5 max-w-3xl border-l-2 border-neutral-300 pl-4 leading-relaxed text-neutral-500"
-          style={{ animationDelay: "0.16s" }}
-        >
-          it&apos;s written from the firmware&apos;s code and none of it has been tried on a radio yet, so the
-          key names especially might change.
-        </p>
-        <ul
-          className="load-reveal mt-8 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-4 border-y border-neutral-200 py-5 text-sm text-neutral-500 sm:gap-x-8"
-          style={{ animationDelay: "0.2s" }}
-        >
-          {(Object.keys(badgeLabels) as ManualBadge[]).map((badge) => (
-            <li key={badge} className="flex flex-col items-start gap-1.5">
-              <Badge badge={badge} />
-              {badgeMeanings[badge]}
-            </li>
-          ))}
-        </ul>
-
         <section
           id="try"
           aria-labelledby="try-heading"
@@ -247,8 +204,7 @@ export default async function ManualRoute({ params }: { params: Promise<{ slug: 
               the menus, on the radio&apos;s screen
             </h2>
             <p className="max-w-3xl text-lg leading-relaxed text-neutral-600">
-              click through every menu and setting like on the radio, with what each one does as you go, and hear the roger beeps.
-              it doesn&apos;t talk to a real radio, and changes aren&apos;t kept.
+              click through every menu and setting like on the radio, with what each one does as you go, and hear the FM sounds.
             </p>
           </div>
           <C62SettingsSim />

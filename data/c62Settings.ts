@@ -3,8 +3,6 @@
 // entries, values and starting values as on the radio.
 // In text, {name} is drawn as a key, e.g. {green} or {0}.
 
-export type SimBadge = "c62" | "saved" | "channel" | "empty";
-
 export type SimValue = {
   label: string;
   /** What this value does, shown while it's picked */
@@ -15,7 +13,6 @@ export type SimEntry = {
   id: string;
   name: string;
   explain: string;
-  badges?: SimBadge[];
   /** A setting changed with {up} / {down} after {green} */
   values?: SimValue[];
   start?: number;
@@ -33,7 +30,6 @@ export type SimMenu = {
   id: string;
   title: string;
   explain: string;
-  badges?: SimBadge[];
   entries: SimEntry[];
 };
 
@@ -72,7 +68,7 @@ const display: SimMenu = {
   id: "display",
   title: "Display",
   explain: "the screen. saved, so they come back at power on.",
-  badges: ["saved"],
+ 
   entries: [
     {
       id: "brightness",
@@ -109,7 +105,7 @@ const radio: SimMenu = {
   title: "Radio",
   explain:
     "the repeater offset and the tuning step. these belong to the frequency you're on, and only matter for transmitting in FM.",
-  badges: ["channel"],
+ 
   entries: [
     {
       id: "offset",
@@ -150,7 +146,7 @@ const m17: SimMenu = {
   id: "m17",
   title: "M17",
   explain: "M17 is an open digital voice mode made by hams. these are for transmitting in it.",
-  badges: ["saved"],
+ 
   entries: [
     {
       id: "callsign",
@@ -186,13 +182,12 @@ const fm: SimMenu = {
   title: "FM",
   explain:
     "analog FM, for repeaters, simplex and weather radio. width, power and tones belong to the channel you're on; squelch and roger beep are saved for the whole radio.",
-  badges: ["channel"],
+ 
   entries: [
     {
       id: "squelch",
       name: "Squelch",
       explain: "the signal level that opens the speaker. side key + {up} / {down} change it from the main screen.",
-      badges: ["saved"],
       values: SQUELCH,
       start: 4,
     },
@@ -249,7 +244,6 @@ const fm: SimMenu = {
       name: "Talk permit",
       explain:
         "a tone in the radio's own speaker when you press PTT, telling you to start talking, like on motorola radios. it isn't transmitted: the radio keys up just after it.",
-      badges: ["c62", "saved"],
       values: [
         { label: "Off", note: "keys up as soon as you press PTT." },
         { label: "Beep", note: "one beep." },
@@ -263,7 +257,6 @@ const fm: SimMenu = {
       id: "roger",
       name: "Roger beep",
       explain: "a sound sent when you let go of PTT, so the others know you've finished.",
-      badges: ["c62", "saved"],
       values: [
         { label: "Off" },
         { label: "Classic", note: "two rising tones." },
@@ -284,7 +277,7 @@ const tetra: SimMenu = {
   id: "tetra",
   title: "TETRA",
   explain: "the TETRA receiver (T mode). all on at first. here {up} turns a setting on and {down} turns it off.",
-  badges: ["c62", "saved"],
+ 
   entries: [
     {
       id: "follow",
@@ -348,7 +341,7 @@ const accessibility: SimMenu = {
   id: "accessibility",
   title: "Accessibility",
   explain: "shortcut mode and spoken prompts.",
-  badges: ["saved"],
+ 
   entries: [
     {
       id: "latch",
@@ -363,7 +356,7 @@ const accessibility: SimMenu = {
     {
       id: "voice",
       name: "Voice",
-      explain: "spoken prompts that read menus and values out. not tried on the C62 yet.",
+      explain: "spoken prompts that read menus and values out.",
       values: [
         { label: "OFF" },
         { label: "Beep", note: "a beep on each key, no voice." },
@@ -392,7 +385,7 @@ const settings: SimMenu = {
     { id: "radio", name: "Radio", explain: radio.explain, menu: radio },
     { id: "m17", name: "M17", explain: m17.explain, menu: m17 },
     { id: "fm", name: "FM", explain: fm.explain, menu: fm },
-    { id: "tetra", name: "TETRA", explain: tetra.explain, badges: ["c62"], menu: tetra },
+    { id: "tetra", name: "TETRA", explain: tetra.explain, menu: tetra },
     { id: "accessibility", name: "Accessibility", explain: accessibility.explain, menu: accessibility },
     {
       id: "defaults",
@@ -413,7 +406,6 @@ export const topMenu: SimMenu = {
       id: "banks",
       name: "Banks",
       explain: "groups of channels. the C62's channel list has no banks, so it's empty.",
-      badges: ["empty"],
       page: { lines: ["No banks"] },
     },
     {
@@ -426,7 +418,6 @@ export const topMenu: SimMenu = {
       id: "contacts",
       name: "Contacts",
       explain: "an address book for digital calls. TETRA talkgroups get their names from the channel list instead.",
-      badges: ["empty"],
       page: { lines: ["No contacts"] },
     },
     { id: "settings", name: "Settings", explain: settings.explain, menu: settings },
@@ -440,7 +431,6 @@ export const topMenu: SimMenu = {
       id: "field-test",
       name: "Field test",
       explain: "what the TETRA receiver knows right now, like the service screen of a real TETRA radio.",
-      badges: ["c62"],
       page: { image: "/projects/c62-manual/15-field-test.png", alt: "field test screen with lock, signal and cell" },
     },
     {
@@ -450,13 +440,6 @@ export const topMenu: SimMenu = {
       page: { lines: ["C62 fork:", "Jackson Zhou", "jkzhou.ca", "OpenRTX by:", "..."] },
     },
   ],
-};
-
-export const simBadgeLabels: Record<SimBadge, string> = {
-  c62: "c62 only",
-  saved: "saved",
-  channel: "per channel",
-  empty: "empty",
 };
 
 /** Every setting with values, by id path, for resetting */
