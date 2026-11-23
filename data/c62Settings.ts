@@ -248,8 +248,9 @@ const fm: SimMenu = {
         { label: "Off", note: "keys up as soon as you press PTT." },
         { label: "Beep", note: "one beep." },
         { label: "Double", note: "two quick beeps." },
-        { label: "Motorola", note: "three fast high beeps, \"dit-dit-dit\", like a motorola radio." },
-        { label: "Moto clear", note: "the same, then one more beep: on motorola trunked systems that means the call isn't encrypted." },
+        { label: "Motorola", note: "motorola's trunking talk permit: four 910 Hz bursts, getting longer." },
+        { label: "Triple", note: "three short 1000 Hz beeps." },
+        { label: "Melody", note: "four quick notes, G C G E." },
         { label: "Chime", note: "high, then low." },
       ],
       start: 0,
@@ -524,8 +525,9 @@ export function rogerSteps(name: string): RogerStep[] {
 export const talkPermitStyles: { name: string; note: string }[] = [
   { name: "Beep", note: "one beep" },
   { name: "Double", note: "two quick beeps" },
-  { name: "Motorola", note: "three fast high beeps, \"dit-dit-dit\"" },
-  { name: "Moto clear", note: "the same, then one more: not encrypted" },
+  { name: "Motorola", note: "motorola's trunking talk permit" },
+  { name: "Triple", note: "three short 1000 Hz beeps" },
+  { name: "Melody", note: "four quick notes, G C G E" },
   { name: "Chime", note: "high, then low" },
 ];
 
@@ -535,15 +537,16 @@ export function talkPermitSteps(name: string): RogerStep[] {
       return [{ hz: 1000, ms: 100 }];
     case "Double":
       return [{ hz: 1400, ms: 50 }, { hz: 0, ms: 30 }, { hz: 1400, ms: 50 }];
+    // Measured from recordings of real radios
     case "Motorola":
       return [
-        { hz: 1800, ms: 30 }, { hz: 0, ms: 25 }, { hz: 1800, ms: 30 }, { hz: 0, ms: 25 }, { hz: 1800, ms: 30 },
+        { hz: 910, ms: 26 }, { hz: 0, ms: 21 }, { hz: 910, ms: 27 }, { hz: 0, ms: 21 },
+        { hz: 910, ms: 51 }, { hz: 0, ms: 31 }, { hz: 910, ms: 77 },
       ];
-    case "Moto clear":
-      return [
-        { hz: 1800, ms: 30 }, { hz: 0, ms: 25 }, { hz: 1800, ms: 30 }, { hz: 0, ms: 25 },
-        { hz: 1800, ms: 30 }, { hz: 0, ms: 90 }, { hz: 1800, ms: 30 },
-      ];
+    case "Triple":
+      return [{ hz: 1000, ms: 23 }, { hz: 0, ms: 17 }, { hz: 1000, ms: 23 }, { hz: 0, ms: 17 }, { hz: 1000, ms: 23 }];
+    case "Melody":
+      return [{ hz: 1568, ms: 30 }, { hz: 1047, ms: 40 }, { hz: 1568, ms: 40 }, { hz: 1319, ms: 40 }];
     case "Chime":
       return [{ hz: 1500, ms: 60 }, { hz: 1000, ms: 90 }];
     default:

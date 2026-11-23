@@ -14,7 +14,7 @@ export default function Image() {
     section: "projects",
     title: "C62 manual",
     description:
-      "every menu and setting in my C62 TETRA firmware: try them on a simulated screen, then what each one does, what it starts at, and the screen it's on.",
+      "every menu and setting in my C62 TETRA firmware: what each one does, what it starts at, and the screen it's on.",
     image: "/projects/c62-manual/menu-11-about.png",
     fit: "contain",
   });
