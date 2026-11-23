@@ -244,6 +244,7 @@ export const manual: ManualSection[] = [
             ["tone mode", "none, encode, decode, both", "none", "encode sends the TX tone, decode only opens the speaker for the RX tone. also side key + {1}"],
             ["TX tone", "67.0 to 254.1 Hz", "67.0", "the tone sent. side key + {2} / {3} change both tones"],
             ["RX tone", "67.0 to 254.1 Hz", "67.0", "the tone the squelch waits for"],
+            ["roger beep", "on / off", "off", "two short rising tones when you let go of PTT, so others know you're done. saved"],
           ],
         },
         note: "width, power and tones belong to the channel you're on. on a memory channel they last until you leave it, since the channel list is read only: put them in the list with FM_CHANNEL to keep them.",
