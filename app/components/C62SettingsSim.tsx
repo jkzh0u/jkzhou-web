@@ -307,9 +307,9 @@ export default function C62SettingsSim() {
         </div>
       </div>
 
-      <RogerBeeps />
-
       <MenuMap onJump={jump} stack={stack} mode={mode} />
+
+      <RogerBeeps />
     </div>
   );
 }
