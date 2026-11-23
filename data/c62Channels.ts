@@ -39,15 +39,14 @@ export const channelsSections: FlashSection[] = [
             type: "code",
             code: `CPS_CHANNEL("NOAA WX 1", 162550000, OPMODE_FM)
 CPS_CHANNEL("M17 Simplex", 433475000, OPMODE_M17)
-CPS_CHANNEL("TETRA Site 1", 390012500, OPMODE_TETRA)
-CPS_CHANNEL("DMR Rptr", 443850000, OPMODE_DMR)`,
+CPS_CHANNEL("TETRA Site 1", 390012500, OPMODE_TETRA)`,
           },
           {
             type: "list",
             items: [
               "name: plain ASCII. the main screen shows 12 characters.",
               "frequency: in Hz, so 390.0125 MHz is `390012500`.",
-              "mode: `OPMODE_FM`, `OPMODE_M17`, `OPMODE_TETRA` or `OPMODE_DMR`. each channel starts its own mode. for a DMR repeater, use its output frequency.",
+              "mode: `OPMODE_FM`, `OPMODE_M17` or `OPMODE_TETRA`. each channel starts its own mode.",
             ],
           },
           { type: "p", text: "these channels are receive only. delete the example lines you don't want." },

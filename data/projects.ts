@@ -93,10 +93,8 @@ export const projects: Project[] = [
         ],
       },
       {
-        heading: "DMR, and a better FM screen",
+        heading: "a better FM screen",
         paragraphs: [
-          "after TETRA I added DMR, the digital system most ham repeaters around here use. D mode decodes the 4FSK signal from the same receive path, works out which of the two timeslots each burst belongs to, and reads the link control: who's talking to which talkgroup, on which colour code. it also names calls it joins halfway through, from the bits of link control spread through the voice frames. it doesn't play the voice: DMR speech is AMBE+2, a proprietary codec, so the radio shows the call and stays quiet.",
-          "I tested the decoder against a simulated DMR transmitter and another implementation's code tables, with noise, an inverted signal and simplex radios, but not on a real repeater yet.",
           "FM got the same kind of screen as T mode: tones, repeater shift and power at the top, the channel turning green when the squelch opens and red when transmitting, and a signal bar that marks where the squelch opens. the FM settings page now has squelch, width, power and separate TX and RX tones, and channel lists can hold FM channels with their tones and repeater shift.",
         ],
       },
@@ -113,7 +111,7 @@ export const projects: Project[] = [
           "you only need [docker](https://www.docker.com), git and python 3. the image holds the whole toolchain (the Zephyr SDK, west, cmake and ninja), and your source stays on your disk. on windows, use a WSL2 shell with the folder inside WSL.",
           "the first command makes a folder for the workspace, since west puts the Zephyr fork and the radio's modules next to the OpenRTX checkout. building the image takes 5 to 10 minutes and about 2 GB, and the first firmware build downloads the Zephyr fork. after that, running the same docker command again only rebuilds what changed.",
           "for your channel list, copy scripts/c62/channels/example.h, fill in your own channels and talkgroups, and build it with chlist.py. --show prints what an image holds. the -DC62_CHANNELS build option does the same thing during the firmware build, and writes channels.bin next to the firmware, which is how I build the TTC one.",
-          "build options go after the image name. the ones I'd know about: -DC62_TETRA_FOLLOW=OFF and -DC62_TETRA_ROAM=OFF build without call following and cell tracking, -DC62_TETRA_SPEECH=OFF builds without speech, -DC62_TETRA_LOG=OFF builds without the log, and -DC62_DMR=OFF builds without DMR. cmake remembers them in build_c62, so pass an option again with its default value, or delete the folder, to drop it.",
+          "build options go after the image name. the ones I'd know about: -DC62_TETRA_FOLLOW=OFF and -DC62_TETRA_ROAM=OFF build without call following and cell tracking, -DC62_TETRA_SPEECH=OFF builds without speech, and -DC62_TETRA_LOG=OFF builds without the log. cmake remembers them in build_c62, so pass an option again with its default value, or delete the folder, to drop it.",
           "once it's built, the [flashing instructions](/projects/c62/flashing) cover installing the flashing tool, backing up your radio and flashing it, on macOS, Linux and Windows.",
         ],
         code: `mkdir c62-ws && cd c62-ws

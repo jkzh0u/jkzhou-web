@@ -78,7 +78,7 @@ export const manual: ManualSection[] = [
         title: "changing a value",
         paragraphs: [
           "on every settings page: pick the line with {up} / {down}, press {green}, then {up} / {down} change it. {green} or {red} finishes. text like the callsign is typed on the number keys, like an old phone.",
-          "on the main screen, {red} switches between VFO mode (a frequency) and memory mode (your channel list), and side key + {5} (or holding {5}) cycles FM, M17, T (TETRA) and D (DMR). a channel starts its own mode by itself.",
+          "on the main screen, {red} switches between VFO mode (a frequency) and memory mode (your channel list), and side key + {5} (or holding {5}) cycles FM, M17 and T (TETRA). a channel starts its own mode by itself.",
         ],
       },
     ],
@@ -87,7 +87,7 @@ export const manual: ManualSection[] = [
     id: "screens",
     heading: "main screens",
     paragraphs: [
-      "T mode has its own screen, shown on the [project page](/projects/c62). FM and D mode got the same treatment: the station large, what's going on above it, and a meter of labelled bars at the bottom.",
+      "T mode has its own screen, shown on the [project page](/projects/c62). FM got the same treatment: the station large, what's going on above it, and a meter of labelled bars at the bottom.",
     ],
     pages: [
       {
@@ -104,29 +104,6 @@ export const manual: ManualSection[] = [
           "line 1 shows what's in effect: width, tones (TSQ when both ways use one tone), the repeater shift in amber and the power, or RX only. the channel or frequency turns green when the squelch opens and red when transmitting.",
           "the meter is VOL, SIG with an amber tick where the squelch opens, and SQL, which becomes MIC while transmitting. FM channels can carry their tones, width and repeater shift in the [channel list](/projects/c62/channels) with FM_CHANNEL.",
         ],
-      },
-      {
-        id: "dmr-screen",
-        title: "DMR",
-        badges: ["c62"],
-        screens: [
-          shot("dmr-2-idle", "a DMR repeater between calls, colour code 1", "repeater idle"),
-          shot("dmr-3-group-call", "a group call to TG 3020 from 3021234 on TS1", "a group call"),
-          shot("dmr-4-private-late", "a private call joined late on TS2", "a private call, joined late"),
-          shot("dmr-7-recent", "recent DMR calls", "recent calls"),
-        ],
-        paragraphs: [
-          "D mode decodes DMR, the two-timeslot digital system on most ham repeaters and lots of business radio. it shows who's calling which talkgroup, on which timeslot and colour code, and names calls joined late. it plays no audio: DMR voice is AMBE+2, a proprietary codec OpenRTX doesn't include. tune to the repeater's output frequency.",
-          "only tested on simulated signals so far.",
-        ],
-        table: {
-          columns: ["key", "in D mode"],
-          rows: [
-            ["{#}", "timeslot shown: both, TS1, TS2"],
-            ["{*}", "only the colour code being heard, or any again"],
-            ["{0}", "recent calls"],
-          ],
-        },
       },
     ],
   },
@@ -206,7 +183,7 @@ export const manual: ManualSection[] = [
     id: "settings",
     heading: "settings",
     paragraphs: [
-      "eight pages. settings marked saved are written to flash 5 s after you last change one. per channel ones belong to the frequency you're on: they're saved with it, and a memory channel brings its own.",
+      "seven pages. settings marked saved are written to flash 5 s after you last change one. per channel ones belong to the frequency you're on: they're saved with it, and a memory channel brings its own.",
     ],
     pages: [
       {
@@ -236,7 +213,7 @@ export const manual: ManualSection[] = [
             ["step", "1, 5, 6.25, 10, 12.5, 15, 20, 25, 50, 100 kHz", "12.5 kHz", "how far {up} / {down} move the frequency in VFO mode"],
           ],
         },
-        note: "offset and direction only matter for transmitting. T and D modes are receive only, and so are channel list channels unless they're an FM_CHANNEL with a transmit frequency.",
+        note: "offset and direction only matter for transmitting. T mode is receive only, and so are channel list channels unless they're an FM_CHANNEL with a transmit frequency.",
       },
       {
         id: "m17",
@@ -290,20 +267,6 @@ export const manual: ManualSection[] = [
         note: "here {up} turns a setting on and {down} turns it off. keep filter remembers the filter, not a held talkgroup. alarm talkgroups are the ones marked TF_ALARM in the channel list. talkgroups with TF_PRIORITY(n), 1 to 15, come first when following calls: a higher number takes over, and the radio waits 10 s after one before following a lower one elsewhere.",
       },
       {
-        id: "dmr",
-        title: "DMR",
-        badges: ["c62", "saved"],
-        screens: [shot("menu-08c-dmr", "DMR settings, timeslot both and colour code any", "settings > DMR")],
-        table: {
-          columns: ["setting", "values", "starts at", "does"],
-          rows: [
-            ["timeslot", "both, TS1, TS2", "both", "calls on the other timeslot aren't shown. also {#} in D mode"],
-            ["colour code", "any, 0 to 15", "any", "calls of other colour codes aren't shown. {*} in D mode picks the one being heard"],
-          ],
-        },
-        note: "a simplex transmission from a single radio has no timeslot, so it always shows. the filters show in amber at the top left while set.",
-      },
-      {
         id: "accessibility",
         title: "accessibility",
         badges: ["saved"],
@@ -344,7 +307,7 @@ export const manual: ManualSection[] = [
             ["{1}", "FM: tone off, encode, decode, both"],
             ["{2} {3}", "FM: tone down / up"],
             ["{4}", "FM: bandwidth 12.5 or 25 kHz"],
-            ["{5}", "mode: FM, M17, T, D"],
+            ["{5}", "mode: FM, M17, T"],
             ["{6}", "transmit power"],
             ["{7} {8}", "brightness down / up"],
             ["{9}", "lock or unlock the keypad"],
