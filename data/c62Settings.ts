@@ -293,6 +293,38 @@ const fm: SimMenu = {
   ],
 };
 
+const memory: SimMenu = {
+  id: "memory",
+  title: "Memory",
+  explain:
+    "FM channels saved on the radio, in 200 slots, like a quansheng. they show in memory mode after the channel list's channels, and stay through a new firmware or channel list.",
+  entries: [
+    {
+      id: "slot",
+      name: "Slot",
+      explain: "which slot the lines below act on. {green}, then {up} / {down} pick it. it shows the channel's name, or empty.",
+      values: Array.from({ length: 200 }, (_, i) => ({ label: `M${i + 1} empty` })),
+      start: 0,
+    },
+    {
+      id: "save",
+      name: "Save here",
+      explain:
+        "{green} saves the channel in use (the VFO, or a memory channel with your changes) to the slot: frequency, transmit frequency, width, power and tones. without a name it's named after its frequency. FM only.",
+    },
+    {
+      id: "rename",
+      name: "Rename",
+      explain: "{green}, then type the name on the keypad like an old phone, up to 15 characters, and {green} to keep it.",
+    },
+    {
+      id: "delete",
+      name: "Delete",
+      explain: "{green} twice clears the slot.",
+    },
+  ],
+};
+
 const tetra: SimMenu = {
   id: "tetra",
   title: "TETRA",
@@ -399,12 +431,13 @@ const accessibility: SimMenu = {
 const settings: SimMenu = {
   id: "settings",
   title: "Settings",
-  explain: "seven pages. press {green} on one to open it.",
+  explain: "eight pages. press {green} on one to open it.",
   entries: [
     { id: "display", name: "Display", explain: display.explain, menu: display },
     { id: "radio", name: "Radio", explain: radio.explain, menu: radio },
     { id: "m17", name: "M17", explain: m17.explain, menu: m17 },
     { id: "fm", name: "FM", explain: fm.explain, menu: fm },
+    { id: "memory", name: "Memory", explain: memory.explain, menu: memory },
     { id: "tetra", name: "TETRA", explain: tetra.explain, menu: tetra },
     { id: "accessibility", name: "Accessibility", explain: accessibility.explain, menu: accessibility },
     {

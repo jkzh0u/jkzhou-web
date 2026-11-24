@@ -213,6 +213,20 @@ export const manual: ManualSection[] = [
         note: "width, power and tones belong to the channel you're on. on a memory channel they last until you leave it, since the channel list is read only: put them in the list with FM_CHANNEL to keep them.",
       },
       {
+        id: "memory",
+        title: "memory",
+        table: {
+          columns: ["line", "does"],
+          rows: [
+            ["slot", "{green}, then {up} / {down} pick a slot, M1 to M200. it shows the channel's name, or empty"],
+            ["save here", "{green} saves the channel in use (the VFO, or a memory channel with your changes) to the slot. without a name it's named after its frequency"],
+            ["rename", "{green}, type the name on the keypad, {green} to keep it"],
+            ["delete", "{green} twice clears the slot"],
+          ],
+        },
+        note: "FM channels saved on the radio, like a quansheng. memory mode shows them after the channel list's channels, in slot order. to change one, select it, change it, and save it to the same slot. they survive a new firmware, a new channel list and default settings.",
+      },
+      {
         id: "tetra",
         title: "TETRA",
         screens: [shot("menu-08b-tetra", "TETRA settings, all six on", "settings > TETRA")],
