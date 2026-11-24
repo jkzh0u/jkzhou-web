@@ -381,20 +381,6 @@ const fm: SimMenu = {
       ],
       start: 0,
     },
-    {
-      id: "wx-alert",
-      name: "Weather alert",
-      explain:
-        "the NOAA weather channel watched for alerts: every 5 s, while nothing is heard, the radio listens to it for 0.3 s for the 1050 Hz alarm tone. heard twice, it shows WEATHER ALERT and sounds the emergency alert two-tone. also set with {green} in Menu › Weather.",
-      values: [
-        { label: "OFF", note: "no watch." },
-        ...["162.550", "162.400", "162.475", "162.425", "162.450", "162.500", "162.525"].map((f, i) => ({
-          label: `WX${i + 1}`,
-          note: `${f} MHz.`,
-        })),
-      ],
-      start: 0,
-    },
   ],
 };
 
@@ -584,13 +570,6 @@ export const topMenu: SimMenu = {
       explain:
         "broadcast FM, 87.5 to 108 MHz, on the C62's second receiver chip. {up} / {down} tune, held they seek the next station; numbers type a frequency, held they save the station on that number; {*} / {#} go through the saved ones. your FM channel keeps listening behind it: when someone talks there, the music goes quiet and you hear them. PTT still transmits.",
       page: { image: "/projects/c62-manual/fm-10-radio.png", alt: "FM radio playing 98.1 MHz, saved on 3, with signal bars" },
-    },
-    {
-      id: "weather",
-      name: "Weather",
-      explain:
-        "the seven NOAA weather channels, heard as you move through them. {green} watches the selected one for alerts: the radio then checks it every 5 s for the 1050 Hz alarm tone stations send before a warning, and sounds an alert if it hears it. {red} goes back to your channel.",
-      page: { image: "/projects/c62-manual/fm-11-weather.png", alt: "weather channels WX1 to WX7, WX2 selected and watched for alerts" },
     },
     { id: "settings", name: "Settings", explain: settings.explain, menu: settings },
     {
