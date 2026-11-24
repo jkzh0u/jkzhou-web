@@ -80,6 +80,7 @@ export const manual: ManualSection[] = [
           shot("fm-7-scanning-memory", "scanning the memory channels, Scan up Ch 3 in amber", "scanning"),
           shot("fm-8-spectrum", "the spectrum view: bars across 1 MHz, the strongest at 146.895", "spectrum view"),
           shot("fm-10-radio", "the FM radio playing 98.1 MHz, saved on 3", "FM radio"),
+          shot("fm-12-replay", "an amber bar at the top: Replay 2/3, 4s of 12s", "instant replay"),
         ],
         paragraphs: [
           "line 1 shows what's in effect: width, tones (TSQ when both ways use one tone), the repeater shift in amber and the power, or RX only. the channel or frequency turns green when the squelch opens and red when transmitting.",
@@ -87,6 +88,8 @@ export const manual: ManualSection[] = [
           "fast copy: hold {*} and key another radio right next to the C62. it reads the frequency, then the CTCSS tone or DCS code, and {green} copies them into the VFO, like the quansheng UV-K5 does. it only hears a radio a metre or so away.",
           "scan: hold {0}. in memory mode it goes through the FM channels, in VFO mode it steps through the band, about 10 a second, and stops where the squelch opens (so set the squelch above off). {up} / {down} turn it around, any other key stops it there. what it does after a signal is the scan resume setting.",
           "spectrum view: side key + {0} shows the signal strength across a band, like the UV-K5 spectrum mod. {up} / {down} move it, {*} / {#} zoom from 200 kHz to 20 MHz wide, {green} tunes the VFO to the strongest signal. nothing is heard while it's open.",
+          "instant replay: the radio keeps the last 30 s received, FM and TETRA, as separate transmissions. P2 plays the last one again, P2 while it plays goes back one more, holding P2 stops. anything new coming in cuts it off.",
+          "DTMF: while transmitting in FM, hold {0} to {9}, {*} or {#} to send its DTMF tones, for repeater control or EchoLink and IRLP nodes. the keys sent show on the screen.",
           "FM radio: Menu › FM radio plays broadcast FM (87.5 to 108 MHz) on the C62's second receiver chip. {up} / {down} tune, held they seek; type a frequency on the numbers (9 8 1 for 98.1), hold a number to save the station there, {*} / {#} go through the saved ones. your FM channel keeps listening: when someone talks there the music goes quiet and you hear them, and PTT transmits as usual.",
         ],
       },
@@ -218,6 +221,7 @@ export const manual: ManualSection[] = [
             ["VOX delay", "0.5, 1, 1.5, 2, 3 s", "1 s", "how long VOX keeps transmitting after you stop talking. saved"],
             ["AI denoise RX", "off, 1 to 10", "off", "AI noise reduction (RNNoise, a small neural network) on what you hear: noise down 3 dB per level, up to 30 dB. AI shows at the top left. the radio shows the processor time it takes, and turns it off by itself if it can't keep up. saved"],
             ["AI denoise TX", "off, 1 to 10", "off", "the same for your microphone, before it's transmitted. saved"],
+            ["# in TX", "DTMF #, 1750 Hz", "DTMF #", "what {#} sends while you transmit: DTMF #, or the 1750 Hz burst some repeaters need to open. saved"],
             ["scan resume", "carrier, time, stop", "carrier", "after scan stops on a signal: carrier goes on 2 s after it ends, time after 5 s, stop ends the scan. saved"],
           ],
         },
@@ -311,6 +315,7 @@ export const manual: ManualSection[] = [
             ["{#}", "next talkgroup filter", "hold the current call's talkgroup"],
             ["{*}", "previous talkgroup filter", "switch line 1 between the last call and signal figures"],
             ["{0}", "recent calls", "search for the best signal"],
+            ["P2", "instant replay of the last call heard; again: the one before", "stop the replay"],
           ],
         },
       },
@@ -320,7 +325,8 @@ export const manual: ManualSection[] = [
         table: {
           columns: ["key", "press", "hold"],
           rows: [
-            ["{#}", "1750 Hz tone burst, for repeaters that need one", ""],
+            ["{0} to {9}, {*}, {#}", "while transmitting: their DTMF tones, for repeater control. {#} can send the 1750 Hz burst instead (Settings › FM › # in TX)", ""],
+            ["P2", "instant replay of the last transmission heard; again: the one before", "stop the replay"],
             ["{*}", "", "fast copy: read a radio keyed next to this one, {green} copies it to the VFO"],
             ["{0}", "", "scan: memory channels, or the band in VFO mode"],
             ["side key + {0}", "spectrum view", ""],

@@ -381,6 +381,17 @@ const fm: SimMenu = {
       ],
       start: 0,
     },
+    {
+      id: "tx-hash",
+      name: "# in TX",
+      explain:
+        "what {#} sends while you transmit. the number keys and {*} always send their DTMF tones while PTT is held.",
+      values: [
+        { label: "DTMF #", note: "the DTMF tones of #, like the other keys." },
+        { label: "1750 Hz", note: "the 1750 Hz tone burst some repeaters need to open, mostly in Europe." },
+      ],
+      start: 0,
+    },
   ],
 };
 
