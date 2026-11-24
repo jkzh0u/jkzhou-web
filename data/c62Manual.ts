@@ -152,6 +152,16 @@ export const manual: ManualSection[] = [
           ],
         },
       },
+      {
+        id: "saved-calls",
+        title: "saved calls",
+        screens: [shot("tetra-16b-saved", "saved calls: Transit Control and Davisville Yard with dates and lengths", "saved calls")],
+        paragraphs: [
+          "with Settings › TETRA › save calls on, every TETRA call heard with speech is kept on the radio: the talkgroup, who talked, the date and time from the network's clock, and the speech itself, still coded as it came off the air (about 38 kB a minute), so it plays back sounding exactly as it did live.",
+          "{up} / {down} pick one, {green} plays it, {green} on the one playing stops it, holding {green} twice deletes it, {red} goes back. a call coming in stops the playback. about 13 minutes of calls fit, up to 3 minutes each; when it's full the oldest make room. they stay through power off.",
+          "keep them to yourself: in Canada the Radiocommunication Act forbids passing on or using what you intercept.",
+        ],
+      },
     ],
   },
   {
@@ -253,6 +263,7 @@ export const manual: ManualSection[] = [
             ["cell tracking", "moves to a stronger cell when the signal gets weak, searches when it's lost", "stays on the channel you picked. holding {0} still searches once"],
             ["alarm beep", "an alarm talkgroup call turns the screen red and beeps three times", "red screen only"],
             ["keep filter", "starts with the talkgroup filter you last picked", "starts at TG All"],
+            ["save calls (off at first)", "keeps every call heard with speech on the radio, to play in Menu › Saved calls", "nothing is kept; P2 still replays the last 30 s"],
             ["freq. correct", "tunes itself so the signal decodes best: the C62 decodes best about 1.6 kHz off the channel frequency, plus its crystal error. found within about 20 s and kept across channel changes. remembered at power off, so the radio starts corrected even on a weak signal. if a strong signal stops decoding for 8 s, it goes back to the remembered correction, then to none", "tunes exactly to the channel frequency"],
           ],
         },
@@ -354,6 +365,7 @@ export const manual: ManualSection[] = [
             ["held talkgroup", "no"],
             ["memory mode and channel number", "no"],
             ["recent calls and the log", "no. send the log with side key + {0} first"],
+            ["saved calls", "yes, about 13 minutes of them, the oldest making room"],
             ["channel list", "always: it's flashed separately and the radio never writes to it"],
           ],
         },

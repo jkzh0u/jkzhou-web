@@ -478,6 +478,14 @@ const tetra: SimMenu = {
       start: 0,
     },
     {
+      id: "save-calls",
+      name: "Save calls",
+      explain:
+        "keeps every call heard with speech on the radio, with its talkgroup, date and time, to play later in Menu › Saved calls. about 13 minutes fit; the oldest make room.",
+      values: onOff("calls are saved.", "nothing is kept. P2 still replays the last 30 s."),
+      start: 1,
+    },
+    {
       id: "afc",
       name: "Freq. correct",
       explain:
@@ -581,6 +589,13 @@ export const topMenu: SimMenu = {
       explain:
         "broadcast FM, 87.5 to 108 MHz, on the C62's second receiver chip. {up} / {down} tune, held they seek the next station; numbers type a frequency, held they save the station on that number; {*} / {#} go through the saved ones. your FM channel keeps listening behind it: when someone talks there, the music goes quiet and you hear them. PTT still transmits.",
       page: { image: "/projects/c62-manual/fm-10-radio.png", alt: "FM radio playing 98.1 MHz, saved on 3, with signal bars" },
+    },
+    {
+      id: "saved-calls",
+      name: "Saved calls",
+      explain:
+        "the TETRA calls kept on the radio, newest first: talkgroup and length, then date, time and who talked. {green} plays one, {green} held twice deletes it. it fills with Settings › TETRA › Save calls on.",
+      page: { image: "/projects/c62-manual/tetra-16b-saved.png", alt: "saved calls: Transit Control and Davisville Yard, with dates and lengths" },
     },
     { id: "settings", name: "Settings", explain: settings.explain, menu: settings },
     {
