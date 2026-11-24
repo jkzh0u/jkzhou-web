@@ -354,6 +354,33 @@ const fm: SimMenu = {
       ],
       start: 1,
     },
+    {
+      id: "nr-rx",
+      name: "AI denoise RX",
+      explain:
+        "AI noise reduction on what you hear: a small neural network (RNNoise) that tells speech from noise takes out hiss and background noise, about 10 ms later. the radio shows how much of its processor it takes next to the level.",
+      values: [
+        { label: "OFF", note: "as it comes." },
+        ...Array.from({ length: 10 }, (_, i) => ({
+          label: `${i + 1}`,
+          note: `noise down by up to ${3 * (i + 1)} dB${i === 9 ? ": the strongest, voices can sound thinner." : "."}`,
+        })),
+      ],
+      start: 0,
+    },
+    {
+      id: "nr-tx",
+      name: "AI denoise TX",
+      explain: "the same for your microphone, before it's transmitted: wind, engines, crowds.",
+      values: [
+        { label: "OFF", note: "as it comes." },
+        ...Array.from({ length: 10 }, (_, i) => ({
+          label: `${i + 1}`,
+          note: `noise down by up to ${3 * (i + 1)} dB${i === 9 ? ": the strongest, voices can sound thinner." : "."}`,
+        })),
+      ],
+      start: 0,
+    },
   ],
 };
 

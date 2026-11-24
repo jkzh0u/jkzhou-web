@@ -214,6 +214,8 @@ export const manual: ManualSection[] = [
             ["roger beep", "off, classic, single, double, chirp, bloop, morse K, sweep, moto MDC", "off", "tones when you let go of PTT, so others know you're done. morse K is dah dit dah (\"over\"), moto MDC sounds like a motorola data burst. saved"],
             ["VOX", "off, 1 to 10", "off", "transmit while you talk, without PTT. 10 is the most sensitive. not while receiving, at most 3 minutes at a time. VOX shows at the top left. saved"],
             ["VOX delay", "0.5, 1, 1.5, 2, 3 s", "1 s", "how long VOX keeps transmitting after you stop talking. saved"],
+            ["AI denoise RX", "off, 1 to 10", "off", "AI noise reduction (RNNoise, a small neural network) on what you hear: noise down 3 dB per level, up to 30 dB. AI shows at the top left. the radio shows the processor time it takes, and turns it off by itself if it can't keep up. saved"],
+            ["AI denoise TX", "off, 1 to 10", "off", "the same for your microphone, before it's transmitted. saved"],
             ["scan resume", "carrier, time, stop", "carrier", "after scan stops on a signal: carrier goes on 2 s after it ends, time after 5 s, stop ends the scan. saved"],
           ],
         },
