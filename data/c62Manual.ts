@@ -81,6 +81,7 @@ export const manual: ManualSection[] = [
         paragraphs: [
           "line 1 shows what's in effect: width, tones (TSQ when both ways use one tone), the repeater shift in amber and the power, or RX only. the channel or frequency turns green when the squelch opens and red when transmitting.",
           "the meter is VOL, SIG with an amber tick where the squelch opens, and SQL, which becomes MIC while transmitting. FM channels can carry their tones, width and repeater shift in the [channel list](/projects/c62/channels) with FM_CHANNEL.",
+          "fast copy: hold {*} and key another radio right next to the C62. it reads the frequency, then the CTCSS tone or DCS code, and {green} copies them into the VFO, like the quansheng UV-K5 does. it only hears a radio a metre or so away.",
         ],
       },
     ],
@@ -285,6 +286,17 @@ export const manual: ManualSection[] = [
             ["{#}", "next talkgroup filter", "hold the current call's talkgroup"],
             ["{*}", "previous talkgroup filter", "switch line 1 between the last call and signal figures"],
             ["{0}", "recent calls", "search for the best signal"],
+          ],
+        },
+      },
+      {
+        id: "fm-keys",
+        title: "in FM",
+        table: {
+          columns: ["key", "press", "hold"],
+          rows: [
+            ["{#}", "1750 Hz tone burst, for repeaters that need one", ""],
+            ["{*}", "", "fast copy: read a radio keyed next to this one, {green} copies it to the VFO"],
           ],
         },
       },
