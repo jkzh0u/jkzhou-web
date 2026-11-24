@@ -7,6 +7,10 @@ export type SimValue = {
   label: string;
   /** What this value does, shown while it's picked */
   note?: string;
+  /** On a picker page: the group, shown at the right */
+  group?: string;
+  /** In the settings list, when it differs from the label */
+  short?: string;
 };
 
 export type SimEntry = {
@@ -15,6 +19,8 @@ export type SimEntry = {
   explain: string;
   /** A setting changed with {up} / {down} after {green} */
   values?: SimValue[];
+  /** {green} opens the values as a page of their own to pick from */
+  picker?: boolean;
   start?: number;
   /** A value typed on the keypad on the radio, shown here as it starts */
   typed?: string;
@@ -57,10 +63,22 @@ const DCS = [
   "703", "712", "723", "731", "732", "734", "743", "754",
 ];
 
+// The tone pickers: off, the CTCSS tones, then the DCS codes normal and inverted
 const TONES: SimValue[] = [
-  ...CTCSS.map((label) => ({ label, note: "a CTCSS tone, in Hz." })),
-  ...DCS.map((code) => ({ label: `D${code}N`, note: "a DCS code: a slow digital pattern instead of a tone." })),
-  ...DCS.map((code) => ({ label: `D${code}I`, note: "a DCS code, inverted: every bit flipped." })),
+  { label: "OFF", group: "no tone", note: "no tone this way: tone mode follows." },
+  ...CTCSS.map((t) => ({ label: `${t} Hz`, short: t, group: "CTCSS", note: "a CTCSS tone, in Hz." })),
+  ...DCS.map((code) => ({
+    label: `D${code} N`,
+    short: `D${code}N`,
+    group: "DCS",
+    note: "a DCS code: a slow digital pattern instead of a tone.",
+  })),
+  ...DCS.map((code) => ({
+    label: `D${code} I`,
+    short: `D${code}I`,
+    group: "DCS inv",
+    note: "a DCS code, inverted: every bit flipped.",
+  })),
 ];
 
 // Squelch: off, then -127 + level * 66 / 15 dBm for levels 1 to 15 (the FM mode's formula)
@@ -233,7 +251,7 @@ const fm: SimMenu = {
       id: "tone-mode",
       name: "Tone mode",
       explain:
-        "CTCSS: an almost silent low tone under your voice. repeaters use it to know who's meant for them. side key + {1} too.",
+        "CTCSS: an almost silent low tone under your voice. repeaters use it to know who's meant for them. picking a TX or RX tone sets it too, and so does side key + {1}.",
       values: [
         { label: "None", note: "no tones: you hear everything above the squelch." },
         { label: "Encode", note: "sends your TX tone. most repeaters only open for the right tone." },
@@ -246,15 +264,18 @@ const fm: SimMenu = {
       id: "tx-tone",
       name: "TX tone",
       explain:
-        "the tone you send with Encode: a CTCSS tone, or a DCS code after them. the repeater's listing says which one. side key + {2} / {3} change both tones.",
+        "the tone you send: a CTCSS tone, or a DCS code after them. the repeater's listing says which one. {green} opens the list of them; picking OFF stops sending one. side key + {2} / {3} change both tones.",
       values: TONES,
+      picker: true,
       start: 0,
     },
     {
       id: "rx-tone",
       name: "RX tone",
-      explain: "the tone the speaker waits for with Decode, from the same list. a DCS code opens it normal or inverted.",
+      explain:
+        "the tone the speaker waits for, from the same list: {green} opens it. a DCS code opens it normal or inverted. OFF opens for any signal.",
       values: TONES,
+      picker: true,
       start: 0,
     },
     {

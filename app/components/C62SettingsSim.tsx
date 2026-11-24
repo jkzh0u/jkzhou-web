@@ -26,7 +26,7 @@ const ROWS = 6;
 const AMBER = "#fab413";
 
 type Level = { menu: SimMenu; sel: number; path: string };
-type Mode = "main" | "menu" | "page" | "reset";
+type Mode = "main" | "menu" | "page" | "reset" | "pick";
 type Key = "green" | "red" | "up" | "down";
 
 // Roger beeps through the browser: one oscillator that changes frequency
@@ -115,8 +115,29 @@ function KeyText({ text }: { text: string }) {
   );
 }
 
+/**
+ * TX and RX tone pickers: whether tone mode sends (TX) or waits for (RX) a
+ * tone. Tone mode's values are None, Encode, Decode, Both: bit 0 TX, bit 1 RX.
+ */
+function toneModeKey(key: string): string {
+  return `${key.slice(0, key.lastIndexOf("/"))}/tone-mode`;
+}
+function toneBit(entry: SimEntry): number {
+  return entry.id === "tx-tone" ? 1 : 2;
+}
+
+/** Where a picker shows the current choice: OFF unless tone mode has that way on */
+function pickedIndex(entry: SimEntry, values: Record<string, number>, key: string): number {
+  if (((values[toneModeKey(key)] ?? 0) & toneBit(entry)) === 0) return 0;
+  return Math.max(1, values[key] ?? entry.start ?? 0);
+}
+
 /** The value shown at the right of a row */
 function valueText(entry: SimEntry, values: Record<string, number>, key: string): string {
+  if (entry.picker && entry.values) {
+    const v = entry.values[pickedIndex(entry, values, key)];
+    return v?.short ?? v?.label ?? "";
+  }
   if (entry.values) return entry.values[values[key] ?? entry.start ?? 0]?.label ?? "";
   if (entry.typed !== undefined) return entry.typed.length > 7 ? `${entry.typed.slice(0, 7)}*` : entry.typed;
   return "";
@@ -128,6 +149,7 @@ export default function C62SettingsSim() {
   const [editing, setEditing] = useState(false);
   const [values, setValues] = useState<Record<string, number>>(startValues);
   const [resetStep, setResetStep] = useState<0 | 1 | 2>(0);
+  const [pickSel, setPickSel] = useState(0);
   const [pressed, setPressed] = useState<Key | null>(null);
   const stage = useRef<HTMLDivElement>(null);
 
@@ -170,6 +192,27 @@ export default function C62SettingsSim() {
       if (!level || !entry) return;
       const n = level.menu.entries.length;
 
+      if (mode === "pick" && entry.values) {
+        const count = entry.values.length;
+        if (key === "up" || key === "down") {
+          setPickSel((p) => (p + (key === "down" ? 1 : -1) + count) % count);
+        } else if (key === "green") {
+          // A tone turns that way on in tone mode, OFF turns it off and keeps the tone
+          const bit = toneBit(entry);
+          const modeKey = toneModeKey(entryKey);
+          setValues((v) => {
+            const toneMode = v[modeKey] ?? 0;
+            const next = { ...v, [modeKey]: pickSel > 0 ? toneMode | bit : toneMode & ~bit };
+            if (pickSel > 0) next[entryKey] = pickSel;
+            return next;
+          });
+          setMode("menu");
+        } else {
+          setMode("menu");
+        }
+        return;
+      }
+
       if (editing && entry.values) {
         const count = entry.values.length;
         const cur = values[entryKey] ?? entry.start ?? 0;
@@ -193,7 +236,10 @@ export default function C62SettingsSim() {
       } else if (key === "green") {
         if (entry.menu) setStack((s) => [...s, { menu: entry.menu!, sel: 0, path: entryKey }]);
         else if (entry.page) setMode("page");
-        else if (entry.reset) {
+        else if (entry.picker) {
+          setPickSel(pickedIndex(entry, values, entryKey));
+          setMode("pick");
+        } else if (entry.reset) {
           setResetStep(0);
           setMode("reset");
         } else if (entry.values) setEditing(true);
@@ -205,7 +251,7 @@ export default function C62SettingsSim() {
         }
       }
     },
-    [mode, level, entry, entryKey, editing, values, stack.length, resetStep],
+    [mode, level, entry, entryKey, editing, values, stack.length, resetStep, pickSel],
   );
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -268,6 +314,8 @@ export default function C62SettingsSim() {
                 values={values}
                 resetStep={resetStep}
                 entry={entry}
+                entryKey={entryKey}
+                pickSel={pickSel}
                 fontFamily={ubuntu.style.fontFamily}
               />
             </div>
@@ -301,7 +349,15 @@ export default function C62SettingsSim() {
             level={level}
             entry={entry}
             editing={editing}
-            current={entry?.values ? (values[entryKey] ?? entry.start ?? 0) : undefined}
+            current={
+              mode === "pick"
+                ? pickSel
+                : entry?.picker
+                  ? pickedIndex(entry, values, entryKey)
+                  : entry?.values
+                    ? (values[entryKey] ?? entry.start ?? 0)
+                    : undefined
+            }
             resetStep={resetStep}
           />
         </div>
@@ -351,6 +407,8 @@ function Screen({
   values,
   resetStep,
   entry,
+  entryKey,
+  pickSel,
   fontFamily,
 }: {
   mode: Mode;
@@ -359,6 +417,8 @@ function Screen({
   values: Record<string, number>;
   resetStep: 0 | 1 | 2;
   entry?: SimEntry;
+  entryKey: string;
+  pickSel: number;
   fontFamily: string;
 }) {
   const text = { fontFamily, fontSize: 12.5 };
@@ -379,6 +439,41 @@ function Screen({
             {line}
           </text>
         ))}
+      </>
+    );
+  } else if (mode === "pick" && entry?.values) {
+    // The picker page: the choice in the middle, its group on the right
+    const list = entry.values;
+    const inUse = pickedIndex(entry, values, entryKey);
+    const first = Math.max(0, Math.min(pickSel - Math.floor(ROWS / 2), list.length - ROWS));
+    body = (
+      <>
+        <text x={W / 2} y={12} textAnchor="middle" fill="#fff" {...text}>
+          {entry.name}
+        </text>
+        {list.slice(first, first + ROWS).map((v, i) => {
+          const index = first + i;
+          const selected = index === pickSel;
+          const y = TOP + 4 + i * ROW;
+          return (
+            <g key={v.label}>
+              {selected && <rect x={0} y={y} width={W} height={ROW} fill="#fff" />}
+              <text x={4} y={y + 12.5} fill={selected ? "#000" : "#fff"} {...text}>
+                {v.label}
+              </text>
+              <text
+                x={W - 3}
+                y={y + 11.5}
+                textAnchor="end"
+                fill={selected ? "#000" : index === inUse ? AMBER : "#999"}
+                {...text}
+                fontSize={9}
+              >
+                {index === inUse ? "in use" : (v.group ?? "")}
+              </text>
+            </g>
+          );
+        })}
       </>
     );
   } else if (mode === "reset") {
@@ -474,7 +569,9 @@ function Explain({
   }
 
   const hint =
-    mode === "page"
+    mode === "pick"
+      ? "{up} / {down} move, {green} picks, {red} goes back without changing it. on the radio {*} / {#} also jump between OFF, CTCSS, DCS and DCS inverted, and numbers jump to a tone: 8 8 for 88.5, 0 2 3 for D023."
+      : mode === "page"
       ? "{red} goes back."
       : mode === "reset"
         ? resetStep === 2
@@ -484,7 +581,9 @@ function Explain({
           ? "{up} / {down} change the value. {green} or {red} finishes."
           : entry.menu
             ? "{green} opens it."
-            : entry.values
+            : entry.picker
+              ? "{green} opens the list."
+              : entry.values
               ? "{green} to change it."
               : entry.typed !== undefined
                 ? "typed on the number keys on the radio, like an old phone. not here though."
