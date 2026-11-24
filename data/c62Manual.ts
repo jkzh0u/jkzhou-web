@@ -153,6 +153,17 @@ export const manual: ManualSection[] = [
         },
       },
       {
+        id: "messages",
+        title: "messages",
+        screens: [
+          shot("tetra-17b-messages", "messages: three, with senders, ages and text", "messages"),
+          shot("tetra-17c-message", "one message in full, wrapped", "one in full"),
+        ],
+        paragraphs: [
+          "Menu › Messages keeps the last 20 short messages (SDS) heard, text and status, newest first: who sent it, how long ago and the start of the text. {green} shows one in full, with who it was to and how many times it came. {up} / {down} go through them, {red} goes back. they're kept until the radio is turned off.",
+        ],
+      },
+      {
         id: "saved-calls",
         title: "saved calls",
         screens: [shot("tetra-16b-saved", "saved calls: Transit Control and Davisville Yard with dates and lengths", "saved calls")],
@@ -262,7 +273,7 @@ export const manual: ManualSection[] = [
             ["cell tracking", "moves to a stronger cell when the signal gets weak, searches when it's lost", "stays on the channel you picked. holding {0} still searches once"],
             ["alarm beep", "an alarm talkgroup call turns the screen red and beeps three times", "red screen only"],
             ["keep filter", "starts with the talkgroup filter you last picked", "starts at TG All"],
-            ["save calls (off at first)", "keeps every call heard with speech on the radio, to play in Menu › Saved calls", "nothing is kept; P2 still replays the last 30 s"],
+            ["save calls (off at first)", "which calls are kept, to play in Menu › Saved calls: all, marked (talkgroups with TF_SAVE in the channel list) or filter (what the talkgroup filter lets through). alarm calls always", "nothing is kept; P2 still replays the last 30 s"],
             ["freq. correct", "tunes itself so the signal decodes best: the C62 decodes best about 1.6 kHz off the channel frequency, plus its crystal error. found within about 20 s and kept across channel changes. remembered at power off, so the radio starts corrected even on a weak signal. if a strong signal stops decoding for 8 s, it goes back to the remembered correction, then to none", "tunes exactly to the channel frequency"],
           ],
         },

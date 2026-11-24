@@ -481,9 +481,14 @@ const tetra: SimMenu = {
       id: "save-calls",
       name: "Save calls",
       explain:
-        "keeps every call heard with speech on the radio, with its talkgroup, date and time, to play later in Menu › Saved calls. about 13 minutes fit; the oldest make room.",
-      values: onOff("calls are saved.", "nothing is kept. P2 still replays the last 30 s."),
-      start: 1,
+        "which calls heard with speech are kept on the radio, to play later in Menu › Saved calls. about 13 minutes fit; the oldest make room, so keeping only the ones you care about lasts longer. alarm calls are always kept when it's on.",
+      values: [
+        { label: "OFF", note: "nothing is kept. P2 still replays the last 30 s." },
+        { label: "All", note: "every call heard." },
+        { label: "Marked", note: "talkgroups marked TF_SAVE in the channel list, like Transit Control." },
+        { label: "Filter", note: "the talkgroups the talkgroup filter ({#} / {*}) lets through." },
+      ],
+      start: 0,
     },
     {
       id: "afc",
@@ -596,6 +601,13 @@ export const topMenu: SimMenu = {
       explain:
         "the TETRA calls kept on the radio, newest first: talkgroup and length, then date, time and who talked. {green} plays one, {green} held twice deletes it. it fills with Settings › TETRA › Save calls on.",
       page: { image: "/projects/c62-manual/tetra-16b-saved.png", alt: "saved calls: Transit Control and Davisville Yard, with dates and lengths" },
+    },
+    {
+      id: "messages",
+      name: "Messages",
+      explain:
+        "the last 20 short messages (SDS) heard in T mode, text and status, newest first: who sent it, how long ago and the start of the text. {green} shows one in full, with who it was to and how many times it came.",
+      page: { image: "/projects/c62-manual/tetra-17b-messages.png", alt: "messages: three, with senders, ages and text" },
     },
     { id: "settings", name: "Settings", explain: settings.explain, menu: settings },
     {
