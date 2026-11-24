@@ -157,9 +157,8 @@ export const manual: ManualSection[] = [
         title: "saved calls",
         screens: [shot("tetra-16b-saved", "saved calls: Transit Control and Davisville Yard with dates and lengths", "saved calls")],
         paragraphs: [
-          "with Settings › TETRA › save calls on, every TETRA call heard with speech is kept on the radio: the talkgroup, who talked, the date and time from the network's clock, and the speech itself, still coded as it came off the air (about 38 kB a minute), so it plays back sounding exactly as it did live.",
+          "with Settings › TETRA › save calls on, every TETRA call heard with speech is kept on the radio: the talkgroup, who talked, when (\"5 min ago\" for today's, else the date and time from the network's clock), and the speech itself, still coded as it came off the air (about 38 kB a minute), so it plays back sounding exactly as it did live.",
           "{up} / {down} pick one, {green} plays it, {green} on the one playing stops it, holding {green} twice deletes it, {red} goes back. a call coming in stops the playback. about 13 minutes of calls fit, up to 3 minutes each; when it's full the oldest make room. they stay through power off.",
-          "keep them to yourself: in Canada the Radiocommunication Act forbids passing on or using what you intercept.",
         ],
       },
     ],
