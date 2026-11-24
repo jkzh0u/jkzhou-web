@@ -212,6 +212,8 @@ export const manual: ManualSection[] = [
             ["RX tone", "the same", "off", "the tone the squelch waits for, picked from the same list. a DCS code opens it normal or inverted"],
             ["talk permit", "off, beep, double, motorola, triple, melody, chime", "off", "a tone in your own speaker when you press PTT, telling you to talk. motorola is motorola's trunking talk permit. not transmitted. saved"],
             ["roger beep", "off, classic, single, double, chirp, bloop, morse K, sweep, moto MDC", "off", "tones when you let go of PTT, so others know you're done. morse K is dah dit dah (\"over\"), moto MDC sounds like a motorola data burst. saved"],
+            ["VOX", "off, 1 to 10", "off", "transmit while you talk, without PTT. 10 is the most sensitive. not while receiving, at most 3 minutes at a time. VOX shows at the top left. saved"],
+            ["VOX delay", "0.5, 1, 1.5, 2, 3 s", "1 s", "how long VOX keeps transmitting after you stop talking. saved"],
             ["scan resume", "carrier, time, stop", "carrier", "after scan stops on a signal: carrier goes on 2 s after it ends, time after 5 s, stop ends the scan. saved"],
           ],
         },

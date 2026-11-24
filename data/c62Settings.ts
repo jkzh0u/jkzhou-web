@@ -322,6 +322,38 @@ const fm: SimMenu = {
       ],
       start: 0,
     },
+    {
+      id: "vox",
+      name: "VOX",
+      explain:
+        "transmit when you talk, without pressing PTT. not while a signal is coming in, so the speaker can't set it off. VOX shows at the top left of the FM screen.",
+      values: [
+        { label: "OFF", note: "PTT only." },
+        ...Array.from({ length: 10 }, (_, i) => ({
+          label: `${i + 1}`,
+          note:
+            i === 0
+              ? "the least sensitive: needs a loud voice close to the radio."
+              : i === 9
+                ? "the most sensitive: may key up on background noise."
+                : undefined,
+        })),
+      ],
+      start: 0,
+    },
+    {
+      id: "vox-delay",
+      name: "VOX delay",
+      explain: "how long VOX keeps transmitting after you stop talking, so pauses between words don't cut you off.",
+      values: [
+        { label: "0.5 s" },
+        { label: "1 s", note: "the default." },
+        { label: "1.5 s" },
+        { label: "2 s" },
+        { label: "3 s" },
+      ],
+      start: 1,
+    },
   ],
 };
 
