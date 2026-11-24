@@ -290,6 +290,17 @@ const fm: SimMenu = {
       ],
       start: 0,
     },
+    {
+      id: "scanResume",
+      name: "Scan resume",
+      explain: "what scan (hold 0) does after it stops on a signal.",
+      values: [
+        { label: "Carrier", note: "goes on 2 s after the signal ends." },
+        { label: "Time", note: "goes on after 5 s, signal or not." },
+        { label: "Stop", note: "the scan ends on that channel." },
+      ],
+      start: 0,
+    },
   ],
 };
 
