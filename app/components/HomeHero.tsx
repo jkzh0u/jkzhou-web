@@ -90,9 +90,16 @@ const CONFIG = {
     // hero photo must be, so nothing else is visible around the about section.
     aboutClearance: 40,
 
-    // Mobile intro: each tile fades in over this many seconds, staggered by the gap below.
-    mobileFadeDuration: 0.9,
-    mobileFadeGap: 0.06,
+    // Mobile intro, and arriving from another page of the site: the tiles reveal one by one from
+    // the middle of the screen outwards, exactly like the photos page (.media-reveal in
+    // globals.css and PhotoField's delays): 1.2s, easeOutQuint, from transparent, blurred 8px and
+    // 97% size; each waits 0.1s plus 1s per 1400px from the middle, at most 0.9s more.
+    tileFadeDuration: 1.2,
+    tileFadeBlur: 8,
+    tileFadeScale: 0.97,
+    tileFadeStart: 0.1,
+    tileFadeSpread: 1400,
+    tileFadeMaxDelay: 0.9,
 } as const;
 
 const HERO_SLOTS_DESKTOP: HeroSlot[] = [
@@ -152,6 +159,7 @@ const FRAGMENT = /* glsl */ `
     uniform float uOpacity;
     uniform vec2 uRatio;
     uniform vec2 uBackRatio;
+    uniform vec2 uBlur; // reveal blur: grid spacing across the card (0 = sharp)
 
     varying vec2 vUv;
 
@@ -159,8 +167,20 @@ const FRAGMENT = /* glsl */ `
         vec4 tex;
 
         if (gl_FrontFacing) {
-            vec2 uv = (vUv - 0.5) * uRatio + 0.5;
-            tex = texture2D(uTexture, uv);
+            if (uBlur.x > 0.0 || uBlur.y > 0.0) {
+                // 5x5 grid average, spaced to match a CSS blur() of the same radius
+                tex = vec4(0.0);
+                for (int i = -2; i <= 2; i++) {
+                    for (int j = -2; j <= 2; j++) {
+                        vec2 p = vUv + vec2(float(i), float(j)) * uBlur;
+                        tex += texture2D(uTexture, (p - 0.5) * uRatio + 0.5);
+                    }
+                }
+                tex /= 25.0;
+            } else {
+                vec2 uv = (vUv - 0.5) * uRatio + 0.5;
+                tex = texture2D(uTexture, uv);
+            }
         } else {
             vec2 uv = (vUv - 0.5) * uBackRatio + 0.5;
             uv.x = 1.0 - uv.x;
@@ -558,27 +578,34 @@ export default function PhotographerHome({
         };
 
         // ---------------------------------------------------------
-        // MOBILE INTRO: tiles simply fade in (no stacking / spreading)
+        // FADE-IN: on the mobile intro, and whenever the intro is skipped (arriving from another
+        // page), the tiles start invisible and fade in one by one instead of stacking / spreading
+        // or popping in as each image arrives.
         // ---------------------------------------------------------
 
-        // Becomes true once the overlay starts lifting. A tile whose image is ready by then fades in
-        // right away; a tile whose image arrives later fades in the moment it is ready (no pop-in).
+        // Set once the tiles are released (the overlay starts lifting, or right away when the intro
+        // is skipped). Each tile gets a turn, nearest the middle of the screen first; a tile whose
+        // image is ready fades in on its turn, and one whose image arrives later fades in the
+        // moment it's ready (no pop-in).
         let introReleased = false;
+        let releasedAt = 0;
+        let fadeDelay: number[] = [];
 
         const fadeTile = (t: Tile, i: number) => {
             if (t.fadeStarted) return;
 
             t.fadeStarted = true;
 
+            const turnAt = releasedAt + (fadeDelay[i] ?? CONFIG.tileFadeStart);
             gsap.to(t.state, {
                 fade: 1,
-                duration: reduceMotion ? 0.01 : CONFIG.mobileFadeDuration,
-                delay: reduceMotion ? 0 : i * CONFIG.mobileFadeGap,
-                ease: 'power2.out',
+                duration: reduceMotion ? 0.01 : CONFIG.tileFadeDuration,
+                delay: reduceMotion ? 0 : Math.max(0, turnAt - performance.now() / 1000),
+                ease: 'power4.out', // easeOutQuint, the cubic-bezier(0.22, 1, 0.36, 1) of .media-reveal
             });
         };
 
-        const mobileFade = isMobile && !skipIntro;
+        const fadeIn = isMobile || skipIntro;
 
         const tiles: Tile[] = tileEls.map((el, i) => {
             const depth = parseFloat(el.dataset.depth ?? '1');
@@ -604,6 +631,9 @@ export default function PhotographerHome({
                     uBackRatio: {
                         value: new THREE.Vector2(1, 1),
                     },
+                    uBlur: {
+                        value: new THREE.Vector2(0, 0),
+                    },
                 },
             });
 
@@ -620,7 +650,7 @@ export default function PhotographerHome({
                     // on mobile the tiles start (and stay) in their final spots
                     p: skipIntro || isMobile ? 1 : 0,
                     a: skipIntro || isMobile ? 1 : 0,
-                    fade: mobileFade ? 0 : 1,
+                    fade: fadeIn ? 0 : 1,
                     flip: 0,
                     direction: 1,
                 },
@@ -648,7 +678,7 @@ export default function PhotographerHome({
                         tile.ready = true;
                         needsRender = true;
 
-                        if (mobileFade && introReleased) fadeTile(tile, i);
+                        if (fadeIn && introReleased) fadeTile(tile, i);
                     },
                     () => {
                         console.warn(
@@ -660,6 +690,23 @@ export default function PhotographerHome({
 
             return tile;
         });
+
+        // let the tiles fade in, nearest the middle of the screen first
+        const releaseTiles = () => {
+            introReleased = true;
+            releasedAt = performance.now() / 1000;
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            // the photos page's delays: the further from the middle, the later
+            fadeDelay = tiles.map((t) => {
+                const r = t.el.getBoundingClientRect();
+                const d = Math.hypot(r.left + r.width / 2 - cx, r.top + r.height / 2 - cy);
+                return CONFIG.tileFadeStart + Math.min(CONFIG.tileFadeMaxDelay, d / CONFIG.tileFadeSpread);
+            });
+            tiles.forEach((t, i) => {
+                if (t.ready) fadeTile(t, i);
+            });
+        };
 
         let flipTexture: THREE.Texture | null = null;
         let flipAspect = 1;
@@ -1208,8 +1255,18 @@ export default function PhotographerHome({
                     fall
                     : normalY;
 
+                // reveal: settles up from slightly smaller and comes into focus as it fades in
+                const fade = t.state.fade;
+                const grow = fade < 1 ? CONFIG.tileFadeScale + (1 - CONFIG.tileFadeScale) * fade : 1;
+                const blurPx = (1 - fade) * CONFIG.tileFadeBlur;
+                // a 5x5 grid spaced blur / sqrt(2) apart has the spread of a CSS blur(blur)
+                (t.material.uniforms.uBlur.value as THREE.Vector2).set(
+                    blurPx > 0.05 ? blurPx / Math.SQRT2 / mw : 0,
+                    blurPx > 0.05 ? blurPx / Math.SQRT2 / mh : 0
+                );
+
                 t.mesh.position.set(finalX, finalY, 0);
-                t.mesh.scale.set(mw, mh, 1);
+                t.mesh.scale.set(mw * grow, mh * grow, 1);
 
                 // the mouse tilt fades out as a flip progresses: dropping it the moment a flip
                 // starts snaps the photo sideways (photos flip as they scroll under the cursor)
@@ -1403,16 +1460,14 @@ export default function PhotographerHome({
                     if (!cancelled) logo.classList.add('pa-logo--live');
                 });
 
-            tl.fromTo(
-                canvas,
-                { opacity: 0 },
-                { opacity: 1, duration: 0.6, ease: 'power2.out' }
-            );
+            // the canvas shows straight away; the tiles on it fade in one by one
+            tl.set(canvas, { opacity: 1 }, 0);
 
             tl.add(() => {
                 measure();
                 lastScrollY = window.scrollY;
-            }, 0.2);
+                releaseTiles();
+            }, 0);
         } else {
             tl.to(overlay, {
                 opacity: 0,
@@ -1430,15 +1485,10 @@ export default function PhotographerHome({
                 tl.add(() => html.classList.remove('pa-intro'), 0.3);
 
                 tl.add(() => {
-                    introReleased = true;
                     logo.classList.add('pa-logo--live');
-
-                    tiles.forEach((t, i) => {
-                        if (t.ready) fadeTile(t, i);
-                    });
-
                     measure();
                     lastScrollY = window.scrollY;
+                    releaseTiles();
                 }, 0.3);
 
                 tl.call(
