@@ -39,7 +39,6 @@ const MAX_BEND = 0.6;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-const pad = (i: number) => String(i + 1).padStart(2, '0');
 
 export default function Interests({ interests }: { interests: Interest[] }) {
     const wallRef = useRef<HTMLDivElement>(null);
@@ -199,7 +198,6 @@ export default function Interests({ interests }: { interests: Interest[] }) {
                                 </div>
                             </div>
                             <div className="pw-note">
-                                <p className="pw-note-no">no. {pad(i)}</p>
                                 <p className="pw-note-text">{interest.description}</p>
                             </div>
                         </article>
@@ -335,14 +333,6 @@ const css = `
     transition-delay: 0.35s;
   }
 
-  .pw-note-no {
-    margin: 0 0 8px;
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--pw-accent);
-  }
 
   .pw-note-text {
     margin: 0;
