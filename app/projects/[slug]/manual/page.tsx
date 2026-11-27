@@ -77,7 +77,7 @@ function ManualTableView({ page }: { page: ManualPage }) {
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-neutral-900 text-xs tracking-wide text-neutral-400 uppercase">
+          <tr className="border-b border-neutral-900 text-xs text-neutral-400 lowercase">
             {page.table.columns.map((column) => (
               <th key={column} scope="col" className="py-2 pr-4 pl-1 font-mono font-normal">
                 {column}

@@ -92,7 +92,7 @@ export default async function VideoPage({ params }: Params) {
         </div>
 
         <div className="load-reveal mt-8" style={{ animationDelay: "0.2s" }}>
-          <p className="text-sm tracking-wide text-neutral-400 uppercase">
+          <p className="text-sm text-neutral-400 lowercase">
             {video.tag} · {video.year}
           </p>
           <h1 className="mt-2 text-3xl font-semibold">{video.title}</h1>

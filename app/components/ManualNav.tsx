@@ -38,7 +38,7 @@ export default function ManualNav({ sections }: { sections: Section[] }) {
 
   return (
     <nav aria-label="contents">
-      <p className="font-mono text-xs tracking-wide text-neutral-400 uppercase">contents</p>
+      <p className="font-mono text-xs text-neutral-400 lowercase">contents</p>
       <ol className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-1 lg:gap-y-5">
         {sections.map((section) => {
           const open = active === section.id || section.pages.some((page) => page.id === active);

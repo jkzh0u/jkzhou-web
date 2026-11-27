@@ -368,11 +368,11 @@ const css = `
   .ct-label,
   .ct-form-head,
   .ct-row-label {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1.6;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    text-transform: lowercase;
   }
 
   .ct-title {
@@ -768,10 +768,10 @@ const css = `
     background: none;
     color: inherit;
     font: inherit;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    text-transform: lowercase;
     text-decoration: underline;
     text-underline-offset: 4px;
     cursor: pointer;

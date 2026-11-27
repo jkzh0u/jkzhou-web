@@ -54,7 +54,7 @@ function SitesTable({ sites }: { sites: RadioSite[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-neutral-200 text-xs tracking-wide text-neutral-400 uppercase">
+            <tr className="border-b border-neutral-200 text-xs text-neutral-400 lowercase">
               <th scope="col" className="py-2 pr-4 font-medium">site</th>
               <th scope="col" className="py-2 font-medium">frequencies (MHz)</th>
             </tr>

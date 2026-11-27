@@ -43,7 +43,7 @@ export default function HomelabDiagram({ compact = false }: { compact?: boolean 
       <div className="flex h-full w-full flex-col justify-center gap-4 px-5 py-6 sm:gap-5 sm:px-8" aria-hidden="true">
         {lanes.map((lane) => (
           <div key={lane.name}>
-            <p className="text-[10px] font-medium tracking-wide text-neutral-400 uppercase">{lane.name}</p>
+            <p className="text-xs font-medium text-neutral-400 lowercase">{lane.name}</p>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs sm:text-sm">
               {lane.nodes.map((node, i) => (
                 <span key={node.label} className="flex items-center gap-1.5">
@@ -71,7 +71,7 @@ export default function HomelabDiagram({ compact = false }: { compact?: boolean 
       <div className="space-y-8">
         {lanes.map((lane) => (
           <section key={lane.name} aria-label={lane.name}>
-            <h3 className="text-xs font-medium tracking-wide text-neutral-400 uppercase">{lane.name}</h3>
+            <h3 className="text-xs font-medium text-neutral-400 lowercase">{lane.name}</h3>
             <ol className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-0">
               {lane.nodes.map((node, i) => (
                 <li key={node.label} className="flex flex-col sm:flex-1 sm:flex-row sm:items-center">

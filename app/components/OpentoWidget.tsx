@@ -74,7 +74,7 @@ export default function OpentoWidget() {
 
   return (
     <div className="flex h-full w-full flex-col px-4 py-4 sm:px-6 sm:py-5" aria-label="live numbers from opento">
-      <div className="flex items-center justify-between text-[10px] font-medium tracking-wide text-neutral-400 uppercase">
+      <div className="flex items-center justify-between text-xs font-medium text-neutral-400 lowercase">
         <span className="flex items-center gap-1.5">
           <span className="relative flex size-1.5">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-500 opacity-75 motion-reduce:hidden" />
@@ -92,7 +92,7 @@ export default function OpentoWidget() {
             className="flex min-w-0 flex-col border-t-2 bg-white px-3 py-2 sm:px-4 sm:py-3"
             style={{ borderTopColor: accent[section.id] }}
           >
-            <span className="text-[10px] font-medium tracking-wide uppercase" style={{ color: accent[section.id] }}>
+            <span className="text-xs font-medium lowercase" style={{ color: accent[section.id] }}>
               {section.title}
             </span>
             <span className="mt-0.5 text-2xl leading-tight font-semibold tabular-nums text-neutral-900 sm:text-3xl">

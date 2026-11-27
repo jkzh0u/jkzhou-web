@@ -754,7 +754,7 @@ function RogerBeeps() {
   return (
     <section aria-label="roger beeps" className="space-y-8 border-t border-neutral-900 pt-6">
       <div>
-        <p className="font-mono text-xs tracking-wide text-neutral-400 uppercase">FM sounds: click one to hear it</p>
+        <p className="font-mono text-xs text-neutral-400 lowercase">FM sounds: click one to hear it</p>
         <p className="mt-3 max-w-3xl leading-relaxed text-neutral-600">
           picked in settings &gt; FM. the talk permit plays in your own speaker when you press PTT, telling you to talk. the roger beep
           is sent over the air when you let go, so the others know you&apos;ve finished. these are the same tones and timings as the
@@ -784,7 +784,7 @@ function MenuMap({ onJump, stack, mode }: { onJump: (path: number[]) => void; st
 
   return (
     <nav aria-label="every menu" className="border-t border-neutral-900 pt-6">
-      <p className="font-mono text-xs tracking-wide text-neutral-400 uppercase">every menu: click one to go there</p>
+      <p className="font-mono text-xs text-neutral-400 lowercase">every menu: click one to go there</p>
       <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-8 text-sm sm:grid-cols-3 lg:grid-cols-5">
         {groups.map((g) => (
           <div key={g.title}>

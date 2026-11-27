@@ -12,7 +12,7 @@ const PAGES = [
 export default function C62PageLinks({ current }: { current: (typeof PAGES)[number]["id"] }) {
   return (
     <nav aria-label="more on the C62" className="mt-24 border-t border-neutral-900 pt-6">
-      <p className="font-mono text-xs tracking-wide text-neutral-400 uppercase">more on the C62</p>
+      <p className="font-mono text-xs text-neutral-400 lowercase">more on the C62</p>
       <ul className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {PAGES.filter((page) => page.id !== current).map((page) => (
           <li key={page.id}>

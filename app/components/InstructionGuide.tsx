@@ -72,7 +72,7 @@ function Block({ block }: { block: FlashBlock }) {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-neutral-900 text-xs tracking-wide text-neutral-400 uppercase">
+              <tr className="border-b border-neutral-900 text-xs text-neutral-400 lowercase">
                 {block.columns.map((column) => (
                   <th key={column} scope="col" className="py-2 pr-4 pl-1 font-mono font-normal">
                     {column}
@@ -107,7 +107,7 @@ function Block({ block }: { block: FlashBlock }) {
 function OsPicker({ os, onPick, className = "" }: { os: OS; onPick: (os: OS) => void; className?: string }) {
   return (
     <div className={className}>
-      <p className="font-mono text-xs tracking-wide text-neutral-400 uppercase">your computer</p>
+      <p className="font-mono text-xs text-neutral-400 lowercase">your computer</p>
       <div role="group" aria-label="your computer" className="mt-2 inline-flex border border-neutral-300">
         {OSES.map((option) => (
           <button
