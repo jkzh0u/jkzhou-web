@@ -21,7 +21,9 @@ const FALLBACK_RATIO = 3 / 2;
 // vertical photos all get the same 3:4 frame (cropped to fill); others keep their own shape
 const PORTRAIT_RATIO = 3 / 4;
 
-type Cell = { photo: number; x: number; y: number; w: number; h: number };
+// depth: how near the photo sits, 0.55 (far) to 1.05 (near). Nearer photos lead when the field
+// moves, shift more with the mouse, and draw on top (like the homepage's tile depths).
+type Cell = { photo: number; x: number; y: number; w: number; h: number; depth: number };
 type Field = { cells: Cell[]; tw: number; th: number; margin: number; scale: number };
 
 const CONFIG = {
@@ -29,12 +31,26 @@ const CONFIG = {
     friction: 0.93, // flick momentum kept per frame
     dragZoom: 0.955, // the field pulls back a little while you drag
     keyStep: 160, // px per arrow key press
-    leaveDelay: 0.34, // s between clicking a photo and the album opening
+    expandTime: 0.6, // s for a clicked photo to glide to the middle of the screen and grow
+    dissolveTime: 0.3, // s for it to then fade into the background before the album opens
+    maxGrow: 1.8, // a clicked photo grows at most this much (and never past its loaded resolution)
+    // The homepage's cylinder: the field curves away from you, more the faster it moves.
+    // Kept gentler than the homepage, so the tile's edges never come into view.
+    bendBase: 0.15, // curve at rest
+    bendSpeed: 0.45, // extra curve at full speed
+    perspective: 0.7, // viewing distance, times the window's longer side (about 1000px on a laptop)
+    // Depth, like the homepage: while the field moves, nearer photos lead and farther ones lag by
+    // this many px per px-per-frame of speed (per unit of depth), up to depthMax of a cell; they
+    // settle back into place when it stops. With a mouse they also shift by up to mouseShift px.
+    depthLead: 1.5,
+    depthMax: 0.04,
+    mouseShift: 5,
+    mouseSmoothing: 0.06,
+    scatter: 140, // px the other photos drift away from the clicked one
 } as const;
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const mod = (a: number, n: number) => ((a % n) + n) % n;
-const pad2 = (n: number) => String(n).padStart(2, '0');
 
 function mulberry32(seed: number) {
     let a = seed >>> 0;
@@ -55,7 +71,9 @@ function buildField(ratios: (number | null)[], vw: number, vh: number): Field {
     const scale = vw < 760 ? 0.62 : vw < 1200 ? 0.85 : 1;
     const cellW = 380 * scale;
     const cellH = 430 * scale;
-    const margin = 420 * scale; // room for a photo to slide fully off an edge before wrapping
+    // room past each edge before a photo wraps: enough for one to slide fully off, and for the
+    // cylinder curve (which pulls the edges in) never to show the end of the tile
+    const margin = Math.max(420 * scale, 0.3 * Math.max(vw, vh));
 
     const cols = Math.max(Math.ceil(Math.sqrt(count * 1.1)), Math.ceil((vw + margin) / cellW) + 1);
     const rows = Math.max(Math.ceil(count / cols), Math.ceil((vh + margin) / cellH) + 1);
@@ -69,11 +87,44 @@ function buildField(ratios: (number | null)[], vw: number, vh: number): Field {
         [order[i], order[j]] = [order[j], order[i]];
     }
 
-    const cells: Cell[] = [];
-    const inset = 22 * scale;
+    // Which photo goes in each cell. There are usually more cells than photos, so some repeat.
+    // Every photo is used once before any is used twice (least-used first, in shuffled order),
+    // and a cell never takes a photo already within two cells of it, counting across the tile's
+    // wrap, since the tile repeats edge to edge. If nothing fits, the reach shrinks to one cell.
+    const used = new Array<number>(count).fill(0);
+    const assigned: number[] = [];
+    const wrap = (d: number, n: number) => {
+        const a = Math.abs(d) % n;
+        return Math.min(a, n - a);
+    };
+    const clashes = (r: number, c: number, photo: number, reach: number) => {
+        for (let k = 0; k < assigned.length; k++) {
+            if (assigned[k] !== photo) continue;
+            const r2 = Math.floor(k / cols);
+            const c2 = k % cols;
+            if (wrap(r - r2, rows) <= reach && wrap(c - c2, cols) <= reach) return true;
+        }
+        return false;
+    };
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-            const photo = order[(r * cols + c) % count];
+            const byUse = [...order].sort((a, b) => used[a] - used[b]); // stable: keeps the shuffle
+            const photo =
+                byUse.find((p) => !clashes(r, c, p, 2)) ??
+                byUse.find((p) => !clashes(r, c, p, 1)) ??
+                byUse[0];
+            used[photo]++;
+            assigned.push(photo);
+        }
+    }
+
+    const cells: Cell[] = [];
+    const inset = 22 * scale;
+    // its own sequence, so adding depths didn't change the layout
+    const depthRand = mulberry32(5596 ^ 0x5bd1e995);
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const photo = assigned[r * cols + c];
             const real = ratios[photo] ?? FALLBACK_RATIO;
             const ratio = real < 1 ? PORTRAIT_RATIO : real;
 
@@ -92,7 +143,7 @@ function buildField(ratios: (number | null)[], vw: number, vh: number): Field {
                 (c % 2) * cellH * 0.5 + // stagger every other column
                 inset +
                 rand() * Math.max(0, cellH - h - inset * 2);
-            cells.push({ photo, x, y, w, h });
+            cells.push({ photo, x, y, w, h, depth: 0.55 + depthRand() * 0.5 });
         }
     }
 
@@ -179,9 +230,15 @@ export default function PhotoField({
 
         let vw = root.clientWidth;
         let vh = root.clientHeight;
+        // the viewing distance scales with the window, so the curve looks the same on any screen
+        const setPerspective = () => {
+            layer.style.perspective = `${Math.round(CONFIG.perspective * Math.max(vw, vh))}px`;
+        };
+        setPerspective();
         const onResize = () => {
             vw = root.clientWidth;
             vh = root.clientHeight;
+            setPerspective();
         };
         window.addEventListener('resize', onResize);
 
@@ -191,6 +248,23 @@ export default function PhotoField({
         let zoom = 1;
         let shownZoom = -1;
         let opening = false;
+        // the cylinder curve, per axis: how fast the view is moving and how much it's bent
+        const prevCam = { x: 0, y: 0 };
+        const speed = { x: 0, y: 0 };
+        const bend = { x: CONFIG.bendBase, y: CONFIG.bendBase };
+        // smoothed signed speed (px per frame), for the depth lead / lag
+        const flow = { x: 0, y: 0 };
+        // the mouse, -1 to 1 from the middle of the window, and where it's heading
+        const mouse = { x: 0, y: 0 };
+        const mouseTarget = { x: 0, y: 0 };
+        const onMouse = (e: PointerEvent) => {
+            if (e.pointerType !== 'mouse' || reduceMotion) return;
+            mouseTarget.x = (e.clientX / vw) * 2 - 1;
+            mouseTarget.y = (e.clientY / vh) * 2 - 1;
+        };
+        window.addEventListener('pointermove', onMouse, { passive: true });
+        // opening an album: the other photos drift away from the clicked one (0 to 1)
+        const burst = { v: 0, x: 0, y: 0 };
 
         // ---- dragging ----
         const drag = {
@@ -318,18 +392,76 @@ export default function PhotoField({
             vel.x = vel.y = 0;
         };
 
-        let leaveCall: gsap.core.Tween | null = null;
+        // Opening an album: a copy of the clicked photo lifts out of the field, glides to the middle
+        // of the screen and grows a little while the rest drift away and fade, then it dissolves
+        // into the background and the album page loads in with its usual reveal. It only grows as
+        // far as the thumbnail it shows stays sharp (the field loads small images), so it never
+        // blurs.
+        let leaveTl: gsap.core.Timeline | null = null;
+        let zoomEl: HTMLDivElement | null = null;
         openRef.current = (cell, href) => {
             if (opening || reduceMotion) return false;
             opening = true;
             vel.x = vel.y = 0;
             target.x = cam.x;
             target.y = cam.y;
-            els[cell].classList.add('is-chosen');
+            router.prefetch(href);
+
+            const chosen = els[cell];
+            const rect = (chosen.querySelector('.cv-photo') ?? chosen).getBoundingClientRect();
+            const img = chosen.querySelector('img');
+            burst.x = rect.left + rect.width / 2;
+            burst.y = rect.top + rect.height / 2;
+
+            zoomEl = document.createElement('div');
+            zoomEl.className = 'cv-zoom';
+            zoomEl.setAttribute('aria-hidden', 'true');
+            if (img?.currentSrc || img?.src) {
+                const copy = document.createElement('img');
+                copy.src = img.currentSrc || img.src;
+                copy.alt = '';
+                zoomEl.appendChild(copy);
+            }
+            root.appendChild(zoomEl);
+
+            chosen.classList.add('is-chosen');
             root.classList.add('is-leaving');
             document.documentElement.classList.add('cv-leaving');
-            router.prefetch(href);
-            leaveCall = gsap.delayedCall(CONFIG.leaveDelay, () => router.push(href));
+
+            // how much bigger it can get: limited by the pixels the thumbnail actually has, by
+            // maxGrow, and by 70% of the screen
+            const dpr = window.devicePixelRatio || 1;
+            const sharp = img?.naturalWidth ? img.naturalWidth / (rect.width * dpr) : 1;
+            const grow = Math.max(
+                1,
+                Math.min(CONFIG.maxGrow, sharp, (vw * 0.7) / rect.width, (vh * 0.7) / rect.height)
+            );
+            const w = rect.width * grow;
+            const h = rect.height * grow;
+
+            leaveTl = gsap
+                .timeline()
+                .to(burst, { v: 1, duration: CONFIG.expandTime + 0.15, ease: 'power2.out' }, 0)
+                .fromTo(
+                    zoomEl,
+                    { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+                    {
+                        left: (vw - w) / 2,
+                        top: (vh - h) / 2,
+                        width: w,
+                        height: h,
+                        duration: CONFIG.expandTime,
+                        ease: 'power3.inOut',
+                    },
+                    0
+                )
+                .to(zoomEl, {
+                    opacity: 0,
+                    y: -16,
+                    duration: CONFIG.dissolveTime,
+                    ease: 'power1.in',
+                })
+                .call(() => router.push(href));
             return true;
         };
 
@@ -351,6 +483,21 @@ export default function PhotoField({
             cam.x += (target.x - cam.x) * follow;
             cam.y += (target.y - cam.y) * follow;
 
+            // like the homepage: speed rises fast and settles slowly, and the bend follows it
+            for (const axis of ['x', 'y'] as const) {
+                const moved = reduceMotion ? 0 : (cam[axis] - prevCam[axis]) / f;
+                const raw = Math.abs(moved);
+                prevCam[axis] = cam[axis];
+                flow[axis] += (moved - flow[axis]) * Math.min(1, 0.12 * f);
+                mouse[axis] += (mouseTarget[axis] - mouse[axis]) * Math.min(1, CONFIG.mouseSmoothing * f);
+                speed[axis] += (raw - speed[axis]) * (raw > speed[axis] ? 0.22 : 0.1);
+                const want = CONFIG.bendBase + clamp(speed[axis] / 40, 0, 1) * CONFIG.bendSpeed;
+                bend[axis] += (want - bend[axis]) * (want < bend[axis] ? 0.12 : 0.1);
+            }
+            const leadMax = CONFIG.depthMax * 380 * field.scale;
+            const ry = vh * 1.1; // cylinder radius, as on the homepage
+            const rx = vw * 1.1;
+
             const zTarget = drag.moved && drag.active && !reduceMotion ? CONFIG.dragZoom : 1;
             zoom += (zTarget - zoom) * Math.min(1, 0.12 * f);
             if (Math.abs(zoom - shownZoom) > 0.0005) {
@@ -360,21 +507,50 @@ export default function PhotoField({
 
             for (let i = 0; i < els.length; i++) {
                 const c = field.cells[i];
-                const x = wrapX(field, c.x, cam.x);
-                const y = wrapY(field, c.y, cam.y);
-                els[i].style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+                let x = wrapX(field, c.x, cam.x);
+                let y = wrapY(field, c.y, cam.y);
+
+                // depth: lead / lag with the movement, and shift with the mouse
+                const dd = c.depth - 0.8;
+                x += clamp(flow.x * dd * CONFIG.depthLead, -leadMax, leadMax) + mouse.x * CONFIG.mouseShift * c.depth;
+                y += clamp(flow.y * dd * CONFIG.depthLead, -leadMax, leadMax) + mouse.y * CONFIG.mouseShift * c.depth;
+
+                if (burst.v) {
+                    const dx = x + c.w / 2 - burst.x;
+                    const dy = y + c.h / 2 - burst.y;
+                    const d = Math.hypot(dx, dy) || 1;
+                    const push = burst.v * CONFIG.scatter * field.scale;
+                    x += (dx / d) * push;
+                    y += (dy / d) * push;
+                }
+
+                // Wrap the photo onto the cylinders (the homepage's vertex shader, per photo): the
+                // further it is from the middle, the more it curves round and away, and it turns
+                // to face along the curve.
+                const oy = y + c.h / 2 - vh / 2;
+                const ox = x + c.w / 2 - vw / 2;
+                const a = clamp(oy / ry, -1.45, 1.45);
+                const b = clamp(ox / rx, -1.45, 1.45);
+                y += (ry * Math.sin(a) - oy) * bend.y;
+                x += (rx * Math.sin(b) - ox) * bend.x;
+                const z = ry * (Math.cos(a) - 1) * bend.y + rx * (Math.cos(b) - 1) * bend.x;
+                els[i].style.transform =
+                    `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) ` +
+                    `rotateX(${(-a * bend.y).toFixed(4)}rad) rotateY(${(b * bend.x).toFixed(4)}rad)`;
             }
         };
         gsap.ticker.add(tick);
 
         return () => {
             gsap.ticker.remove(tick);
-            leaveCall?.kill();
+            leaveTl?.kill();
+            zoomEl?.remove();
             glideRef.current = null;
             openRef.current = null;
             window.removeEventListener('resize', onResize);
             root.removeEventListener('pointerdown', onDown);
             window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointermove', onMouse);
             window.removeEventListener('pointerup', onUp);
             window.removeEventListener('pointercancel', onUp);
             root.removeEventListener('click', onClickCapture, true);
@@ -385,12 +561,17 @@ export default function PhotoField({
         };
     }, [field, photos, router]);
 
-    // one rule per album: while it's picked in the list, every other photo fades back
+    // Rules per album: while it's picked in the list, every other photo fades back. And while
+    // one of its photos is hovered, its other photos stay lit instead of dimming with the rest
+    // (this beats the general hover dim rule in css below by specificity).
     const albumCss = albums
         .map(
             (_, i) =>
                 `.cv-root[data-album="${i}"] .cv-item:not([data-album="${i}"]) { opacity: 0.12; }
-                 .cv-root[data-album="${i}"] .cv-item[data-album="${i}"] .cv-cap { opacity: 1; transform: none; }`
+                 .cv-root[data-album="${i}"] .cv-item[data-album="${i}"] .cv-cap { opacity: 1; transform: none; }
+                 @media (hover: hover) {
+                   .cv-root:not(.is-dragging):not(.is-leaving) .cv-layer:has(.cv-item[data-album="${i}"]:hover) .cv-item[data-album="${i}"] { opacity: 1; }
+                 }`
         )
         .join('\n');
 
@@ -432,6 +613,7 @@ export default function PhotoField({
                             style={{
                                 width: c.w,
                                 height: c.h,
+                                zIndex: Math.round(c.depth * 100), // nearer photos on top
                                 transform: `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`,
                             }}
                             onClick={(e) => {
@@ -477,7 +659,6 @@ export default function PhotoField({
                                 }}
                                 onBlur={() => setAlbum(null)}
                             >
-                                <span className="cv-albums-no">{pad2(albums.length - i)}</span>
                                 {a.title}
                             </Link>
                         </li>
@@ -527,6 +708,10 @@ const css = `
     inset: 0;
     transform-origin: 50% 50%;
     will-change: transform;
+    /* the photos sit on a cylinder seen from the middle of the screen (see the frame loop);
+       the perspective distance is set from the window size */
+    perspective: 1000px;
+    perspective-origin: 50% 50%;
   }
 
   .cv-item {
@@ -610,11 +795,28 @@ const css = `
   /* opening an album: everything else fades, the chosen photo lifts */
   .cv-root.is-leaving .cv-item:not(.is-chosen) {
     opacity: 0;
-    transition: opacity 0.28s ease;
+    transition: opacity 0.5s ease;
   }
 
-  .cv-root.is-leaving .cv-item.is-chosen .cv-photo {
-    transform: scale(1.08);
+  /* the clicked photo is replaced by its moving copy (.cv-zoom) */
+  .cv-root.is-leaving .cv-item.is-chosen {
+    visibility: hidden;
+  }
+
+  .cv-zoom {
+    position: absolute;
+    z-index: 3;
+    overflow: hidden;
+    pointer-events: none;
+    background: color-mix(in srgb, currentColor 6%, transparent);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.18);
+  }
+
+  .cv-zoom img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .cv-albums {
@@ -659,11 +861,6 @@ const css = `
     opacity: 1;
   }
 
-  .cv-albums-no {
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 10px;
-    opacity: 0.7;
-  }
 
   @media (max-width: 760px) {
     .cv-albums ol {
