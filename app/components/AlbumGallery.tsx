@@ -100,6 +100,13 @@ export default function AlbumGallery({
   // which enlarged photo has finished loading, so stepping to a new one hides it until it's ready
   const [loadedPhoto, setLoadedPhoto] = useState<string | null>(null);
   const bigLoaded = selectedPhoto !== null && loadedPhoto === selectedPhoto;
+  // Stepping lays the next photo over the current one like a sheet of paper: `under` is the photo
+  // being covered (kept until the new one has landed) and `dir` the side the new one comes from.
+  const [under, setUnder] = useState<string | null>(null);
+  const [dir, setDir] = useState<0 | 1 | -1>(0);
+  // latest open and loaded photo, for the step handler
+  const selectedRef = useRef<string | null>(null);
+  const loadedRef = useRef<string | null>(null);
   const closeTimer = useRef<number | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   // the thumbnail that opened the viewer, so focus can go back to it on close
@@ -145,7 +152,6 @@ export default function AlbumGallery({
           srcs[(selectedIndex + 1) % srcs.length],
         ]
       : [];
-  const selectedSize = selectedPhoto ? sizeOf.get(selectedPhoto) : undefined;
 
   const open = useCallback((src: string) => {
     if (closeTimer.current !== null) {
@@ -157,6 +163,9 @@ export default function AlbumGallery({
       openerRef.current = document.activeElement;
     }
     setVisible(false);
+    setUnder(null);
+    setDir(0);
+    selectedRef.current = src;
     setSelectedPhoto(src);
   }, []);
 
@@ -168,6 +177,8 @@ export default function AlbumGallery({
     }
 
     closeTimer.current = window.setTimeout(() => {
+      selectedRef.current = null;
+      setUnder(null);
       setSelectedPhoto(null);
       closeTimer.current = null;
       openerRef.current?.focus({ preventScroll: true });
@@ -177,15 +188,27 @@ export default function AlbumGallery({
 
   // Step to the previous (-1) or next (+1) photo, wrapping at the ends
   const step = useCallback(
-    (dir: 1 | -1) => {
-      setSelectedPhoto((current) => {
-        if (!current || srcs.length < 2) return current;
-        const i = srcs.indexOf(current);
-        return srcs[(i + dir + srcs.length) % srcs.length];
-      });
+    (to: 1 | -1) => {
+      const current = selectedRef.current;
+      if (!current || srcs.length < 2) return;
+      const next = srcs[(srcs.indexOf(current) + to + srcs.length) % srcs.length];
+      // the photo on screen goes underneath; if it never loaded, whatever was under stays
+      if (loadedRef.current === current) setUnder(current);
+      setDir(to);
+      selectedRef.current = next;
+      setSelectedPhoto(next);
     },
     [srcs]
   );
+
+  const onNavClick = (to: 1 | -1) => (e: React.MouseEvent) => {
+    e.stopPropagation(); // don't close the viewer
+    if (swiped.current) {
+      swiped.current = false;
+      return;
+    }
+    step(to);
+  };
 
   // Phones: swipe left/right to step, swipe down to close. Taps still close as before.
   const SWIPE_MIN = 50;
@@ -295,6 +318,7 @@ export default function AlbumGallery({
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
           onPointerCancel={() => (swipeStart.current = null)}
+          style={{ "--dir": dir || 1 } as React.CSSProperties}
           className={`
             ag-viewer fixed inset-0 z-50 flex items-center justify-center
             bg-black/40 p-4 outline-none
@@ -310,27 +334,74 @@ export default function AlbumGallery({
           {!bigLoaded && (
             <span className="ag-spin" aria-hidden="true" />
           )}
-          <Image
-            // remount per photo so each one fades in on its own once loaded
-            key={selectedPhoto}
-            src={selectedPhoto}
-            alt={`${album.title} enlarged photo`}
-            width={selectedSize?.width ?? 2400}
-            height={selectedSize?.height ?? 1600}
-            sizes="82vw"
-            onLoad={() => setLoadedPhoto(selectedPhoto)}
-            onError={() => setLoadedPhoto(selectedPhoto)}
-            className={`
-              h-auto max-h-[88vh] w-auto max-w-[82vw] object-contain shadow-2xl
-              transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]
-              motion-reduce:transition-none
-              ${
-                visible && bigLoaded
-                  ? "ag-big-in scale-100 opacity-100"
-                  : "scale-95 opacity-0"
-              }
-            `}
-          />
+          {/* Keyed by photo, so the one on screen keeps its element when it becomes the sheet
+              underneath, and only the new photo mounts (and fades in once loaded). */}
+          {(under && under !== selectedPhoto ? [under, selectedPhoto] : [selectedPhoto]).map(
+            (src) => {
+              const top = src === selectedPhoto;
+              const size = sizeOf.get(src);
+              const landed = visible && bigLoaded;
+              return (
+                <Image
+                  key={src}
+                  src={src}
+                  alt={top ? `${album.title} enlarged photo` : ""}
+                  aria-hidden={top ? undefined : true}
+                  width={size?.width ?? 2400}
+                  height={size?.height ?? 1600}
+                  sizes="82vw"
+                  onLoad={
+                    top
+                      ? () => {
+                          loadedRef.current = src;
+                          setLoadedPhoto(src);
+                        }
+                      : undefined
+                  }
+                  onError={top ? () => setLoadedPhoto(src) : undefined}
+                  onAnimationEnd={
+                    top
+                      ? (e) => {
+                          if (e.animationName === "ag-paper-in") setUnder(null);
+                        }
+                      : undefined
+                  }
+                  className={`
+                    h-auto max-h-[88vh] w-auto max-w-[82vw] object-contain shadow-2xl
+                    transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]
+                    motion-reduce:transition-none
+                    ${
+                      !top
+                        ? `ag-under${bigLoaded ? " is-covered" : ""}`
+                        : landed
+                          ? `relative scale-100 opacity-100 ${dir ? "ag-paper-in" : "ag-big-in"}`
+                          : under
+                            ? "relative opacity-0"
+                            : "relative scale-95 opacity-0"
+                    }
+                  `}
+                />
+              );
+            }
+          )}
+
+          {srcs.length > 1 &&
+            ([-1, 1] as const).map((to) => (
+              <button
+                key={to}
+                type="button"
+                tabIndex={-1}
+                aria-label={to < 0 ? "previous photo" : "next photo"}
+                onClick={onNavClick(to)}
+                className={`ag-nav ${to < 0 ? "ag-nav-prev" : "ag-nav-next"}`}
+              >
+                <span className="ag-nav-icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={to < 0 ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"} />
+                  </svg>
+                </span>
+              </button>
+            ))}
           {/* load the previous and next photos in the background so arrowing is instant */}
           {neighbours.map((src) => (
             <Image
@@ -338,8 +409,8 @@ export default function AlbumGallery({
               src={src}
               alt=""
               aria-hidden="true"
-              width={2400}
-              height={1600}
+              width={sizeOf.get(src)?.width ?? 2400}
+              height={sizeOf.get(src)?.height ?? 1600}
               sizes="82vw"
               loading="eager"
               className="pointer-events-none absolute h-px w-px opacity-0"
@@ -429,6 +500,104 @@ const css = `
     }
   }
 
+  /* stepping: the next photo is laid on top like a sheet of paper, sliding in from the side it
+     came from with a slight turn, while the one underneath sinks back and fades out */
+  .ag-paper-in {
+    animation: ag-paper-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+
+  @keyframes ag-paper-in {
+    from {
+      opacity: 0;
+      transform: translateX(calc(var(--dir) * 34vw)) rotate(calc(var(--dir) * 6deg)) scale(1.03);
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.45);
+    }
+    35% {
+      opacity: 1;
+    }
+  }
+
+  .ag-under {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+  }
+
+  .ag-under.is-covered {
+    animation: ag-under-out 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes ag-under-out {
+    70% {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+      transform: translateX(calc(var(--dir) * -4vw)) rotate(calc(var(--dir) * -1.5deg)) scale(0.93);
+      filter: brightness(0.6);
+    }
+  }
+
+  /* big click areas down each side, with an arrow that shows on hover */
+  .ag-nav {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    width: clamp(64px, 16vw, 260px);
+    padding: 0 clamp(12px, 2.5vw, 36px);
+    border: 0;
+    background: none;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .ag-nav-prev {
+    left: 0;
+    justify-content: flex-start;
+    --side: -1;
+  }
+
+  .ag-nav-next {
+    right: 0;
+    justify-content: flex-end;
+    --side: 1;
+  }
+
+  .ag-nav-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: translateX(calc(var(--side) * -8px));
+    transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .ag-nav:hover .ag-nav-icon,
+  .ag-nav:focus-visible .ag-nav-icon {
+    opacity: 1;
+    transform: none;
+  }
+
+  .ag-nav:active .ag-nav-icon {
+    transform: scale(0.9);
+  }
+
+  /* touch screens: no hover, so the arrows stay faintly visible (swiping still works too) */
+  @media (hover: none) {
+    .ag-nav-icon {
+      opacity: 0.6;
+      transform: none;
+    }
+  }
+
   @keyframes ag-shimmer {
     from { background-position: 120% 0; }
     to { background-position: -120% 0; }
@@ -441,8 +610,15 @@ const css = `
   @media (prefers-reduced-motion: reduce) {
     .ag-thumb::after,
     .ag-spin,
-    .ag-big-in {
+    .ag-big-in,
+    .ag-paper-in {
       animation: none;
+    }
+
+    /* no slide, so the photo underneath is simply swapped out */
+    .ag-under.is-covered {
+      animation: none;
+      display: none;
     }
   }
 `;
