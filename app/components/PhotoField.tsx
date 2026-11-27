@@ -134,7 +134,6 @@ export default function PhotoField({
     const router = useRouter();
     const rootRef = useRef<HTMLElement>(null);
     const layerRef = useRef<HTMLDivElement>(null);
-    const coordRef = useRef<HTMLSpanElement>(null);
     const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
     const glideRef = useRef<((album: number) => void) | null>(null);
     const openRef = useRef<((cell: number, href: string) => boolean) | null>(null);
@@ -191,7 +190,6 @@ export default function PhotoField({
         const vel = { x: 0, y: 0 };
         let zoom = 1;
         let shownZoom = -1;
-        let shownCoord = '';
         let opening = false;
 
         // ---- dragging ----
@@ -366,18 +364,6 @@ export default function PhotoField({
                 const y = wrapY(field, c.y, cam.y);
                 els[i].style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
             }
-
-            if (coordRef.current) {
-                const fmt = (v: number) => {
-                    const n = Math.round(-v / 10);
-                    return `${n < 0 ? '-' : '+'}${String(Math.abs(n)).padStart(4, '0')}`;
-                };
-                const s = `x ${fmt(cam.x)}  y ${fmt(cam.y)}`;
-                if (s !== shownCoord) {
-                    coordRef.current.textContent = s;
-                    shownCoord = s;
-                }
-            }
         };
         gsap.ticker.add(tick);
 
@@ -470,19 +456,13 @@ export default function PhotoField({
             </div>
 
             <header className="cv-head load-reveal" style={{ animationDelay: '0.2s' }}>
-                <h1 className="cv-title">
-                    photo vault
-                    <span className="sr-only">: life through jackson zhou&apos;s lens</span>
-                </h1>
+                {/* not shown, but keeps a page heading for screen readers and search */}
+                <h1 className="sr-only">photo vault: life through jackson zhou&apos;s lens</h1>
                 <p className="cv-hint">
                     <span className="cv-hint-fine">drag, scroll or use the arrow keys to explore</span>
                     <span className="cv-hint-touch">drag to explore</span>
                 </p>
             </header>
-
-            <span ref={coordRef} className="cv-coord load-reveal" aria-hidden="true">
-                x +0000  y +0000
-            </span>
 
             <nav
                 className="cv-albums load-reveal"
@@ -526,7 +506,6 @@ const css = `
   }
 
   html.cv-leaving .cv-head,
-  html.cv-leaving .cv-coord,
   html.cv-leaving .cv-albums {
     opacity: 0;
     transition: opacity 0.25s ease;
@@ -645,24 +624,19 @@ const css = `
     transform: scale(1.08);
   }
 
+  /* white and inverted against whatever is behind it, like the site nav */
   .cv-head {
     position: absolute;
     left: var(--pad);
     top: calc(var(--pad) + 52px);
     z-index: 2;
     pointer-events: none;
-  }
-
-  .cv-title {
-    margin: 0;
-    font-size: clamp(28px, 3.4vw, 46px);
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: -0.035em;
+    color: #fff;
+    mix-blend-mode: difference;
   }
 
   .cv-hint {
-    margin: 10px 0 0;
+    margin: 0;
     font-size: 13px;
     opacity: 0.55;
   }
@@ -676,22 +650,6 @@ const css = `
     .cv-hint-touch { display: inline; }
   }
 
-  .cv-coord {
-    position: absolute;
-    right: var(--pad);
-    top: calc(var(--pad) + 58px);
-    z-index: 2;
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    white-space: pre;
-    opacity: 0.5;
-    font-variant-numeric: tabular-nums;
-    pointer-events: none;
-  }
-
-  .cv-head,
-  .cv-coord,
   .cv-albums {
     text-shadow: 0 0 14px var(--background), 0 0 4px var(--background);
   }
@@ -748,10 +706,6 @@ const css = `
     }
 
     .cv-albums ol::-webkit-scrollbar {
-      display: none;
-    }
-
-    .cv-coord {
       display: none;
     }
   }
