@@ -27,7 +27,7 @@ export const albums = [
       "concert photos from wave to earth's the () pieces tour in toronto.",
     cover:
       "1.jpg",
-    field: ["2.jpg", "13.jpg", "15.jpg"],
+    field: ["2.jpg", "13.jpg", "15.jpg", "12.jpg"],
   },
 
   // {
@@ -140,6 +140,6 @@ export const albums = [
     metaDescription: "photos from gloco 2023 at mary ward css.",
     cover:
       "cover.jpg",
-    field: [],
+    field: ["1IMG_8385.jpg"],
   },
 ] as const;
