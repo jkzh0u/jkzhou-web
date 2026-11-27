@@ -455,14 +455,8 @@ export default function PhotoField({
                 })}
             </div>
 
-            <header className="cv-head load-reveal" style={{ animationDelay: '0.2s' }}>
-                {/* not shown, but keeps a page heading for screen readers and search */}
-                <h1 className="sr-only">photo vault: life through jackson zhou&apos;s lens</h1>
-                <p className="cv-hint">
-                    <span className="cv-hint-fine">drag, scroll or use the arrow keys to explore</span>
-                    <span className="cv-hint-touch">drag to explore</span>
-                </p>
-            </header>
+            {/* not shown, but keeps a page heading for screen readers and search */}
+            <h1 className="sr-only">photo vault: life through jackson zhou&apos;s lens</h1>
 
             <nav
                 className="cv-albums load-reveal"
@@ -505,7 +499,6 @@ const css = `
     display: none;
   }
 
-  html.cv-leaving .cv-head,
   html.cv-leaving .cv-albums {
     opacity: 0;
     transition: opacity 0.25s ease;
@@ -622,32 +615,6 @@ const css = `
 
   .cv-root.is-leaving .cv-item.is-chosen .cv-photo {
     transform: scale(1.08);
-  }
-
-  /* white and inverted against whatever is behind it, like the site nav */
-  .cv-head {
-    position: absolute;
-    left: var(--pad);
-    top: calc(var(--pad) + 52px);
-    z-index: 2;
-    pointer-events: none;
-    color: #fff;
-    mix-blend-mode: difference;
-  }
-
-  .cv-hint {
-    margin: 0;
-    font-size: 13px;
-    opacity: 0.55;
-  }
-
-  .cv-hint-touch {
-    display: none;
-  }
-
-  @media (hover: none) {
-    .cv-hint-fine { display: none; }
-    .cv-hint-touch { display: inline; }
   }
 
   .cv-albums {
