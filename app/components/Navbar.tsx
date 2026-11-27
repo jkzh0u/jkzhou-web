@@ -1,4 +1,3 @@
-import { TURBO_TRACE_DEFAULT_MEMORY_LIMIT } from 'next/dist/shared/lib/constants'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { MobileMenu } from './MobileMenu'
@@ -165,33 +164,43 @@ const css = `
     }
   }
 
-  /* phones: the open menu takes over the row (MobileMenu.tsx). Same blur as the site-wide
-     load-reveal. The name fades on .nm, not .site-nav-name, because the home page turns off
-     transitions on .site-nav-name so it can swap instantly with HomeHero's name. */
+  /* phones: the open menu takes over the row (MobileMenu.tsx sets data-menu-open on the navbar).
+     Opacity and a small slide only: an animated blur here stalled phones before the fade began.
+     The name fades on .nm, not .site-nav-name, because the home page turns off transitions on
+     .site-nav-name so it can swap instantly with HomeHero's name. */
   @media (width < 40rem) {
     .site-nav-name > .nm,
     .site-nav-right,
     .nav-menu-links {
-      transition: opacity 0.35s ease, filter 0.35s ease, visibility 0.35s;
+      transition:
+        opacity 0.3s ease,
+        transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0.3s;
+      will-change: opacity;
     }
 
-    html.nav-open .site-nav-name > .nm,
-    html.nav-open .site-nav-right,
-    html:not(.nav-open) .nav-menu-links {
+    .site-nav[data-menu-open] .site-nav-name > .nm,
+    .site-nav[data-menu-open] .site-nav-right {
       opacity: 0;
-      filter: blur(8px);
+      transform: translateY(-4px);
+      visibility: hidden;
+    }
+
+    .site-nav:not([data-menu-open]) .nav-menu-links {
+      opacity: 0;
+      transform: translateY(4px);
       visibility: hidden;
     }
 
     /* !important because the home page rule above that reveals the name is more specific */
-    html.nav-open .site-nav-name { pointer-events: none !important; }
+    .site-nav[data-menu-open] .site-nav-name { pointer-events: none !important; }
   }
 
   @media (width < 40rem) and (prefers-reduced-motion: reduce) {
-    html.nav-open .site-nav-name > .nm,
-    html.nav-open .site-nav-right,
-    html:not(.nav-open) .nav-menu-links {
-      filter: none;
+    .site-nav[data-menu-open] .site-nav-name > .nm,
+    .site-nav[data-menu-open] .site-nav-right,
+    .site-nav:not([data-menu-open]) .nav-menu-links {
+      transform: none;
     }
   }
 `
