@@ -11,10 +11,14 @@ import {
   useSyncExternalStore,
 } from "react";
 
+// width and height are the photo's real size (read on the server), so each thumbnail holds
+// exactly its own space while it loads
+export type AlbumPhoto = { src: string; width: number; height: number };
+
 type Album = {
   slug: string;
   title: string;
-  photos: readonly string[];
+  photos: readonly AlbumPhoto[];
 };
 
 // Matches the sm breakpoint (640px): 2 columns below, 3 above
@@ -43,11 +47,15 @@ const finderCollator = new Intl.Collator("en", {
 
 const Thumb = memo(function Thumb({
   src,
+  width,
+  height,
   alt,
   priority,
   onSelect,
 }: {
   src: string;
+  width: number;
+  height: number;
   alt: string;
   priority: boolean;
   onSelect: (src: string) => void;
@@ -64,10 +72,9 @@ const Thumb = memo(function Thumb({
       <Image
         src={src}
         alt={alt}
-        // Only sets the aspect ratio placeholder; h-auto lets the real photo
-        // keep its natural shape, which gives the mismatched masonry look.
-        width={1600}
-        height={1067}
+        // the real size, so the box has the photo's shape before it loads
+        width={width}
+        height={height}
         sizes={THUMB_SIZES}
         priority={priority}
         onLoad={() => setLoaded(true)}
@@ -108,14 +115,16 @@ export default function AlbumGallery({
   );
 
   const sorted = useMemo(
-    () => [...album.photos].sort(finderCollator.compare),
+    () => [...album.photos].sort((a, b) => finderCollator.compare(a.src, b.src)),
     [album.photos]
   );
+  const srcs = useMemo(() => sorted.map((p) => p.src), [sorted]);
+  const sizeOf = useMemo(() => new Map(sorted.map((p) => [p.src, p])), [sorted]);
 
   // Masonry with left-to-right order: 1 2 3 across the top, then 4 5 6.
   // Heights stay mismatched.
   const columns = useMemo(() => {
-    const cols: { photo: string; index: number }[][] = Array.from(
+    const cols: { photo: AlbumPhoto; index: number }[][] = Array.from(
       { length: columnCount },
       () => []
     );
@@ -128,14 +137,15 @@ export default function AlbumGallery({
   }, [sorted, columnCount]);
 
   // Position of the open photo, and its neighbours (wrapping at the ends)
-  const selectedIndex = selectedPhoto ? sorted.indexOf(selectedPhoto) : -1;
+  const selectedIndex = selectedPhoto ? srcs.indexOf(selectedPhoto) : -1;
   const neighbours =
-    selectedIndex >= 0 && sorted.length > 1
+    selectedIndex >= 0 && srcs.length > 1
       ? [
-          sorted[(selectedIndex - 1 + sorted.length) % sorted.length],
-          sorted[(selectedIndex + 1) % sorted.length],
+          srcs[(selectedIndex - 1 + srcs.length) % srcs.length],
+          srcs[(selectedIndex + 1) % srcs.length],
         ]
       : [];
+  const selectedSize = selectedPhoto ? sizeOf.get(selectedPhoto) : undefined;
 
   const open = useCallback((src: string) => {
     if (closeTimer.current !== null) {
@@ -169,12 +179,12 @@ export default function AlbumGallery({
   const step = useCallback(
     (dir: 1 | -1) => {
       setSelectedPhoto((current) => {
-        if (!current || sorted.length < 2) return current;
-        const i = sorted.indexOf(current);
-        return sorted[(i + dir + sorted.length) % sorted.length];
+        if (!current || srcs.length < 2) return current;
+        const i = srcs.indexOf(current);
+        return srcs[(i + dir + srcs.length) % srcs.length];
       });
     },
-    [sorted]
+    [srcs]
   );
 
   // Phones: swipe left/right to step, swipe down to close. Taps still close as before.
@@ -259,9 +269,11 @@ export default function AlbumGallery({
           <div key={c} className="flex min-w-0 flex-1 flex-col gap-5">
             {col.map(({ photo, index }) => (
               <Thumb
-                key={photo}
+                key={photo.src}
                 // R2 URLs are passed directly from AlbumPage.
-                src={photo}
+                src={photo.src}
+                width={photo.width}
+                height={photo.height}
                 alt={`${album.title} photo ${index + 1}`}
                 priority={index < PRIORITY_COUNT}
                 onSelect={open}
@@ -303,8 +315,8 @@ export default function AlbumGallery({
             key={selectedPhoto}
             src={selectedPhoto}
             alt={`${album.title} enlarged photo`}
-            width={2400}
-            height={1600}
+            width={selectedSize?.width ?? 2400}
+            height={selectedSize?.height ?? 1600}
             sizes="82vw"
             onLoad={() => setLoadedPhoto(selectedPhoto)}
             onError={() => setLoadedPhoto(selectedPhoto)}

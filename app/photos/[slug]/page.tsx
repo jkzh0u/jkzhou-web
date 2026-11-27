@@ -5,6 +5,7 @@ import { albums } from "@/data/albums";
 import AlbumGallery from "../../components/AlbumGallery";
 import AlbumGridSkeleton from "./AlbumGridSkeleton";
 import { getAlbumPhotos, getPhotoUrl } from "@/lib/r2";
+import { getImageSize } from "@/lib/imageSize";
 import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,14 @@ export async function generateMetadata({
 
 async function AlbumPhotos({ album }: { album: Album }) {
   const filenames = await getAlbumPhotos(album.slug);
-  const photos = filenames.map((filename) => getPhotoUrl(album.slug, filename));
+  const urls = filenames.map((filename) => getPhotoUrl(album.slug, filename));
+  // each photo's real shape, so its space is held before it loads and nothing shifts
+  const sizes = await Promise.all(urls.map((src) => getImageSize(src)));
+  const photos = urls.map((src, i) => ({
+    src,
+    width: sizes[i]?.width ?? 1600,
+    height: sizes[i]?.height ?? 1067,
+  }));
 
   return <AlbumGallery album={{ ...album, photos }} />;
 }

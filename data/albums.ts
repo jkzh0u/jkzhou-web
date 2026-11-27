@@ -4,6 +4,19 @@
 //   leave it empty and only the cover is shown.
 // Newest first, by when the photos were taken (from their EXIF dates).
 export const albums = [
+  // taken 2026-11-26
+  {
+    slug: "adrenalyn26",
+    title: "adrenalyn 2026",
+    subtitle: "mary ward's dance crew 2026 photoshoot",
+    metaTitle: "adrenalyn 2026 photoshoot, mary ward css",
+    metaDescription:
+      "photos from the 2026 photoshoot of adrenalyn, mary ward's dance crew.",
+    cover:
+      "JKZ08594.jpg",
+    field: ["JKZ08548.jpg", "JKZ08623.jpg", "JKZ08506-2.jpg", "JKZ08438.jpg", "JKZ08538.jpg"],
+  },
+
   // taken 2026-09-25
   {
     slug: "wave2earth2026",

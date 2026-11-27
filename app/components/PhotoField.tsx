@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,10 +9,7 @@ import { getLenis } from './SmoothScroll';
 
 // The photo index as an endless field of scattered photos you wander around in.
 //   drag (mouse or touch), scroll / trackpad, or arrow keys to move; flicks carry on and ease out.
-//   the field is worked out cell by cell from where you are, so it goes on forever without
-//   repeating: every spot gets its own photo, size and offset from a seeded hash of its
-//   position (the same every visit), and no photo ever sits next to a copy of itself.
-//   only enough frames to cover the window exist; they're reused as cells scroll in and out.
+//   the field repeats in every direction, so there's no edge to hit.
 //   hover a photo to see which album it's from; click to open the album.
 //   the album list at the bottom lights up that album's photos (keyboard focus also glides to one).
 
@@ -24,157 +21,92 @@ const FALLBACK_RATIO = 3 / 2;
 // vertical photos all get the same 3:4 frame (cropped to fill); others keep their own shape
 const PORTRAIT_RATIO = 3 / 4;
 
+type Cell = { photo: number; x: number; y: number; w: number; h: number };
+type Field = { cells: Cell[]; tw: number; th: number; margin: number; scale: number };
+
 const CONFIG = {
     follow: 0.14, // how quickly the view catches up with where you've dragged / scrolled it
     friction: 0.93, // flick momentum kept per frame
     dragZoom: 0.955, // the field pulls back a little while you drag
     keyStep: 160, // px per arrow key press
     leaveDelay: 0.34, // s between clicking a photo and the album opening
-    seed: 5596,
 } as const;
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
+const mod = (a: number, n: number) => ((a % n) + n) % n;
 const pad2 = (n: number) => String(n).padStart(2, '0');
-const odd = (n: number) => (n & 1) === 1; // also right for negatives (two's complement)
 
-// a well-mixed 32-bit hash of a cell position
-function hash(x: number, y: number, salt: number) {
-    let h = Math.imul(x, 0x27d4eb2d) ^ Math.imul(y, 0x165667b1) ^ Math.imul(salt + CONFIG.seed, 0x9e3779b1);
-    h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
-    h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
-    return (h ^ (h >>> 16)) >>> 0;
+function mulberry32(seed: number) {
+    let a = seed >>> 0;
+    return () => {
+        a = (a + 0x6d2b79f5) >>> 0;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
 }
-const unit = (x: number, y: number, salt: number) => hash(x, y, salt) / 4294967296;
 
-type Geom = { key: string; photo: number; x: number; y: number; w: number; h: number };
-
-// Neighbours each cell must differ from, by which of the four (column, row) parity classes it's
-// in. Every pair of touching cells (including diagonals, which the staggered columns make into
-// real neighbours) is checked by the later class of the two, and each class only looks at
-// earlier ones, so working out any cell takes at most three steps.
-const AVOID: [number, number][][] = [
-    [], // even column, even row: free pick
-    [[-1, 0], [1, 0]], // odd, even
-    [[0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]], // even, odd
-    [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]], // odd, odd
-];
-
-function makeField(photos: FieldPhoto[], vw: number) {
-    const count = photos.length;
+// Lays the photos out on a loose, staggered grid, one per cell, with random sizes and offsets.
+// Same input, same layout (seeded), so the server and the browser agree. The tile is always
+// bigger than the window, so wrapping it never shows a gap.
+function buildField(ratios: (number | null)[], vw: number, vh: number): Field {
+    const count = ratios.length;
     const scale = vw < 760 ? 0.62 : vw < 1200 ? 0.85 : 1;
     const cellW = 380 * scale;
     const cellH = 430 * scale;
+    const margin = 420 * scale; // room for a photo to slide fully off an edge before wrapping
+
+    const cols = Math.max(Math.ceil(Math.sqrt(count * 1.1)), Math.ceil((vw + margin) / cellW) + 1);
+    const rows = Math.max(Math.ceil(count / cols), Math.ceil((vh + margin) / cellH) + 1);
+
+    const rand = mulberry32(5596);
+
+    // shuffle once so albums are mixed through the field
+    const order = Array.from({ length: count }, (_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+    }
+
+    const cells: Cell[] = [];
     const inset = 22 * scale;
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const photo = order[(r * cols + c) % count];
+            const real = ratios[photo] ?? FALLBACK_RATIO;
+            const ratio = real < 1 ? PORTRAIT_RATIO : real;
 
-    const picks = new Map<string, number>();
-    const geoms = new Map<string, Geom>();
+            // roughly the same amount of photo in every frame, in the photo's own shape,
+            // shrunk if a very wide or tall one wouldn't fit its cell
+            const area = 62000 * scale * scale * (0.7 + rand() * 0.6);
+            let w = Math.sqrt(area * ratio);
+            let h = w / ratio;
+            const fit = Math.min(1, (cellW - inset * 2) / w, (cellH - inset * 2) / h);
+            w *= fit;
+            h *= fit;
 
-    const photoAt = (gx: number, gy: number): number => {
-        const key = `${gx},${gy}`;
-        const known = picks.get(key);
-        if (known !== undefined) return known;
-
-        const avoid = new Set<number>();
-        if (count > 9) {
-            for (const [dx, dy] of AVOID[(odd(gx) ? 1 : 0) + (odd(gy) ? 2 : 0)]) {
-                avoid.add(photoAt(gx + dx, gy + dy));
-            }
+            const x = c * cellW + inset + rand() * Math.max(0, cellW - w - inset * 2);
+            const y =
+                r * cellH +
+                (c % 2) * cellH * 0.5 + // stagger every other column
+                inset +
+                rand() * Math.max(0, cellH - h - inset * 2);
+            cells.push({ photo, x, y, w, h });
         }
-        const start = hash(gx, gy, 1) % count;
-        let pick = start;
-        for (let i = 0; i < count; i++) {
-            const p = (start + i) % count;
-            if (!avoid.has(p)) {
-                pick = p;
-                break;
-            }
-        }
-
-        if (picks.size > 50000) picks.clear();
-        picks.set(key, pick);
-        return pick;
-    };
-
-    const cellAt = (gx: number, gy: number): Geom => {
-        const key = `${gx},${gy}`;
-        const known = geoms.get(key);
-        if (known) return known;
-
-        const photo = photoAt(gx, gy);
-        const real = photos[photo]?.ratio ?? FALLBACK_RATIO;
-        const ratio = real < 1 ? PORTRAIT_RATIO : real;
-
-        // roughly the same amount of photo in every frame, in the photo's own shape,
-        // shrunk if a very wide or tall one wouldn't fit its cell
-        const area = 62000 * scale * scale * (0.7 + unit(gx, gy, 2) * 0.6);
-        let w = Math.sqrt(area * ratio);
-        let h = w / ratio;
-        const fit = Math.min(1, (cellW - inset * 2) / w, (cellH - inset * 2) / h);
-        w *= fit;
-        h *= fit;
-
-        const x = gx * cellW + inset + unit(gx, gy, 3) * Math.max(0, cellW - w - inset * 2);
-        const y =
-            gy * cellH +
-            (odd(gx) ? cellH * 0.5 : 0) + // stagger every other column
-            inset +
-            unit(gx, gy, 4) * Math.max(0, cellH - h - inset * 2);
-
-        const g = { key, photo, x, y, w, h };
-        if (geoms.size > 20000) geoms.clear();
-        geoms.set(key, g);
-        return g;
-    };
-
-    // the cells that can show up in a window at this camera offset (with a cell to spare)
-    const range = (camX: number, camY: number, vw: number, vh: number) => ({
-        x0: Math.floor(-camX / cellW) - 1,
-        x1: Math.floor((vw - camX) / cellW) + 1,
-        y0: Math.floor(-camY / cellH) - 2, // staggered columns hang half a cell lower
-        y1: Math.floor((vh - camY) / cellH) + 1,
-    });
-
-    // enough frames for the largest range() at this window size
-    const poolSize = (vw: number, vh: number) =>
-        (Math.ceil(vw / cellW) + 3) * (Math.ceil(vh / cellH) + 4);
-
-    const parseKey = (key: string) => key.split(',').map(Number) as [number, number];
-
-    return { scale, cellW, cellH, photoAt, cellAt, range, poolSize, parseKey };
-}
-
-type FieldModel = ReturnType<typeof makeField>;
-
-// which cell each frame shows, for a camera offset; keeps frames on the cells they already show
-function assign(model: FieldModel, slots: (string | null)[], camX: number, camY: number, vw: number, vh: number) {
-    const { x0, x1, y0, y1 } = model.range(camX, camY, vw, vh);
-    const needed = new Set<string>();
-    for (let gx = x0; gx <= x1; gx++) {
-        for (let gy = y0; gy <= y1; gy++) needed.add(`${gx},${gy}`);
     }
 
-    const next = slots.slice();
-    const free: number[] = [];
-    next.forEach((key, i) => {
-        if (key && needed.has(key)) needed.delete(key);
-        else free.push(i);
-    });
-
-    let changed = false;
-    for (const key of needed) {
-        const i = free.shift();
-        if (i === undefined) break;
-        next[i] = key;
-        changed = true;
-    }
-    // frames whose cell left the window and weren't reused stay as they are (hidden)
-    return changed ? next : slots;
+    return { cells, tw: cols * cellW, th: rows * cellH, margin, scale };
 }
+
+// where a cell lands on screen for a given camera offset
+const wrapX = (f: Field, x: number, cam: number) => mod(x + cam + f.margin, f.tw) - f.margin;
+const wrapY = (f: Field, y: number, cam: number) => mod(y + cam + f.margin, f.th) - f.margin;
 
 // the server doesn't know the window size; this is close to a typical laptop
 const SERVER_VIEW = { w: 1440, h: 900 };
 
-function FieldImage({ src }: { src: string }) {
+function FieldImage({ src, eager }: { src: string; eager: boolean }) {
     const [loaded, setLoaded] = useState(false);
     return (
         <Image
@@ -183,62 +115,14 @@ function FieldImage({ src }: { src: string }) {
             fill
             sizes="(max-width: 760px) 220px, 340px"
             className={`object-cover cv-img${loaded ? ' is-loaded' : ''}`}
-            loading="eager"
+            priority={eager}
+            loading={eager ? undefined : 'eager'}
             draggable={false}
             onLoad={() => setLoaded(true)}
             onError={() => setLoaded(true)}
         />
     );
 }
-
-type SlotProps = {
-    index: number;
-    cell: string | null;
-    model: FieldModel;
-    photos: FieldPhoto[];
-    albums: FieldAlbum[];
-    setRef: (index: number, el: HTMLAnchorElement | null) => void;
-    onOpen: (e: React.MouseEvent<HTMLAnchorElement>, index: number, href: string) => void;
-};
-
-// One reusable frame. The frame loop moves it (and only shows it once it has rendered the cell
-// it's been given, via data-cell).
-const Slot = memo(function Slot({ index, cell, model, photos, albums, setRef, onOpen }: SlotProps) {
-    const ref = useCallback((el: HTMLAnchorElement | null) => setRef(index, el), [index, setRef]);
-
-    if (!cell) {
-        return <a ref={ref} className="cv-item" aria-hidden="true" tabIndex={-1} style={{ visibility: 'hidden' }} />;
-    }
-
-    const [gx, gy] = model.parseKey(cell);
-    const g = model.cellAt(gx, gy);
-    const p = photos[g.photo];
-    const a = albums[p.album];
-
-    return (
-        <Link
-            ref={ref}
-            href={a.href}
-            className="cv-item"
-            data-cell={cell}
-            data-album={p.album}
-            tabIndex={-1}
-            aria-hidden="true"
-            draggable={false}
-            prefetch={false}
-            style={{ width: g.w, height: g.h, visibility: 'hidden' }}
-            onClick={(e) => onOpen(e, index, a.href)}
-        >
-            <span className="cv-photo">
-                <FieldImage key={p.src} src={p.src} />
-            </span>
-            <span className="cv-cap">
-                <span className="cv-cap-title">{a.title}</span>
-                <span className="cv-cap-sub">{a.subtitle}</span>
-            </span>
-        </Link>
-    );
-});
 
 export default function PhotoField({
     albums,
@@ -253,20 +137,13 @@ export default function PhotoField({
     const coordRef = useRef<HTMLSpanElement>(null);
     const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
     const glideRef = useRef<((album: number) => void) | null>(null);
-    const openRef = useRef<((slot: number, href: string) => boolean) | null>(null);
+    const openRef = useRef<((cell: number, href: string) => boolean) | null>(null);
 
     const [view, setView] = useState(SERVER_VIEW);
-    const model = useMemo(() => makeField(photos, view.w), [photos, view.w]);
-    const pool = model.poolSize(view.w, view.h);
+    const ratios = useMemo(() => photos.map((p) => p.ratio), [photos]);
+    const field = useMemo(() => buildField(ratios, view.w, view.h), [ratios, view]);
 
-    // which cell each frame is showing; starts with the first window at the origin
-    const [slots, setSlots] = useState<(string | null)[]>(() =>
-        assign(model, Array(pool).fill(null), 0, 0, view.w, view.h)
-    );
-    // the frame loop's copy, always the latest assignment (React's may lag a frame behind)
-    const slotsRef = useRef(slots);
-
-    // re-lay out only when the window changes enough to matter
+    // re-lay out only when the window changes enough to need a different tile
     useEffect(() => {
         const sync = () => {
             const w = window.innerWidth;
@@ -276,15 +153,6 @@ export default function PhotoField({
         sync();
         window.addEventListener('resize', sync);
         return () => window.removeEventListener('resize', sync);
-    }, []);
-
-    const setRef = useCallback((i: number, el: HTMLAnchorElement | null) => {
-        itemRefs.current[i] = el;
-    }, []);
-
-    const onOpen = useCallback((e: React.MouseEvent<HTMLAnchorElement>, i: number, href: string) => {
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-        if (openRef.current?.(i, href)) e.preventDefault();
     }, []);
 
     // the field takes over the window: no page scroll, no footer
@@ -299,16 +167,16 @@ export default function PhotoField({
         };
     }, []);
 
-    // the camera survives re-layouts (window resizes)
-    const camRef = useRef({ x: 0, y: 0, tx: 0, ty: 0 });
-
     useEffect(() => {
         const root = rootRef.current;
         const layer = layerRef.current;
         if (!root || !layer) return;
 
+        const items = field.cells.map((_, i) => itemRefs.current[i]);
+        if (items.some((el) => !el)) return;
+        const els = items as HTMLAnchorElement[];
+
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const frames = itemRefs.current;
 
         let vw = root.clientWidth;
         let vh = root.clientHeight;
@@ -318,22 +186,13 @@ export default function PhotoField({
         };
         window.addEventListener('resize', onResize);
 
-        const c = camRef.current;
-        const cam = { x: c.x, y: c.y };
-        const target = { x: c.tx, y: c.ty };
+        const cam = { x: 0, y: 0 };
+        const target = { x: 0, y: 0 };
         const vel = { x: 0, y: 0 };
         let zoom = 1;
         let shownZoom = -1;
         let shownCoord = '';
         let opening = false;
-
-        // the pool may have grown or shrunk with the window
-        if (slotsRef.current.length !== pool) {
-            const resized = slotsRef.current.slice(0, pool);
-            while (resized.length < pool) resized.push(null);
-            slotsRef.current = assign(model, resized, cam.x, cam.y, vw, vh);
-            setSlots(slotsRef.current);
-        }
 
         // ---- dragging ----
         const drag = {
@@ -440,42 +299,35 @@ export default function PhotoField({
         root.addEventListener('wheel', onWheel, { passive: false });
         window.addEventListener('keydown', onKey);
 
-        // glide to the nearest photo from an album (keyboard focus on the album list):
-        // search outwards ring by ring from the cell in the middle of the window
+        // glide to the nearest photo from an album (keyboard focus on the album list)
         glideRef.current = (album) => {
-            const cx = Math.floor((vw / 2 - cam.x) / model.cellW);
-            const cy = Math.floor((vh / 2 - cam.y) / model.cellH);
-            let best: Geom | null = null;
+            let best = -1;
             let bestD = Infinity;
-            for (let r = 0; r <= 14 && !best; r++) {
-                for (let gx = cx - r; gx <= cx + r; gx++) {
-                    for (let gy = cy - r; gy <= cy + r; gy++) {
-                        if (Math.max(Math.abs(gx - cx), Math.abs(gy - cy)) !== r) continue;
-                        if (photos[model.photoAt(gx, gy)].album !== album) continue;
-                        const g = model.cellAt(gx, gy);
-                        const d = Math.hypot(g.x + g.w / 2 + cam.x - vw / 2, g.y + g.h / 2 + cam.y - vh / 2);
-                        if (d < bestD) {
-                            bestD = d;
-                            best = g;
-                        }
-                    }
+            field.cells.forEach((c, i) => {
+                if (photos[c.photo].album !== album) return;
+                const sx = wrapX(field, c.x, cam.x) + c.w / 2;
+                const sy = wrapY(field, c.y, cam.y) + c.h / 2;
+                const d = Math.hypot(sx - vw / 2, sy - vh / 2);
+                if (d < bestD) {
+                    bestD = d;
+                    best = i;
                 }
-            }
-            if (!best) return;
-            target.x = vw / 2 - (best.x + best.w / 2);
-            target.y = vh / 2 - (best.y + best.h / 2);
+            });
+            if (best < 0) return;
+            const c = field.cells[best];
+            target.x += vw / 2 - (wrapX(field, c.x, cam.x) + c.w / 2);
+            target.y += vh / 2 - (wrapY(field, c.y, cam.y) + c.h / 2);
             vel.x = vel.y = 0;
         };
 
         let leaveCall: gsap.core.Tween | null = null;
-        openRef.current = (slot, href) => {
-            const el = itemRefs.current[slot];
-            if (opening || reduceMotion || !el) return false;
+        openRef.current = (cell, href) => {
+            if (opening || reduceMotion) return false;
             opening = true;
             vel.x = vel.y = 0;
             target.x = cam.x;
             target.y = cam.y;
-            el.classList.add('is-chosen');
+            els[cell].classList.add('is-chosen');
             root.classList.add('is-leaving');
             document.documentElement.classList.add('cv-leaving');
             router.prefetch(href);
@@ -500,10 +352,6 @@ export default function PhotoField({
             const follow = reduceMotion ? 1 : Math.min(1, CONFIG.follow * f);
             cam.x += (target.x - cam.x) * follow;
             cam.y += (target.y - cam.y) * follow;
-            c.x = cam.x;
-            c.y = cam.y;
-            c.tx = target.x;
-            c.ty = target.y;
 
             const zTarget = drag.moved && drag.active && !reduceMotion ? CONFIG.dragZoom : 1;
             zoom += (zTarget - zoom) * Math.min(1, 0.12 * f);
@@ -512,28 +360,11 @@ export default function PhotoField({
                 shownZoom = zoom;
             }
 
-            // hand frames to cells coming into view (React renders their photos)
-            const current = slotsRef.current;
-            const next = assign(model, current, cam.x, cam.y, vw, vh);
-            if (next !== current) {
-                slotsRef.current = next;
-                setSlots(next);
-            }
-
-            // place every frame that has rendered its cell; hide the rest
-            const els = itemRefs.current;
-            for (let i = 0; i < pool; i++) {
-                const el = els[i];
-                if (!el) continue;
-                const key = el.dataset.cell;
-                if (!key || key !== next[i]) {
-                    if (el.style.visibility !== 'hidden') el.style.visibility = 'hidden';
-                    continue;
-                }
-                const [gx, gy] = model.parseKey(key);
-                const g = model.cellAt(gx, gy);
-                el.style.transform = `translate3d(${(g.x + cam.x).toFixed(1)}px, ${(g.y + cam.y).toFixed(1)}px, 0)`;
-                if (el.style.visibility !== 'visible') el.style.visibility = 'visible';
+            for (let i = 0; i < els.length; i++) {
+                const c = field.cells[i];
+                const x = wrapX(field, c.x, cam.x);
+                const y = wrapY(field, c.y, cam.y);
+                els[i].style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
             }
 
             if (coordRef.current) {
@@ -564,9 +395,9 @@ export default function PhotoField({
             root.removeEventListener('wheel', onWheel);
             window.removeEventListener('keydown', onKey);
             root.classList.remove('is-dragging', 'is-leaving');
-            frames.forEach((el) => el?.classList.remove('is-chosen'));
+            els.forEach((el) => el.classList.remove('is-chosen'));
         };
-    }, [model, pool, photos, router]);
+    }, [field, photos, router]);
 
     // one rule per album: while it's picked in the list, every other photo fades back
     const albumCss = albums
@@ -584,23 +415,58 @@ export default function PhotoField({
         else root.dataset.album = String(i);
     };
 
+    // photos closest to the middle of the first view appear first
+    const cx = view.w / 2;
+    const cy = view.h / 2;
+
     return (
         <section ref={rootRef} className="cv-root" data-lenis-prevent>
             <style>{css + albumCss}</style>
 
-            <div ref={layerRef} className="cv-layer media-reveal" style={{ animationDelay: '0.1s' }}>
-                {slots.map((cell, i) => (
-                    <Slot
-                        key={i}
-                        index={i}
-                        cell={cell}
-                        model={model}
-                        photos={photos}
-                        albums={albums}
-                        setRef={setRef}
-                        onOpen={onOpen}
-                    />
-                ))}
+            <div ref={layerRef} className="cv-layer">
+                {field.cells.map((c, i) => {
+                    const p = photos[c.photo];
+                    const a = albums[p.album];
+                    const x = wrapX(field, c.x, 0);
+                    const y = wrapY(field, c.y, 0);
+                    const onScreen = x + c.w > 0 && x < view.w && y + c.h > 0 && y < view.h;
+                    const delay = Math.min(0.9, Math.hypot(x + c.w / 2 - cx, y + c.h / 2 - cy) / 1400);
+                    return (
+                        <Link
+                            key={i}
+                            ref={(el) => {
+                                itemRefs.current[i] = el;
+                            }}
+                            href={a.href}
+                            className="cv-item"
+                            data-album={p.album}
+                            tabIndex={-1}
+                            aria-hidden="true"
+                            draggable={false}
+                            style={{
+                                width: c.w,
+                                height: c.h,
+                                transform: `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`,
+                            }}
+                            onClick={(e) => {
+                                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)
+                                    return;
+                                if (openRef.current?.(i, a.href)) e.preventDefault();
+                            }}
+                        >
+                            <span
+                                className="cv-photo media-reveal"
+                                style={{ animationDelay: `${(0.1 + delay).toFixed(2)}s` }}
+                            >
+                                <FieldImage src={p.src} eager={onScreen} />
+                            </span>
+                            <span className="cv-cap">
+                                <span className="cv-cap-title">{a.title}</span>
+                                <span className="cv-cap-sub">{a.subtitle}</span>
+                            </span>
+                        </Link>
+                    );
+                })}
             </div>
 
             <header className="cv-head load-reveal" style={{ animationDelay: '0.2s' }}>
