@@ -184,3 +184,8 @@
     animation: none;
   }
 }
+
+/* pages that mark their main with data-no-footer (contact) end without the site footer */
+html:has([data-no-footer]) footer {
+  display: none;
+}

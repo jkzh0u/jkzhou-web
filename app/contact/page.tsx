@@ -10,7 +10,7 @@ export const metadata: Metadata = pageMetadata({
 
 export default function Page() {
   return (
-    <main className="min-h-screen overflow-x-clip bg-background text-foreground">
+    <main data-no-footer className="min-h-screen overflow-x-clip bg-background text-foreground">
       <ContactSection />
     </main>
   );

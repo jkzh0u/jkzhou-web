@@ -11,7 +11,6 @@ import { getLenis } from './SmoothScroll';
 //   drag (mouse or touch), scroll / trackpad, or arrow keys to move; flicks carry on and ease out.
 //   the field repeats in every direction, so there's no edge to hit.
 //   hover a photo to see which album it's from; click to open the album.
-//   the album list at the bottom lights up that album's photos (keyboard focus also glides to one).
 
 export type FieldAlbum = { href: string; title: string; subtitle: string };
 // ratio: width / height as the photo is displayed; null when it couldn't be read
@@ -186,7 +185,6 @@ export default function PhotoField({
     const rootRef = useRef<HTMLElement>(null);
     const layerRef = useRef<HTMLDivElement>(null);
     const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
-    const glideRef = useRef<((album: number) => void) | null>(null);
     const openRef = useRef<((cell: number, href: string) => boolean) | null>(null);
 
     const [view, setView] = useState(SERVER_VIEW);
@@ -228,11 +226,18 @@ export default function PhotoField({
 
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+        // On touch screens the curve is drawn flat: each photo is moved and squashed to where the
+        // 3D version would show it, without real 3D. iOS Safari can't blend the navbar
+        // (mix-blend-mode: difference) over 3D layers, so with them it turned white on white.
+        const flat = window.matchMedia('(hover: none)').matches;
+
         let vw = root.clientWidth;
         let vh = root.clientHeight;
         // the viewing distance scales with the window, so the curve looks the same on any screen
+        let persp = 1000;
         const setPerspective = () => {
-            layer.style.perspective = `${Math.round(CONFIG.perspective * Math.max(vw, vh))}px`;
+            persp = Math.round(CONFIG.perspective * Math.max(vw, vh));
+            layer.style.perspective = flat ? 'none' : `${persp}px`;
         };
         setPerspective();
         const onResize = () => {
@@ -370,27 +375,6 @@ export default function PhotoField({
         root.addEventListener('click', onClickCapture, true);
         root.addEventListener('wheel', onWheel, { passive: false });
         window.addEventListener('keydown', onKey);
-
-        // glide to the nearest photo from an album (keyboard focus on the album list)
-        glideRef.current = (album) => {
-            let best = -1;
-            let bestD = Infinity;
-            field.cells.forEach((c, i) => {
-                if (photos[c.photo].album !== album) return;
-                const sx = wrapX(field, c.x, cam.x) + c.w / 2;
-                const sy = wrapY(field, c.y, cam.y) + c.h / 2;
-                const d = Math.hypot(sx - vw / 2, sy - vh / 2);
-                if (d < bestD) {
-                    bestD = d;
-                    best = i;
-                }
-            });
-            if (best < 0) return;
-            const c = field.cells[best];
-            target.x += vw / 2 - (wrapX(field, c.x, cam.x) + c.w / 2);
-            target.y += vh / 2 - (wrapY(field, c.y, cam.y) + c.h / 2);
-            vel.x = vel.y = 0;
-        };
 
         // Opening an album: a copy of the clicked photo lifts out of the field, glides to the middle
         // of the screen and grows a little while the rest drift away and fade, then it dissolves
@@ -534,6 +518,18 @@ export default function PhotoField({
                 y += (ry * Math.sin(a) - oy) * bend.y;
                 x += (rx * Math.sin(b) - ox) * bend.x;
                 const z = ry * (Math.cos(a) - 1) * bend.y + rx * (Math.cos(b) - 1) * bend.x;
+                if (flat) {
+                    // what the perspective would do: shrink toward the middle with distance,
+                    // and foreshorten by the turn
+                    const k = persp / (persp - z);
+                    const px = vw / 2 + (x + c.w / 2 - vw / 2) * k - c.w / 2;
+                    const py = vh / 2 + (y + c.h / 2 - vh / 2) * k - c.h / 2;
+                    const sx = k * Math.cos(b * bend.x);
+                    const sy = k * Math.cos(a * bend.y);
+                    els[i].style.transform =
+                        `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+                    continue;
+                }
                 els[i].style.transform =
                     `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) ` +
                     `rotateX(${(-a * bend.y).toFixed(4)}rad) rotateY(${(b * bend.x).toFixed(4)}rad)`;
@@ -545,7 +541,6 @@ export default function PhotoField({
             gsap.ticker.remove(tick);
             leaveTl?.kill();
             zoomEl?.remove();
-            glideRef.current = null;
             openRef.current = null;
             window.removeEventListener('resize', onResize);
             root.removeEventListener('pointerdown', onDown);
@@ -561,26 +556,16 @@ export default function PhotoField({
         };
     }, [field, photos, router]);
 
-    // Rules per album: while it's picked in the list, every other photo fades back. And while
-    // one of its photos is hovered, its other photos stay lit instead of dimming with the rest
-    // (this beats the general hover dim rule in css below by specificity).
+    // Rules per album: while one of its photos is hovered, its other photos stay lit instead of
+    // dimming with the rest (this beats the general hover dim rule in css below by specificity).
     const albumCss = albums
         .map(
             (_, i) =>
-                `.cv-root[data-album="${i}"] .cv-item:not([data-album="${i}"]) { opacity: 0.12; }
-                 .cv-root[data-album="${i}"] .cv-item[data-album="${i}"] .cv-cap { opacity: 1; transform: none; }
-                 @media (hover: hover) {
+                `@media (hover: hover) {
                    .cv-root:not(.is-dragging):not(.is-leaving) .cv-layer:has(.cv-item[data-album="${i}"]:hover) .cv-item[data-album="${i}"] { opacity: 1; }
                  }`
         )
         .join('\n');
-
-    const setAlbum = (i: number | null) => {
-        const root = rootRef.current;
-        if (!root) return;
-        if (i === null) delete root.dataset.album;
-        else root.dataset.album = String(i);
-    };
 
     // photos closest to the middle of the first view appear first
     const cx = view.w / 2;
@@ -640,31 +625,9 @@ export default function PhotoField({
             {/* not shown, but keeps a page heading for screen readers and search */}
             <h1 className="sr-only">photo vault: life through jackson zhou&apos;s lens</h1>
 
-            <nav
-                className="cv-albums load-reveal"
-                style={{ animationDelay: '0.45s' }}
-                aria-label="albums"
-                data-cv-ui
-            >
-                <ol>
-                    {albums.map((a, i) => (
-                        <li key={a.href}>
-                            <Link
-                                href={a.href}
-                                onPointerEnter={(e) => e.pointerType === 'mouse' && setAlbum(i)}
-                                onPointerLeave={() => setAlbum(null)}
-                                onFocus={() => {
-                                    setAlbum(i);
-                                    glideRef.current?.(i);
-                                }}
-                                onBlur={() => setAlbum(null)}
-                            >
-                                {a.title}
-                            </Link>
-                        </li>
-                    ))}
-                </ol>
-            </nav>
+            <p className="cv-explore load-reveal" style={{ animationDelay: '0.45s' }} aria-hidden="true">
+                explore
+            </p>
         </section>
     );
 }
@@ -680,7 +643,7 @@ const css = `
     display: none;
   }
 
-  html.cv-leaving .cv-albums {
+  html.cv-leaving .cv-explore {
     opacity: 0;
     transition: opacity 0.25s ease;
   }
@@ -725,6 +688,13 @@ const css = `
     transition: opacity 0.45s ease;
     -webkit-tap-highlight-color: transparent;
     -webkit-user-drag: none;
+    /* a clear outline makes the browser smooth the edges of tilted photos (no stair-steps) */
+    outline: 1px solid transparent;
+  }
+
+  .cv-item:focus-visible {
+    outline-color: currentColor;
+    outline-offset: 2px;
   }
 
   .cv-photo {
@@ -819,59 +789,22 @@ const css = `
     object-fit: cover;
   }
 
-  .cv-albums {
-    text-shadow: 0 0 14px var(--background), 0 0 4px var(--background);
-  }
-
-  .cv-albums {
+  .cv-explore {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: calc(18px + env(safe-area-inset-bottom));
     z-index: 2;
-    padding: 18px var(--pad) calc(18px + env(safe-area-inset-bottom));
-    cursor: auto;
-    touch-action: pan-x;
-    background: linear-gradient(transparent, color-mix(in srgb, var(--background) 92%, transparent) 55%);
-  }
-
-  .cv-albums ol {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 22px;
     margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .cv-albums a {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 6px;
+    text-align: center;
     font-size: 13px;
-    color: inherit;
-    text-decoration: none;
     opacity: 0.55;
-    white-space: nowrap;
-    transition: opacity 0.25s ease;
+    pointer-events: none;
+    text-shadow: 0 0 14px var(--background), 0 0 4px var(--background);
   }
-
-  .cv-albums a:hover,
-  .cv-albums a:focus-visible {
-    opacity: 1;
-  }
-
 
   @media (max-width: 760px) {
-    .cv-albums ol {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-
-    .cv-albums ol::-webkit-scrollbar {
-      display: none;
-    }
+    .cv-explore { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {

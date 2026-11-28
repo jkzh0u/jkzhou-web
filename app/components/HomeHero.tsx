@@ -193,7 +193,13 @@ const FRAGMENT = /* glsl */ `
             }
         }
 
-        gl_FragColor = vec4(tex.rgb, tex.a * uOpacity);
+        // Smooth the card's outline: the outermost pixel fades by how much of it the card
+        // covers. Without this, tilted or curved edges come out as stair-steps wherever the
+        // canvas has no antialiasing (phones, low-power machines).
+        vec2 edgePx = min(vUv, 1.0 - vUv) / max(fwidth(vUv), vec2(1e-5));
+        float edgeAa = clamp(min(edgePx.x, edgePx.y) + 0.5, 0.0, 1.0);
+
+        gl_FragColor = vec4(tex.rgb, tex.a * uOpacity * edgeAa);
 
         #include <colorspace_fragment>
     }

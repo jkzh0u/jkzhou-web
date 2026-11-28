@@ -69,7 +69,7 @@ export const albums = [
   {
     slug: "2025fallbbq",
     title: "2025 fall sac bbq",
-    subtitle: "@ mary ward css",
+    subtitle: "start of year bbq @mwcss",
     metaTitle: "2025 fall sac bbq photos, mary ward css",
     metaDescription:
       "photos from the 2025 fall sac bbq at mary ward css.",
@@ -85,12 +85,12 @@ export const albums = [
   {
     slug: "2024sunrise",
     title: "07s senior sunrise",
-    subtitle: "@ mary ward css",
+    subtitle: "mary ward class of 2025 senior sunrise photos",
     metaTitle: "07s senior sunrise photos, mary ward css",
     metaDescription:
       "photos from the 07s senior sunrise at mary ward css.",
     cover: "cover.jpg",
-    field: ["IMG_9330"],
+    field: ["IMG_9330.jpg"],
   },
 
   // taken 2023-12-24 to 2024-06-15, placed by its latest photos
@@ -102,14 +102,14 @@ export const albums = [
     metaDescription: "personal photos of downtown toronto.",
     cover:
       "IMG_0032.jpg",
-    field: ["IMG_0034-Enhanced-NR", "IMG_2645", "IMG_7233"],
+    field: ["IMG_0034-Enhanced-NR.jpg", "IMG_2645.jpg", "IMG_7233.jpg", "IMG_2693.jpg"],
   },
 
   // taken 2024-03-16
   {
     slug: "2024robotics",
     title: "5596 crescendo",
-    subtitle: "FRC 2024 game",
+    subtitle: "FRC 2024 game, crescendo",
     metaTitle: "FRC team 5596 crescendo photos, 2024",
     metaDescription:
       "photos of FIRST Robotics Competition team 5596 during the 2024 crescendo game.",
@@ -121,21 +121,20 @@ export const albums = [
   // taken 2024-02-25
   {
     slug: "2024autoshow",
-    title: "autoshow",
+    title: "the 2024 canadian international autoshow",
     subtitle: "2024",
     metaTitle: "autoshow 2024 photos",
     metaDescription: "photos from the 2024 autoshow.",
     cover:
       "IMG_1032.jpg",
-    size: "small",
-    field: ["IMG_1055 ed.jpg", "IMG_1100"],
+    field: ["IMG_1055 ed.jpg", "IMG_1100.jpg"],
   },
 
   // taken 2023-11-16
   {
     slug: "2023gloco",
     title: "gloco 2023",
-    subtitle: "@ mary ward",
+    subtitle: "our first ever gloco @mwcss",
     metaTitle: "gloco 2023 photos, mary ward css",
     metaDescription: "photos from gloco 2023 at mary ward css.",
     cover:
