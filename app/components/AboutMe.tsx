@@ -5,6 +5,7 @@ import Image from 'next/image';
 import gsap from 'gsap';
 import { getScrollY } from './SmoothScroll';
 import { isLiteMode } from './perfMode';
+import { WORD_DRIFT, wordExit } from './wordExit';
 
 const ABOUT_PARAGRAPHS = [
     "hi! I'm Jackson (周子冸), I am currently interested in medicine & systems design engineering",
@@ -102,18 +103,22 @@ export default function AboutMe({ portrait }: { portrait: string }) {
             for (const w of words) {
                 const yv = stageTop + w.y - vh / 2;
                 if (yv > vh * 1.2 || yv < -vh * 1.2) {
-                    w.el.style.opacity = yv > 0 ? '0' : '1';
+                    w.el.style.opacity = '0';
                     continue;
                 }
 
+                // in from the bottom of the screen...
                 const reveal = clamp((vh * 0.75 - yv - w.idx * 2 + lift) / (vh * 0.45), 0, 1);
-                w.el.style.opacity = String(reveal);
+                // ...and the same in reverse at the top (wordExit.ts)
+                const exit = wordExit(yv + vh / 2, vh, w.idx * 2);
+                w.el.style.opacity = String(reveal * exit);
 
                 if (reduceMotion) continue;
                 const a = clamp(yv / radius, -1.3, 1.3);
                 const shiftY = lerp(yv, radius * Math.sin(a), k) - yv;
                 const shiftZ = radius * (Math.cos(a) - 1) * k;
-                w.el.style.transform = `perspective(1000px) translate3d(0, ${shiftY + (1 - reveal) * 22}px, ${shiftZ}px) rotateX(${-a * k}rad)`;
+                const drift = (1 - reveal - (1 - exit)) * WORD_DRIFT;
+                w.el.style.transform = `perspective(1000px) translate3d(0, ${shiftY + drift}px, ${shiftZ}px) rotateX(${-a * k}rad)`;
             }
         };
 

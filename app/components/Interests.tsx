@@ -5,6 +5,7 @@ import Image from 'next/image';
 import gsap from 'gsap';
 import { getScrollY } from './SmoothScroll';
 import { isLiteMode } from './perfMode';
+import { WORD_DRIFT, wordExit } from './wordExit';
 
 export type Interest = { label: string; src: string; description: string };
 
@@ -39,15 +40,46 @@ const MAX_BEND = 0.6;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
+// Text split into words for the homepage text's exit at the top of the screen (wordExit.ts).
+// The outer span stays still so it can be measured; the inner one fades and drifts.
+function Words({ text }: { text: string }) {
+    return (
+        <>
+            {text.split(' ').map((word, i) => (
+                <span key={i}>
+                    <span className="pw-w">{word}</span>{' '}
+                </span>
+            ))}
+        </>
+    );
+}
+
+// an element's place in the page, ignoring transforms (the bend never feeds back into it)
+const pageTop = (el: HTMLElement) => {
+    let y = 0;
+    for (let e: HTMLElement | null = el; e; e = e.offsetParent as HTMLElement | null) y += e.offsetTop;
+    return y;
+};
+
 
 export default function Interests({ interests }: { interests: Interest[] }) {
+    const rootRef = useRef<HTMLElement>(null);
     const wallRef = useRef<HTMLDivElement>(null);
 
     // One frame loop for the reveal and the scroll cylinder. Positions come from offsetTop,
     // which ignores transforms, so the bend never feeds back into its own measurements.
     useEffect(() => {
         const wall = wallRef.current;
-        if (!wall) return;
+        const root = rootRef.current;
+        if (!wall || !root) return;
+
+        // the heading's and notes' words, each with its middle's place in the page and its
+        // number within its block (so a block leaves in reading order)
+        const words = Array.from(root.querySelectorAll<HTMLElement>('.pw-w')).map((el) => ({
+            el,
+            y: 0,
+            idx: 0,
+        }));
 
         const items = Array.from(wall.querySelectorAll<HTMLElement>('.pw-item')).map((el) => ({
             el,
@@ -60,6 +92,10 @@ export default function Interests({ interests }: { interests: Interest[] }) {
             for (const item of items) {
                 item.el.classList.add('is-in');
                 item.el.style.transform = '';
+            }
+            for (const w of words) {
+                w.el.style.opacity = '';
+                w.el.style.transform = '';
             }
         };
 
@@ -80,6 +116,16 @@ export default function Interests({ interests }: { interests: Interest[] }) {
             for (const item of items) {
                 item.top = item.el.offsetTop;
                 item.centre = item.top + item.el.offsetHeight / 2;
+            }
+            let block: Element | null = null;
+            let idx = 0;
+            for (const w of words) {
+                const outer = (w.el.parentElement ?? w.el) as HTMLElement;
+                w.y = pageTop(outer) + outer.offsetHeight / 2;
+                const b = w.el.closest('h2, p');
+                idx = b === block ? idx + 1 : 0;
+                block = b;
+                w.idx = idx;
             }
             dirty = true;
         };
@@ -112,7 +158,7 @@ export default function Interests({ interests }: { interests: Interest[] }) {
             bend += (targetBend - bend) * (targetBend < bend ? 0.12 : 0.1);
 
             const vh = window.innerHeight;
-            const box = wall.getBoundingClientRect();
+            const box = root.getBoundingClientRect();
             if (box.bottom < -vh * 0.5 || box.top > vh * 1.5) return;
             if (!dirty && scrollY === drawnScroll && Math.abs(bend - drawnBend) < 0.0005) return;
             dirty = false;
@@ -120,7 +166,22 @@ export default function Interests({ interests }: { interests: Interest[] }) {
             drawnBend = bend;
 
             // the wall's top in the smooth-scrolled frame, as AboutMe does it
-            const wallTop = box.top + window.scrollY - scrollY;
+            const wallTop = wall.getBoundingClientRect().top + window.scrollY - scrollY;
+
+            // the words leave at the top of the screen like the rest of the homepage's text
+            for (const w of words) {
+                const screenY = w.y - scrollY;
+                if (screenY > vh * 0.5) {
+                    if (w.el.style.opacity) {
+                        w.el.style.opacity = '';
+                        w.el.style.transform = '';
+                    }
+                    continue;
+                }
+                const exit = wordExit(screenY, vh, w.idx * 2);
+                w.el.style.opacity = String(exit);
+                w.el.style.transform = `translate3d(0, ${(-(1 - exit) * WORD_DRIFT).toFixed(1)}px, 0)`;
+            }
             const radius = vh * 1.1;
             const k = Math.min(bend, MAX_BEND);
 
@@ -141,6 +202,8 @@ export default function Interests({ interests }: { interests: Interest[] }) {
         measure();
         const ro = new ResizeObserver(measure);
         ro.observe(wall);
+        // the heading's and notes' places in the page also move when anything above them changes
+        ro.observe(document.body);
         window.addEventListener('resize', measure);
         gsap.ticker.add(tick);
 
@@ -157,11 +220,11 @@ export default function Interests({ interests }: { interests: Interest[] }) {
     const lastY = (interests.length - 1) * STEP;
 
     return (
-        <section className="pw-root" aria-labelledby="interests-label">
+        <section ref={rootRef} className="pw-root" aria-labelledby="interests-label">
             <style>{css}</style>
 
             <h2 id="interests-label" className="pw-label">
-                interests
+                <Words text="interests" />
             </h2>
 
             <div
@@ -198,7 +261,9 @@ export default function Interests({ interests }: { interests: Interest[] }) {
                                 </div>
                             </div>
                             <div className="pw-note">
-                                <p className="pw-note-text">{interest.description}</p>
+                                <p className="pw-note-text">
+                                    <Words text={interest.description} />
+                                </p>
                             </div>
                         </article>
                     );
@@ -333,6 +398,17 @@ const css = `
     transition-delay: 0.35s;
   }
 
+
+  .pw-w {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+
+  html.perf-lite .pw-w {
+    opacity: 1 !important;
+    transform: none !important;
+    will-change: auto;
+  }
 
   .pw-note-text {
     margin: 0;

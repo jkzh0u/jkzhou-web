@@ -7,6 +7,7 @@ import gsap from 'gsap';
 import { experiences, type Experience } from '@/data/sidequests';
 import { getScrollY } from './SmoothScroll';
 import { isLiteMode } from './perfMode';
+import { WORD_DRIFT, wordExit } from './wordExit';
 
 const REPEATS = 3;
 // how often (ms) to check which logo is in the middle of the marquee
@@ -295,18 +296,21 @@ export default function SideQuests() {
             for (const { el, y, line } of words) {
                 const yv = box.top + y + toSmooth;
                 if (yv > vh * 1.2 || yv < -vh * 1.2) {
-                    el.style.opacity = yv > 0 ? '0' : '1';
+                    el.style.opacity = '0';
                     continue;
                 }
 
+                // in from the bottom, and out again at the top (wordExit.ts), a line at a time
                 const reveal = revealAt(yv, vh, line * LINE_OFFSET);
-                el.style.opacity = String(reveal);
+                const exit = wordExit(yv + vh / 2, vh, line * LINE_OFFSET);
+                el.style.opacity = String(reveal * exit);
 
                 if (reduceMotion) continue;
                 const a = clamp(yv / radius, -1.3, 1.3);
                 const shiftY = lerp(yv, radius * Math.sin(a), k) - yv;
                 const shiftZ = radius * (Math.cos(a) - 1) * k;
-                el.style.transform = `perspective(1000px) translate3d(0, ${shiftY + (1 - reveal) * 22}px, ${shiftZ}px) rotateX(${-a * k}rad)`;
+                const drift = (1 - reveal - (1 - exit)) * WORD_DRIFT;
+                el.style.transform = `perspective(1000px) translate3d(0, ${shiftY + drift}px, ${shiftZ}px) rotateX(${-a * k}rad)`;
             }
         };
 

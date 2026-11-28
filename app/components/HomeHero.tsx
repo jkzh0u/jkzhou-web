@@ -382,6 +382,13 @@ export default function PhotographerHome({
         const D = CONFIG.cameraDistance;
 
         const quality = getRenderQuality(isMobile);
+        // Phones are 3x screens, and the hero is a handful of photos, so they render at the
+        // screen's own density (up to 3x) rather than the shared 1-1.5x budget. That budget's
+        // low-power guess (few cores / little memory) trips on most phones and rendered the hero
+        // at 1x: blurry photos. A phone that really can't keep up still steps down, but not
+        // below 2x. Save-data mode keeps the low setting.
+        const phoneSharp = isMobile && !(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+        const pixelRatio = phoneSharp ? Math.min(window.devicePixelRatio || 1, 3) : quality.pixelRatio;
 
         const renderer = new THREE.WebGLRenderer({
             canvas,
@@ -390,7 +397,7 @@ export default function PhotographerHome({
             powerPreference: quality.lowPower ? 'low-power' : 'default',
         });
 
-        renderer.setPixelRatio(quality.pixelRatio);
+        renderer.setPixelRatio(pixelRatio);
         renderer.setSize(vw, vh, false);
         renderer.setClearColor(0xffffff, 0);
 
@@ -418,9 +425,13 @@ export default function PhotographerHome({
         const geometry = new THREE.PlaneGeometry(1, 1, 1, 24);
 
         // drops the resolution if this machine can't keep up (setPixelRatio resizes the canvas)
-        const dprGovernor = createDprGovernor([renderer], () => {
-            needsRender = true;
-        });
+        const dprGovernor = createDprGovernor(
+            [renderer],
+            () => {
+                needsRender = true;
+            },
+            phoneSharp ? { min: Math.min(pixelRatio, 2) } : undefined
+        );
         const loader = new THREE.TextureLoader();
 
         loader.setCrossOrigin('anonymous');
@@ -448,9 +459,8 @@ export default function PhotographerHome({
         // and upload to the GPU right away (initTexture) so nothing heavy happens during the
         // animation. Falls back to TextureLoader if any of that isn't supported.
 
-        const pixelRatio = renderer.getPixelRatio();
         // biggest on-screen tile is the intro stack: ~460 x 613 css px
-        const maxShortSide = Math.min(1280, Math.ceil(650 * pixelRatio));
+        const maxShortSide = Math.min(1280, Math.ceil(650 * renderer.getPixelRatio()));
         const maxLongSide = 2048;
 
         const decodeToCanvas = async (url: string) => {
@@ -545,7 +555,10 @@ export default function PhotographerHome({
                 }
 
                 tex.colorSpace = THREE.SRGBColorSpace;
-                tex.anisotropy = Math.min(quality.anisotropy, renderer.capabilities.getMaxAnisotropy());
+                tex.anisotropy = Math.min(
+                    phoneSharp ? 4 : quality.anisotropy,
+                    renderer.capabilities.getMaxAnisotropy()
+                );
 
                 // uploaded by pumpUploads, at most one per frame (several arriving together
                 // would otherwise stall a single frame and make scrolling stutter)
